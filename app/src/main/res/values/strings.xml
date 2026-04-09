@@ -1,0 +1,53 @@
+<resources>
+    <string name="app_name">Attendify</string>
+
+    <!-- Nav labels -->
+    <string name="nav_home">Home</string>
+    <string name="nav_attendance">Attend</string>
+    <string name="nav_history">History</string>
+    <string name="nav_profile">Profile</string>
+
+    <!-- Home -->
+    <string name="welcome_back">Welcome back,</string>
+    <string name="todays_class">Today\'s Class</string>
+    <string name="class_time">08:00 AM - 09:30 AM</string>
+    <string name="btn_start">Start</string>
+    <string name="weekly_attendance">Weekly Attendance</string>
+    <string name="pending_requests">Pending Requests</string>
+    <string name="quick_actions">Quick Actions</string>
+    <string name="recent_activity">Recent Activity</string>
+    <string name="new_report">New Report</string>
+    <string name="message_parent">Message Parent</string>
+    <string name="settings">Settings</string>
+
+    <!-- Attendance -->
+    <string name="attendance_title">Attendance</string>
+    <string name="class_subtitle">IT - 203 • Entrepreneurship</string>
+    <string name="filter_all">All</string>
+    <string name="filter_present">Present</string>
+    <string name="filter_late">Late</string>
+    <string name="filter_absent">Absent</string>
+    <string name="label_present">PRESENT</string>
+    <string name="label_late">LATE</string>
+    <string name="label_absent">ABSENT</string>
+    <string name="no_students">No students found</string>
+    <string name="tap_hint">Tap a student to cycle status</string>
+
+    <!-- History -->
+    <string name="history_title">History</string>
+    <string name="past_30">Past 30 Days</string>
+    <string name="completed">Completed</string>
+
+    <!-- Profile -->
+    <string name="teacher_role">Teacher • IT - 203</string>
+    <string name="personal_info">Personal Information</string>
+    <string name="notifications">Notifications</string>
+    <string name="privacy_security">Privacy &amp; Security</string>
+    <string name="app_settings">App Settings</string>
+    <string name="help_support">Help &amp; Support</string>
+    <string name="log_out">Log Out</string>
+
+    <!-- Misc -->
+    <string name="subject_entrepreneurship">Entrepreneurship</string>
+    <string name="class_it203">IT - 203</string>
+</resources>

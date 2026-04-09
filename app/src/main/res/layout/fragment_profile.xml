@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/gray_50">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingBottom="24dp">
+
+        <!-- Header area: blue bg + avatar overlap -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <!-- Blue background — id used to expand height for status bar -->
+            <LinearLayout
+                android:id="@+id/profile_header_bg"
+                android:layout_width="match_parent"
+                android:layout_height="160dp"
+                android:background="@drawable/bg_header"
+                android:orientation="vertical"
+                android:paddingTop="0dp">
+            </LinearLayout>
+
+            <!-- Avatar: sits at bottom-centre of the blue area -->
+            <FrameLayout
+                android:layout_width="96dp"
+                android:layout_height="96dp"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="-48dp">
+                <ImageView
+                    android:layout_width="96dp"
+                    android:layout_height="96dp"
+                    android:background="@drawable/bg_circle_blue"
+                    android:padding="20dp"
+                    android:src="@android:drawable/ic_menu_myplaces"
+                    android:tint="@color/white" />
+            </FrameLayout>
+        </FrameLayout>
+
+        <!-- Space so avatar isn't hidden (half avatar height) -->
+        <View android:layout_width="match_parent" android:layout_height="56dp" />
+
+        <!-- Name + Role -->
+        <TextView
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:gravity="center" android:text="Teacher"
+            android:textColor="@color/gray_800" android:textSize="24sp" android:textStyle="bold" />
+        <TextView
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:gravity="center" android:text="@string/teacher_role"
+            android:textColor="@color/gray_500" android:textSize="14sp" />
+
+        <!-- Menu Items -->
+        <LinearLayout
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginStart="24dp" android:layout_marginTop="32dp"
+            android:layout_marginEnd="24dp" android:orientation="vertical">
+
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                app:cardCornerRadius="16dp" app:cardElevation="1dp">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:background="@color/white" android:gravity="center_vertical"
+                    android:orientation="horizontal" android:padding="16dp">
+                    <ImageView android:layout_width="40dp" android:layout_height="40dp"
+                        android:background="@drawable/bg_circle_blue50" android:padding="9dp"
+                        android:src="@android:drawable/ic_menu_myplaces" android:tint="@color/blue_600" />
+                    <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp" android:layout_weight="1"
+                        android:text="@string/personal_info" android:textColor="@color/gray_700" android:textSize="15sp" />
+                    <ImageView android:layout_width="20dp" android:layout_height="20dp"
+                        android:src="@android:drawable/ic_media_play" android:tint="@color/gray_400" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                app:cardCornerRadius="16dp" app:cardElevation="1dp">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:background="@color/white" android:gravity="center_vertical"
+                    android:orientation="horizontal" android:padding="16dp">
+                    <ImageView android:layout_width="40dp" android:layout_height="40dp"
+                        android:background="@drawable/bg_circle_blue50" android:padding="9dp"
+                        android:src="@android:drawable/ic_menu_agenda" android:tint="@color/blue_600" />
+                    <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp" android:layout_weight="1"
+                        android:text="@string/notifications" android:textColor="@color/gray_700" android:textSize="15sp" />
+                    <ImageView android:layout_width="20dp" android:layout_height="20dp"
+                        android:src="@android:drawable/ic_media_play" android:tint="@color/gray_400" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                app:cardCornerRadius="16dp" app:cardElevation="1dp">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:background="@color/white" android:gravity="center_vertical"
+                    android:orientation="horizontal" android:padding="16dp">
+                    <ImageView android:layout_width="40dp" android:layout_height="40dp"
+                        android:background="@drawable/bg_circle_blue50" android:padding="9dp"
+                        android:src="@android:drawable/ic_lock_idle_lock" android:tint="@color/blue_600" />
+                    <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp" android:layout_weight="1"
+                        android:text="@string/privacy_security" android:textColor="@color/gray_700" android:textSize="15sp" />
+                    <ImageView android:layout_width="20dp" android:layout_height="20dp"
+                        android:src="@android:drawable/ic_media_play" android:tint="@color/gray_400" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                app:cardCornerRadius="16dp" app:cardElevation="1dp">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:background="@color/white" android:gravity="center_vertical"
+                    android:orientation="horizontal" android:padding="16dp">
+                    <ImageView android:layout_width="40dp" android:layout_height="40dp"
+                        android:background="@drawable/bg_circle_blue50" android:padding="9dp"
+                        android:src="@android:drawable/ic_menu_manage" android:tint="@color/blue_600" />
+                    <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp" android:layout_weight="1"
+                        android:text="@string/app_settings" android:textColor="@color/gray_700" android:textSize="15sp" />
+                    <ImageView android:layout_width="20dp" android:layout_height="20dp"
+                        android:src="@android:drawable/ic_media_play" android:tint="@color/gray_400" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                app:cardCornerRadius="16dp" app:cardElevation="1dp">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:background="@color/white" android:gravity="center_vertical"
+                    android:orientation="horizontal" android:padding="16dp">
+                    <ImageView android:layout_width="40dp" android:layout_height="40dp"
+                        android:background="@drawable/bg_circle_blue50" android:padding="9dp"
+                        android:src="@android:drawable/ic_dialog_info" android:tint="@color/blue_600" />
+                    <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp" android:layout_weight="1"
+                        android:text="@string/help_support" android:textColor="@color/gray_700" android:textSize="15sp" />
+                    <ImageView android:layout_width="20dp" android:layout_height="20dp"
+                        android:src="@android:drawable/ic_media_play" android:tint="@color/gray_400" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <TextView
+                android:id="@+id/btn_logout"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/bg_logout_button"
+                android:gravity="center" android:padding="16dp"
+                android:text="@string/log_out"
+                android:textColor="@color/red_600" android:textSize="15sp" android:textStyle="bold" />
+
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>

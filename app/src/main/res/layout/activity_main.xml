@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/gray_50">
+
+    <!-- Fragments fill entire screen; each fragment adds its own status bar top padding -->
+    <FrameLayout
+        android:id="@+id/fragment_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <!-- Bottom nav — height + bottom inset set in MainActivity -->
+    <LinearLayout
+        android:id="@+id/bottom_nav"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:background="@drawable/bg_nav_bottom"
+        android:elevation="12dp"
+        android:gravity="top"
+        android:orientation="horizontal"
+        android:paddingStart="8dp"
+        android:paddingTop="0dp"
+        android:paddingEnd="8dp"
+        android:paddingBottom="0dp">
+
+        <LinearLayout
+            android:id="@+id/tab_home"
+            android:layout_width="0dp"
+            android:layout_height="64dp"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="4dp">
+            <ImageView
+                android:id="@+id/icon_home"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:background="@drawable/bg_nav_icon_active"
+                android:padding="4dp"
+                android:src="@android:drawable/ic_menu_compass"
+                android:tint="@color/blue_600" />
+            <TextView
+                android:id="@+id/label_home"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/nav_home"
+                android:textColor="@color/blue_600"
+                android:textSize="10sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/tab_attendance"
+            android:layout_width="0dp"
+            android:layout_height="64dp"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="4dp">
+            <ImageView
+                android:id="@+id/icon_attendance"
+                android:layout_width="26dp"
+                android:layout_height="26dp"
+                android:padding="2dp"
+                android:src="@android:drawable/checkbox_on_background"
+                android:tint="@color/gray_400" />
+            <TextView
+                android:id="@+id/label_attendance"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/nav_attendance"
+                android:textColor="@color/gray_400"
+                android:textSize="10sp"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/tab_history"
+            android:layout_width="0dp"
+            android:layout_height="64dp"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="4dp">
+            <ImageView
+                android:id="@+id/icon_history"
+                android:layout_width="26dp"
+                android:layout_height="26dp"
+                android:padding="2dp"
+                android:src="@android:drawable/ic_menu_recent_history"
+                android:tint="@color/gray_400" />
+            <TextView
+                android:id="@+id/label_history"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/nav_history"
+                android:textColor="@color/gray_400"
+                android:textSize="10sp"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/tab_profile"
+            android:layout_width="0dp"
+            android:layout_height="64dp"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="4dp">
+            <ImageView
+                android:id="@+id/icon_profile"
+                android:layout_width="26dp"
+                android:layout_height="26dp"
+                android:padding="2dp"
+                android:src="@android:drawable/ic_menu_myplaces"
+                android:tint="@color/gray_400" />
+            <TextView
+                android:id="@+id/label_profile"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/nav_profile"
+                android:textColor="@color/gray_400"
+                android:textSize="10sp"
+                android:visibility="gone" />
+        </LinearLayout>
+
+    </LinearLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

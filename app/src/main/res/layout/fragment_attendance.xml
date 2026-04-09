@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/gray_50"
+    android:orientation="vertical">
+
+    <!-- Blue Header — id used in fragment to add status bar padding -->
+    <FrameLayout
+        android:id="@+id/attendance_header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_header">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="24dp"
+            android:paddingTop="28dp"
+            android:paddingEnd="24dp"
+            android:paddingBottom="48dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+                <TextView
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="@string/attendance_title"
+                    android:textColor="@color/white" android:textSize="24sp" android:textStyle="bold" />
+                <TextView
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="@string/class_subtitle"
+                    android:textColor="#CCFFFFff" android:textSize="13sp" />
+            </LinearLayout>
+
+            <ImageView
+                android:layout_width="36dp" android:layout_height="36dp"
+                android:background="@drawable/bg_class_card"
+                android:padding="8dp"
+                android:src="@android:drawable/ic_menu_sort_by_size"
+                android:tint="@color/white" />
+        </LinearLayout>
+    </FrameLayout>
+
+    <!-- Stat cards overlapping header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="-32dp"
+        android:layout_marginEnd="16dp"
+        android:orientation="horizontal">
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_marginEnd="6dp" android:layout_weight="1"
+            app:cardCornerRadius="14dp" app:cardElevation="4dp">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:background="@color/white" android:gravity="center_horizontal"
+                android:orientation="vertical" android:padding="12dp">
+                <TextView android:id="@+id/tv_present_count"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="0" android:textColor="@color/green_500"
+                    android:textSize="22sp" android:textStyle="bold" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:letterSpacing="0.05" android:text="@string/label_present"
+                    android:textColor="@color/gray_500" android:textSize="9sp" android:textStyle="bold" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_marginStart="6dp" android:layout_marginEnd="6dp" android:layout_weight="1"
+            app:cardCornerRadius="14dp" app:cardElevation="4dp">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:background="@color/white" android:gravity="center_horizontal"
+                android:orientation="vertical" android:padding="12dp">
+                <TextView android:id="@+id/tv_late_count"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="0" android:textColor="@color/yellow_500"
+                    android:textSize="22sp" android:textStyle="bold" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:letterSpacing="0.05" android:text="@string/label_late"
+                    android:textColor="@color/gray_500" android:textSize="9sp" android:textStyle="bold" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_marginStart="6dp" android:layout_weight="1"
+            app:cardCornerRadius="14dp" app:cardElevation="4dp">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:background="@color/white" android:gravity="center_horizontal"
+                android:orientation="vertical" android:padding="12dp">
+                <TextView android:id="@+id/tv_absent_count"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="0" android:textColor="@color/red_500"
+                    android:textSize="22sp" android:textStyle="bold" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:letterSpacing="0.05" android:text="@string/label_absent"
+                    android:textColor="@color/gray_500" android:textSize="9sp" android:textStyle="bold" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+    </LinearLayout>
+
+    <!-- Filter Pills -->
+    <HorizontalScrollView
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:paddingStart="24dp" android:paddingEnd="24dp"
+        android:scrollbars="none">
+        <LinearLayout
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            <TextView android:id="@+id/filter_all"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp" android:background="@drawable/bg_filter_active"
+                android:paddingStart="16dp" android:paddingTop="6dp"
+                android:paddingEnd="16dp" android:paddingBottom="6dp"
+                android:text="@string/filter_all" android:textColor="@color/white"
+                android:textSize="12sp" android:textStyle="bold" />
+            <TextView android:id="@+id/filter_present"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp" android:background="@drawable/bg_filter_inactive"
+                android:paddingStart="16dp" android:paddingTop="6dp"
+                android:paddingEnd="16dp" android:paddingBottom="6dp"
+                android:text="@string/filter_present" android:textColor="@color/gray_600" android:textSize="12sp" />
+            <TextView android:id="@+id/filter_late"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp" android:background="@drawable/bg_filter_inactive"
+                android:paddingStart="16dp" android:paddingTop="6dp"
+                android:paddingEnd="16dp" android:paddingBottom="6dp"
+                android:text="@string/filter_late" android:textColor="@color/gray_600" android:textSize="12sp" />
+            <TextView android:id="@+id/filter_absent"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:background="@drawable/bg_filter_inactive"
+                android:paddingStart="16dp" android:paddingTop="6dp"
+                android:paddingEnd="16dp" android:paddingBottom="6dp"
+                android:text="@string/filter_absent" android:textColor="@color/gray_600" android:textSize="12sp" />
+        </LinearLayout>
+    </HorizontalScrollView>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rv_students"
+        android:layout_width="match_parent" android:layout_height="0dp"
+        android:layout_marginTop="12dp" android:layout_weight="1"
+        android:clipToPadding="false"
+        android:paddingStart="24dp" android:paddingEnd="24dp" android:paddingBottom="16dp" />
+
+    <TextView android:id="@+id/tv_empty"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:gravity="center" android:paddingTop="40dp"
+        android:text="@string/no_students"
+        android:textColor="@color/gray_400" android:textSize="14sp"
+        android:visibility="gone" />
+
+</LinearLayout>
