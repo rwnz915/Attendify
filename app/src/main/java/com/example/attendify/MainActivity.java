@@ -19,17 +19,16 @@ import com.example.attendify.fragments.AttendanceFragment;
 import com.example.attendify.fragments.HistoryFragment;
 import com.example.attendify.fragments.HomeFragment;
 import com.example.attendify.fragments.ProfileFragment;
+import com.example.attendify.fragments.SubjectFragment;
 
 public class MainActivity extends AppCompatActivity {
 
-    private LinearLayout tabHome, tabAttendance, tabHistory, tabProfile;
+    private LinearLayout tabHome, tabSubject, tabAttendance, tabHistory, tabProfile;
     private LinearLayout bottomNav;
     private FrameLayout fragmentContainer;
     private int currentTab = -1;
 
-    /** Status bar height in px — fragments read this to offset their headers */
     public static int statusBarHeight = 0;
-    /** Full bottom inset (gesture nav bar) in px */
     public static int navBarHeight = 0;
 
     @Override
@@ -47,26 +46,27 @@ public class MainActivity extends AppCompatActivity {
             statusBarHeight = bars.top;
             navBarHeight    = bars.bottom;
 
-            // Bottom nav: pad bottom so icons sit above the gesture bar
             bottomNav.setPadding(8, 0, 8, bars.bottom);
 
-            // Fragment container: pad bottom so content never hides under bottom nav
-            // 64dp tab area + gesture nav bar
             int tabHeightPx = (int)(64 * getResources().getDisplayMetrics().density);
             fragmentContainer.setPadding(0, 0, 0, tabHeightPx + bars.bottom);
 
             return insets;
         });
 
+        // Tabs
         tabHome       = findViewById(R.id.tab_home);
+        tabSubject    = findViewById(R.id.tab_subject);
         tabAttendance = findViewById(R.id.tab_attendance);
         tabHistory    = findViewById(R.id.tab_history);
         tabProfile    = findViewById(R.id.tab_profile);
 
+        // Click listeners (UPDATED INDEXES)
         tabHome.setOnClickListener(v       -> selectTab(0));
-        tabAttendance.setOnClickListener(v -> selectTab(1));
-        tabHistory.setOnClickListener(v    -> selectTab(2));
-        tabProfile.setOnClickListener(v    -> selectTab(3));
+        tabSubject.setOnClickListener(v    -> selectTab(1));
+        tabAttendance.setOnClickListener(v -> selectTab(2));
+        tabHistory.setOnClickListener(v    -> selectTab(3));
+        tabProfile.setOnClickListener(v    -> selectTab(4));
 
         if (savedInstanceState == null) {
             selectTab(0);
@@ -79,9 +79,10 @@ public class MainActivity extends AppCompatActivity {
 
         Fragment fragment;
         switch (index) {
-            case 1: fragment = new AttendanceFragment(); break;
-            case 2: fragment = new HistoryFragment();    break;
-            case 3: fragment = new ProfileFragment();    break;
+            case 1: fragment = new SubjectFragment();    break;
+            case 2: fragment = new AttendanceFragment(); break;
+            case 3: fragment = new HistoryFragment();    break;
+            case 4: fragment = new ProfileFragment();    break;
             default: fragment = new HomeFragment();      break;
         }
 
@@ -94,13 +95,34 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void updateNavUI(int activeIndex) {
-        LinearLayout[] tabs   = {tabHome, tabAttendance, tabHistory, tabProfile};
-        int[]          icons  = {R.id.icon_home, R.id.icon_attendance, R.id.icon_history, R.id.icon_profile};
-        int[]          labels = {R.id.label_home, R.id.label_attendance, R.id.label_history, R.id.label_profile};
+        LinearLayout[] tabs = {
+                tabHome,
+                tabSubject,
+                tabAttendance,
+                tabHistory,
+                tabProfile
+        };
+
+        int[] icons = {
+                R.id.icon_home,
+                R.id.icon_subject,
+                R.id.icon_attendance,
+                R.id.icon_history,
+                R.id.icon_profile
+        };
+
+        int[] labels = {
+                R.id.label_home,
+                R.id.label_subject,
+                R.id.label_attendance,
+                R.id.label_history,
+                R.id.label_profile
+        };
 
         for (int i = 0; i < tabs.length; i++) {
             ImageView icon  = tabs[i].findViewById(icons[i]);
             TextView  label = tabs[i].findViewById(labels[i]);
+
             if (i == activeIndex) {
                 icon.setColorFilter(getResources().getColor(R.color.blue_600, getTheme()));
                 icon.setBackgroundResource(R.drawable.bg_nav_icon_active);
