@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- res/drawable/bg_icon_circle.xml
+     Matches React: background rgba(255,255,255,0.2), borderRadius 50% -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <solid android:color="#33FFFFFF"/>
+</shape>

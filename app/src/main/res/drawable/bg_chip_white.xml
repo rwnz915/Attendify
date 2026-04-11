@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- res/drawable/bg_chip_white.xml
+     Matches React chip: background rgba(255,255,255,0.25), borderRadius 10px -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#40FFFFFF"/>
+    <corners android:radius="10dp"/>
+</shape>
