@@ -40,6 +40,11 @@ public class HomeFragment extends Fragment {
 
         view.findViewById(R.id.btn_start).setOnClickListener(v -> {
             if (getActivity() instanceof MainActivity)
+                ((MainActivity) getActivity()).selectTab(2);
+        });
+
+        view.findViewById(R.id.btn_subjects).setOnClickListener(v -> {
+            if (getActivity() instanceof MainActivity)
                 ((MainActivity) getActivity()).selectTab(1);
         });
 

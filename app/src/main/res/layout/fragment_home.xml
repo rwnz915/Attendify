@@ -240,6 +240,7 @@
                 android:orientation="vertical">
 
                 <ImageView
+                    android:id="@+id/btn_class_list"
                     android:layout_width="56dp"
                     android:layout_height="56dp"
                     android:background="@drawable/bg_quick_action_purple"
@@ -289,6 +290,7 @@
                 android:orientation="vertical">
 
                 <ImageView
+                    android:id="@+id/btn_subjects"
                     android:layout_width="56dp"
                     android:layout_height="56dp"
                     android:background="@drawable/bg_quick_yellow"
