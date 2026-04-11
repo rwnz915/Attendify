@@ -34,7 +34,7 @@ public class HomeFragment extends Fragment {
         View header = view.findViewById(R.id.home_header);
         header.setPadding(
                 header.getPaddingLeft(),
-                header.getPaddingTop() + MainActivity.statusBarHeight,
+                header.getPaddingTop(),
                 header.getPaddingRight(),
                 header.getPaddingBottom());
 
