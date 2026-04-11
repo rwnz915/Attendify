@@ -25,4 +25,26 @@ public class MockData {
         list.add(new AttendanceRecord("Feb 09, 2026", 30, 0, 1));
         return list;
     }
+
+    public static AttendanceRecord getTodayAttendance() {
+        // Derived from today's student list
+        List<Student> students = getStudents();
+        int present = 0, absent = 0, late = 0;
+        for (Student s : students) {
+            switch (s.getStatus()) {
+                case Student.STATUS_PRESENT: present++; break;
+                case Student.STATUS_ABSENT:  absent++;  break;
+                case Student.STATUS_LATE:    late++;    break;
+            }
+        }
+        return new AttendanceRecord("Today", present, absent, late);
+    }
+
+    public static List<ApprovalRequest> getPendingApprovals() {
+        List<ApprovalRequest> list = new ArrayList<>();
+        list.add(new ApprovalRequest(1, "Desaliza, Cyrus",  "D", "April 9–10, 2026", "Fever and flu. Attached medical certificate."));
+        list.add(new ApprovalRequest(2, "Lozano, Nash",     "L", "April 11, 2026",   "Family emergency out of town."));
+        list.add(new ApprovalRequest(3, "Puti, Jericho",    "P", "April 8, 2026",    "Dental appointment. Has clinic certificate."));
+        return list;
+    }
 }

@@ -48,6 +48,26 @@ public class HomeFragment extends Fragment {
                 ((MainActivity) getActivity()).selectTab(1);
         });
 
+        // In onViewCreated, add after the btn_subjects click listener:
+
+        // Pending approvals card → navigate to ApprovalRequestsFragment
+        view.findViewById(R.id.card_pending_approvals).setOnClickListener(v -> {
+            requireActivity().getSupportFragmentManager()
+                    .beginTransaction()
+                    .replace(R.id.fragment_container, new ApprovalRequestsFragment())
+                    .addToBackStack(null)
+                    .commit();
+        });
+
+        // Today's attendance
+        AttendanceRecord today = MockData.getTodayAttendance();
+        ((TextView) view.findViewById(R.id.tv_today_present)).setText(String.valueOf(today.getPresent()));
+        ((TextView) view.findViewById(R.id.tv_today_total)).setText("/ " + (today.getPresent() + today.getAbsent()));
+
+        // Pending count
+        int pendingCount = MockData.getPendingApprovals().size();
+        ((TextView) view.findViewById(R.id.tv_pending_count)).setText(String.valueOf(pendingCount));;
+
         LinearLayout container2 = view.findViewById(R.id.recent_activity_container);
         List<AttendanceRecord> records = MockData.getHistory();
         LayoutInflater li = LayoutInflater.from(requireContext());
