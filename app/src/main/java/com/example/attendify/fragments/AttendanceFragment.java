@@ -15,8 +15,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.attendify.MainActivity;
 import com.example.attendify.R;
 import com.example.attendify.adapters.StudentAdapter;
-import com.example.attendify.models.MockData;
 import com.example.attendify.models.Student;
+import com.example.attendify.repository.StudentRepository;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,7 +41,6 @@ public class AttendanceFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // Shift header down so content starts below the status bar
         View header = view.findViewById(R.id.attendance_header);
         header.setPadding(
                 header.getPaddingLeft(),
@@ -49,7 +48,7 @@ public class AttendanceFragment extends Fragment {
                 header.getPaddingRight(),
                 header.getPaddingBottom());
 
-        allStudents   = MockData.getStudents();
+        allStudents   = StudentRepository.getInstance().getStudents();
         tvPresent     = view.findViewById(R.id.tv_present_count);
         tvLate        = view.findViewById(R.id.tv_late_count);
         tvAbsent      = view.findViewById(R.id.tv_absent_count);

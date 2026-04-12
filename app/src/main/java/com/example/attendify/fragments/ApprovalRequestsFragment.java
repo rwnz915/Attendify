@@ -5,7 +5,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -16,14 +15,13 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.attendify.R;
 import com.example.attendify.adapters.ApprovalsAdapter;
 import com.example.attendify.models.ApprovalRequest;
-import com.example.attendify.models.MockData;
+import com.example.attendify.repository.ApprovalRepository;
 
 import java.util.List;
 
 public class ApprovalRequestsFragment extends Fragment {
 
-    @Nullable
-    @Override
+    @Nullable @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_approval_requests, container, false);
@@ -37,10 +35,10 @@ public class ApprovalRequestsFragment extends Fragment {
                 requireActivity().getSupportFragmentManager().popBackStack()
         );
 
-        RecyclerView rv = view.findViewById(R.id.rv_approvals);
+        RecyclerView rv       = view.findViewById(R.id.rv_approvals);
         LinearLayout emptyState = view.findViewById(R.id.tv_empty);
 
-        List<ApprovalRequest> requests = MockData.getPendingApprovals();
+        List<ApprovalRequest> requests = ApprovalRepository.getInstance().getPendingApprovals();
 
         if (requests.isEmpty()) {
             rv.setVisibility(View.GONE);

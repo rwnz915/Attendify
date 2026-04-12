@@ -26,7 +26,7 @@ import com.example.attendify.fragments.ProfileFragment;
 import com.example.attendify.fragments.SubjectFragment;
 import com.example.attendify.fragments.StudentHomeFragment;
 import com.example.attendify.fragments.StudentProfileFragment;
-//import com.example.attendify.fragments.SecretaryFragment;
+import com.example.attendify.repository.AuthRepository;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -37,7 +37,7 @@ public class MainActivity extends AppCompatActivity {
     private String userRole = "";
 
     public static int statusBarHeight = 0;
-    public static int navBarHeight = 0;
+    public static int navBarHeight    = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -153,20 +153,19 @@ public class MainActivity extends AppCompatActivity {
 
             case "student":
                 switch (index) {
-                    //case 3:  fragment = new StudentHistoryFragment();  break;
-                    case 4:  fragment = new StudentProfileFragment();  break;
-                    //default: fragment = new StudentHomeFragment();     break;
-                    default: fragment = new StudentHomeFragment();       break;
+                    case 4:  fragment = new StudentProfileFragment(); break;
+                    // case 1: fragment = new StudentSubjectFragment(); break;
+                    // case 3: fragment = new StudentHistoryFragment(); break;
+                    default: fragment = new StudentHomeFragment();    break;
                 }
                 break;
 
             case "secretary":
                 switch (index) {
-                    //case 2:  fragment = new SecretaryAttendanceFragment(); break;
-                    //case 3:  fragment = new SecretaryHistoryFragment();    break;
-                    //case 4:  fragment = new SecretaryProfileFragment();    break;
-                   // default: fragment = new SecretaryHomeFragment();       break;
-                    default: fragment = new HomeFragment();       break;
+                    // case 2: fragment = new SecretaryAttendanceFragment(); break;
+                    // case 3: fragment = new SecretaryHistoryFragment();    break;
+                    // case 4: fragment = new SecretaryProfileFragment();    break;
+                    default: fragment = new HomeFragment(); break;
                 }
                 break;
 
@@ -174,8 +173,6 @@ public class MainActivity extends AppCompatActivity {
                 fragment = new HomeFragment();
                 break;
         }
-
-        if (fragment == null) return;
 
         loadFragment(fragment, false);
         updateNavUI(index);
@@ -195,36 +192,22 @@ public class MainActivity extends AppCompatActivity {
 
     private void updateNavUI(int activeIndex) {
         LinearLayout[] tabs = {
-                tabHome,
-                tabSubject,
-                tabAttendance,
-                tabHistory,
-                tabProfile
+                tabHome, tabSubject, tabAttendance, tabHistory, tabProfile
         };
-
         int[] icons = {
-                R.id.icon_home,
-                R.id.icon_subject,
-                R.id.icon_attendance,
-                R.id.icon_history,
-                R.id.icon_profile
+                R.id.icon_home, R.id.icon_subject, R.id.icon_attendance,
+                R.id.icon_history, R.id.icon_profile
         };
-
         int[] labels = {
-                R.id.label_home,
-                R.id.label_subject,
-                R.id.label_attendance,
-                R.id.label_history,
-                R.id.label_profile
+                R.id.label_home, R.id.label_subject, R.id.label_attendance,
+                R.id.label_history, R.id.label_profile
         };
 
         for (int i = 0; i < tabs.length; i++) {
-            if (tabs[i] == null) continue;
-            if (tabs[i].getVisibility() == View.GONE) continue;
+            if (tabs[i] == null || tabs[i].getVisibility() == View.GONE) continue;
 
             ImageView icon  = tabs[i].findViewById(icons[i]);
             TextView  label = tabs[i].findViewById(labels[i]);
-
             if (icon == null || label == null) continue;
 
             if (i == activeIndex) {
@@ -240,6 +223,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void logout() {
+        // Clear the mock session before navigating back to role selection
+        AuthRepository.getInstance().logout();
+
         Intent intent = new Intent(this, RoleSelectionActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);

@@ -24,7 +24,7 @@
             <LinearLayout
                 android:id="@+id/profile_header_bg"
                 android:layout_width="match_parent"
-                android:layout_height="160dp"
+                android:layout_height="130dp"
                 android:background="@drawable/bg_student_header"
                 android:orientation="vertical"
                 android:paddingTop="0dp">
@@ -61,14 +61,24 @@
 
         <!-- Name + Role -->
         <TextView
+            android:id="@+id/tv_profile_name"
             android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:gravity="center" android:text="Teacher"
+            android:gravity="center" android:text="Name"
             android:textColor="@color/gray_800" android:textSize="24sp" android:textStyle="bold" />
+
         <TextView
+            android:id="@+id/tv_profile_section"
             android:layout_width="match_parent" android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:gravity="center" android:text="@string/teacher_role"
+            android:gravity="center"
             android:textColor="@color/gray_500" android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/tv_profile_student_id"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:gravity="center"
+            android:textColor="@color/gray_500" android:textSize="13sp" />
 
         <!-- Menu Items -->
         <LinearLayout
@@ -85,7 +95,7 @@
                     android:orientation="horizontal" android:padding="16dp">
                     <ImageView android:layout_width="40dp" android:layout_height="40dp"
                         android:background="@drawable/bg_circle_blue50" android:padding="9dp"
-                        android:src="@android:drawable/ic_menu_myplaces" android:tint="@color/blue_600" />
+                        android:src="@drawable/ic_person" android:tint="@color/blue_600" />
                     <TextView android:layout_width="0dp" android:layout_height="wrap_content"
                         android:layout_marginStart="12dp" android:layout_weight="1"
                         android:text="@string/personal_info" android:textColor="@color/gray_700" android:textSize="15sp" />

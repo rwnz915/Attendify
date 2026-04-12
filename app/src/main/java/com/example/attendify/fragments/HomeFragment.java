@@ -14,7 +14,8 @@ import androidx.fragment.app.Fragment;
 import com.example.attendify.MainActivity;
 import com.example.attendify.R;
 import com.example.attendify.models.AttendanceRecord;
-import com.example.attendify.models.MockData;
+import com.example.attendify.repository.AttendanceRepository;
+import com.example.attendify.repository.ApprovalRepository;
 
 import java.util.List;
 
@@ -30,14 +31,6 @@ public class HomeFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // Shift header down so content starts below the status bar
-        View header = view.findViewById(R.id.home_header);
-        header.setPadding(
-                header.getPaddingLeft(),
-                header.getPaddingTop(),
-                header.getPaddingRight(),
-                header.getPaddingBottom());
-
         view.findViewById(R.id.btn_start).setOnClickListener(v -> {
             if (getActivity() instanceof MainActivity)
                 ((MainActivity) getActivity()).selectTab(2);
@@ -48,28 +41,26 @@ public class HomeFragment extends Fragment {
                 ((MainActivity) getActivity()).selectTab(1);
         });
 
-        // In onViewCreated, add after the btn_subjects click listener:
+        view.findViewById(R.id.card_pending_approvals).setOnClickListener(v ->
+                requireActivity().getSupportFragmentManager()
+                        .beginTransaction()
+                        .replace(R.id.fragment_container, new ApprovalRequestsFragment())
+                        .addToBackStack(null)
+                        .commit()
+        );
 
-        // Pending approvals card → navigate to ApprovalRequestsFragment
-        view.findViewById(R.id.card_pending_approvals).setOnClickListener(v -> {
-            requireActivity().getSupportFragmentManager()
-                    .beginTransaction()
-                    .replace(R.id.fragment_container, new ApprovalRequestsFragment())
-                    .addToBackStack(null)
-                    .commit();
-        });
-
-        // Today's attendance
-        AttendanceRecord today = MockData.getTodayAttendance();
+        // Today's attendance summary
+        AttendanceRecord today = AttendanceRepository.getInstance().getTodayAttendance();
         ((TextView) view.findViewById(R.id.tv_today_present)).setText(String.valueOf(today.getPresent()));
         ((TextView) view.findViewById(R.id.tv_today_total)).setText("/ " + (today.getPresent() + today.getAbsent()));
 
-        // Pending count
-        int pendingCount = MockData.getPendingApprovals().size();
-        ((TextView) view.findViewById(R.id.tv_pending_count)).setText(String.valueOf(pendingCount));;
+        // Pending approvals count
+        int pendingCount = ApprovalRepository.getInstance().getPendingApprovals().size();
+        ((TextView) view.findViewById(R.id.tv_pending_count)).setText(String.valueOf(pendingCount));
 
+        // Recent activity list
         LinearLayout container2 = view.findViewById(R.id.recent_activity_container);
-        List<AttendanceRecord> records = MockData.getHistory();
+        List<AttendanceRecord> records = AttendanceRepository.getInstance().getHistory();
         LayoutInflater li = LayoutInflater.from(requireContext());
         for (AttendanceRecord record : records) {
             View card = li.inflate(R.layout.item_activity_record, container2, false);

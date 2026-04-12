@@ -24,7 +24,7 @@
             <LinearLayout
                 android:id="@+id/profile_header_bg"
                 android:layout_width="match_parent"
-                android:layout_height="160dp"
+                android:layout_height="130dp"
                 android:background="@drawable/bg_header"
                 android:orientation="vertical"
                 android:paddingTop="0dp">
@@ -67,18 +67,11 @@
             android:textColor="@color/gray_800" android:textSize="24sp" android:textStyle="bold" />
 
         <TextView
-            android:id="@+id/tv_profile_section"
+            android:id="@+id/tv_profile_role"
             android:layout_width="match_parent" android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:gravity="center"
             android:textColor="@color/gray_500" android:textSize="14sp" />
-
-        <TextView
-            android:id="@+id/tv_profile_student_id"
-            android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:gravity="center"
-            android:textColor="@color/gray_500" android:textSize="13sp" />
 
         <!-- Menu Items -->
         <LinearLayout

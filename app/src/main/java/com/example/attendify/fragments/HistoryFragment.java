@@ -14,7 +14,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.attendify.MainActivity;
 import com.example.attendify.R;
 import com.example.attendify.adapters.HistoryAdapter;
-import com.example.attendify.models.MockData;
+import com.example.attendify.repository.AttendanceRepository;
 
 public class HistoryFragment extends Fragment {
 
@@ -28,7 +28,6 @@ public class HistoryFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // Shift header down so content starts below the status bar
         View header = view.findViewById(R.id.history_header);
         header.setPadding(
                 header.getPaddingLeft(),
@@ -38,6 +37,7 @@ public class HistoryFragment extends Fragment {
 
         RecyclerView rv = view.findViewById(R.id.rv_history);
         rv.setLayoutManager(new LinearLayoutManager(requireContext()));
-        rv.setAdapter(new HistoryAdapter(requireContext(), MockData.getHistory()));
+        rv.setAdapter(new HistoryAdapter(requireContext(),
+                AttendanceRepository.getInstance().getHistory()));
     }
 }
