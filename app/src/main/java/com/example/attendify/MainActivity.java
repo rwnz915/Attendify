@@ -24,6 +24,9 @@ import com.example.attendify.fragments.HistoryFragment;
 import com.example.attendify.fragments.HomeFragment;
 import com.example.attendify.fragments.ProfileFragment;
 import com.example.attendify.fragments.SubjectFragment;
+import com.example.attendify.fragments.StudentHomeFragment;
+import com.example.attendify.fragments.StudentProfileFragment;
+//import com.example.attendify.fragments.SecretaryFragment;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -46,14 +49,12 @@ public class MainActivity extends AppCompatActivity {
         bottomNav         = findViewById(R.id.bottom_nav);
         fragmentContainer = findViewById(R.id.fragment_container);
 
-        // Initialize Tabs FIRST to avoid NullPointerException
         tabHome       = findViewById(R.id.tab_home);
         tabSubject    = findViewById(R.id.tab_subject);
         tabAttendance = findViewById(R.id.tab_attendance);
         tabHistory    = findViewById(R.id.tab_history);
         tabProfile    = findViewById(R.id.tab_profile);
 
-        // Now set click listeners
         tabHome.setOnClickListener(v       -> selectTab(0));
         tabSubject.setOnClickListener(v    -> selectTab(1));
         tabAttendance.setOnClickListener(v -> selectTab(2));
@@ -78,14 +79,13 @@ public class MainActivity extends AppCompatActivity {
             return insets;
         });
 
-        // Get role from Intent
         String roleFromIntent = getIntent().getStringExtra("userRole");
         if (roleFromIntent != null) {
             userRole = roleFromIntent;
         }
 
         if (savedInstanceState != null) {
-            userRole = savedInstanceState.getString("userRole", userRole);
+            userRole   = savedInstanceState.getString("userRole", userRole);
             currentTab = savedInstanceState.getInt("currentTab", -1);
         }
 
@@ -97,43 +97,41 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setupUIForRole(String role) {
-        if (role.equals("teacher")) {
-            bottomNav.setVisibility(View.VISIBLE);
-            if (currentTab != -1) {
-                int savedTab = currentTab;
-                currentTab = -1; // Reset to allow selectTab to trigger
-                selectTab(savedTab);
-            } else {
-                selectTab(0);
-            }
-        } else if (role.equals("student")) {
-            bottomNav.setVisibility(View.GONE);
-            fragmentContainer.setPadding(0, 0, 0, 0);
-            loadFragment(new com.example.attendify.fragments.StudentFragment(), false);
-        } else if (role.equals("secretary")) {
-            bottomNav.setVisibility(View.GONE);
-            fragmentContainer.setPadding(0, 0, 0, 0);
-            loadFragment(new com.example.attendify.fragments.SecretaryFragment(), false);
+        switch (role) {
+            case "teacher":
+                bottomNav.setVisibility(View.VISIBLE);
+                tabHome.setVisibility(View.VISIBLE);
+                tabSubject.setVisibility(View.VISIBLE);
+                tabAttendance.setVisibility(View.VISIBLE);
+                tabHistory.setVisibility(View.VISIBLE);
+                tabProfile.setVisibility(View.VISIBLE);
+                selectTab(currentTab != -1 ? currentTab : 0);
+                break;
+
+            case "student":
+                bottomNav.setVisibility(View.VISIBLE);
+                tabHome.setVisibility(View.VISIBLE);
+                tabSubject.setVisibility(View.VISIBLE);
+                tabAttendance.setVisibility(View.GONE);
+                tabHistory.setVisibility(View.VISIBLE);
+                tabProfile.setVisibility(View.VISIBLE);
+                selectTab(currentTab != -1 ? currentTab : 0);
+                break;
+
+            case "secretary":
+                bottomNav.setVisibility(View.VISIBLE);
+                tabHome.setVisibility(View.VISIBLE);
+                tabSubject.setVisibility(View.GONE);
+                tabAttendance.setVisibility(View.VISIBLE);
+                tabHistory.setVisibility(View.VISIBLE);
+                tabProfile.setVisibility(View.VISIBLE);
+                selectTab(currentTab != -1 ? currentTab : 0);
+                break;
+
+            default:
+                logout();
+                break;
         }
-    }
-
-    public void logout() {
-        Intent intent = new Intent(this, RoleSelectionActivity.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        startActivity(intent);
-        finish();
-    }
-
-    @Override
-    protected void onSaveInstanceState(@NonNull Bundle outState) {
-        super.onSaveInstanceState(outState);
-        outState.putString("userRole", userRole);
-        outState.putInt("currentTab", currentTab);
-    }
-
-    @Override
-    public void onConfigurationChanged(@NonNull Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
     }
 
     public void selectTab(int index) {
@@ -141,25 +139,57 @@ public class MainActivity extends AppCompatActivity {
         currentTab = index;
 
         Fragment fragment;
-        switch (index) {
-            case 1: fragment = new SubjectFragment();    break;
-            case 2: fragment = new AttendanceFragment(); break;
-            case 3: fragment = new HistoryFragment();    break;
-            case 4: fragment = new ProfileFragment();    break;
-            default: fragment = new HomeFragment();      break;
+
+        switch (userRole) {
+            case "teacher":
+                switch (index) {
+                    case 1:  fragment = new SubjectFragment();    break;
+                    case 2:  fragment = new AttendanceFragment(); break;
+                    case 3:  fragment = new HistoryFragment();    break;
+                    case 4:  fragment = new ProfileFragment();    break;
+                    default: fragment = new HomeFragment();       break;
+                }
+                break;
+
+            case "student":
+                switch (index) {
+                    //case 3:  fragment = new StudentHistoryFragment();  break;
+                    case 4:  fragment = new StudentProfileFragment();  break;
+                    //default: fragment = new StudentHomeFragment();     break;
+                    default: fragment = new StudentHomeFragment();       break;
+                }
+                break;
+
+            case "secretary":
+                switch (index) {
+                    //case 2:  fragment = new SecretaryAttendanceFragment(); break;
+                    //case 3:  fragment = new SecretaryHistoryFragment();    break;
+                    //case 4:  fragment = new SecretaryProfileFragment();    break;
+                   // default: fragment = new SecretaryHomeFragment();       break;
+                    default: fragment = new HomeFragment();       break;
+                }
+                break;
+
+            default:
+                fragment = new HomeFragment();
+                break;
         }
+
+        if (fragment == null) return;
 
         loadFragment(fragment, false);
         updateNavUI(index);
     }
 
     private void loadFragment(Fragment fragment, boolean addToBackStack) {
+        Bundle bundle = new Bundle();
+        bundle.putString("userRole", userRole);
+        fragment.setArguments(bundle);
+
         FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
         ft.setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out);
         ft.replace(R.id.fragment_container, fragment);
-        if (addToBackStack) {
-            ft.addToBackStack(null);
-        }
+        if (addToBackStack) ft.addToBackStack(null);
         ft.commit();
     }
 
@@ -190,8 +220,12 @@ public class MainActivity extends AppCompatActivity {
 
         for (int i = 0; i < tabs.length; i++) {
             if (tabs[i] == null) continue;
+            if (tabs[i].getVisibility() == View.GONE) continue;
+
             ImageView icon  = tabs[i].findViewById(icons[i]);
             TextView  label = tabs[i].findViewById(labels[i]);
+
+            if (icon == null || label == null) continue;
 
             if (i == activeIndex) {
                 icon.setColorFilter(getResources().getColor(R.color.blue_600, getTheme()));
@@ -203,5 +237,24 @@ public class MainActivity extends AppCompatActivity {
                 label.setVisibility(View.GONE);
             }
         }
+    }
+
+    public void logout() {
+        Intent intent = new Intent(this, RoleSelectionActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        finish();
+    }
+
+    @Override
+    protected void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putString("userRole", userRole);
+        outState.putInt("currentTab", currentTab);
+    }
+
+    @Override
+    public void onConfigurationChanged(@NonNull Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
     }
 }

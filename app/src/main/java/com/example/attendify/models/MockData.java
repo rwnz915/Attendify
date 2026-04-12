@@ -47,4 +47,22 @@ public class MockData {
         list.add(new ApprovalRequest(3, "Puti, Jericho",    "P", "April 8, 2026",    "Dental appointment. Has clinic certificate."));
         return list;
     }
+
+    // Add to MockData.java — student-specific history
+    public static List<AttendanceRecord> getStudentHistory(String studentName) {
+        List<AttendanceRecord> list = new ArrayList<>();
+
+        // Each entry = one class session for this student
+        // Swap in real DB calls here later
+        if (studentName.equals("Morandarte, Renz")) {
+            list.add(new AttendanceRecord("Feb 11, 2026", "Entrepreneurship", "07:55 AM", "Present"));
+            list.add(new AttendanceRecord("Feb 10, 2026", "Entrepreneurship", "07:58 AM", "Present"));
+            list.add(new AttendanceRecord("Feb 09, 2026", "Entrepreneurship", "08:12 AM", "Late"));
+            list.add(new AttendanceRecord("Feb 09, 2026", "Entrepreneurship", "09:45 AM", "Present"));
+            list.add(new AttendanceRecord("Feb 08, 2026", "Entrepreneurship", "07:50 AM", "Present"));
+            list.add(new AttendanceRecord("Feb 07, 2026", "Entrepreneurship", "07:45 AM", "Present"));
+        }
+        // Add more students here as needed
+        return list;
+    }
 }
