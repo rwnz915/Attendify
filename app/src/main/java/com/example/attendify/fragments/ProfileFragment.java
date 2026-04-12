@@ -31,7 +31,10 @@ public class ProfileFragment extends Fragment {
         lp.height = lp.height + MainActivity.statusBarHeight;
         headerBg.setLayoutParams(lp);
 
-        view.findViewById(R.id.btn_logout).setOnClickListener(v ->
-                Toast.makeText(requireContext(), "Logged out", Toast.LENGTH_SHORT).show());
+        view.findViewById(R.id.btn_logout).setOnClickListener(v -> {
+            if (getActivity() instanceof MainActivity) {
+                ((MainActivity) getActivity()).logout();
+            }
+        });
     }
 }

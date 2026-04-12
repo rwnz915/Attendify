@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.coordinatorlayout.widget.CoordinatorLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -25,7 +26,8 @@
         android:paddingStart="8dp"
         android:paddingTop="0dp"
         android:paddingEnd="8dp"
-        android:paddingBottom="0dp">
+        android:paddingBottom="0dp"
+        android:visibility="gone">
 
         <LinearLayout
             android:id="@+id/tab_home"
@@ -35,6 +37,7 @@
             android:gravity="center"
             android:orientation="vertical"
             android:padding="4dp">
+
             <ImageView
                 android:id="@+id/icon_home"
                 android:layout_width="28dp"
@@ -42,7 +45,7 @@
                 android:background="@drawable/bg_nav_icon_active"
                 android:padding="4dp"
                 android:src="@drawable/house"
-                android:tint="@color/blue_600" />
+                app:tint="@color/blue_600" />
             <TextView
                 android:id="@+id/label_home"
                 android:layout_width="wrap_content"
@@ -68,7 +71,7 @@
                 android:layout_height="26dp"
                 android:padding="2dp"
                 android:src="@drawable/book"
-                android:tint="@color/gray_400"/>
+                app:tint="@color/gray_400" />
 
             <TextView
                 android:id="@+id/label_subject"
@@ -94,7 +97,7 @@
                 android:layout_height="26dp"
                 android:padding="2dp"
                 android:src="@drawable/circle_check_big"
-                android:tint="@color/gray_400" />
+                app:tint="@color/gray_400" />
             <TextView
                 android:id="@+id/label_attendance"
                 android:layout_width="wrap_content"
@@ -119,7 +122,7 @@
                 android:layout_height="26dp"
                 android:padding="2dp"
                 android:src="@drawable/calendar"
-                android:tint="@color/gray_400" />
+                app:tint="@color/gray_400" />
             <TextView
                 android:id="@+id/label_history"
                 android:layout_width="wrap_content"
@@ -144,7 +147,7 @@
                 android:layout_height="26dp"
                 android:padding="2dp"
                 android:src="@drawable/user"
-                android:tint="@color/gray_400" />
+                app:tint="@color/gray_400" />
             <TextView
                 android:id="@+id/label_profile"
                 android:layout_width="wrap_content"
