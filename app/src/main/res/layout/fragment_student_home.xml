@@ -303,12 +303,59 @@
 
         </LinearLayout>
 
+        <!-- Quick Actions -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="14dp"
+            android:text="@string/quick_actions"
+            android:textColor="@color/gray_800"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
+            android:layout_marginTop="16dp"
+            android:orientation="horizontal">
+
+            <!-- Class List -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="20dp"
+                android:gravity="center_horizontal"
+                android:orientation="vertical">
+
+                <ImageView
+                    android:id="@+id/btn_class_list"
+                    android:layout_width="56dp"
+                    android:layout_height="56dp"
+                    android:background="@drawable/bg_quick_action_purple"
+                    android:padding="14dp"
+                    android:src="@drawable/ic_document"
+                    android:tint="@color/orange_600" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Excuse Letter"
+                    android:textColor="@color/gray_600"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+        </LinearLayout>
+
         <!-- Recent Attendance Label -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
             android:layout_marginEnd="16dp"
+            android:layout_marginTop="24dp"
             android:layout_marginBottom="8dp"
             android:text="Recent Attendance"
             android:textSize="18sp"

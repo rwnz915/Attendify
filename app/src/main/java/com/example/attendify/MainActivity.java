@@ -23,14 +23,17 @@ import com.example.attendify.fragments.AttendanceFragment;
 import com.example.attendify.fragments.HistoryFragment;
 import com.example.attendify.fragments.HomeFragment;
 import com.example.attendify.fragments.ProfileFragment;
+import com.example.attendify.fragments.SecretaryFragment;
 import com.example.attendify.fragments.SubjectFragment;
 import com.example.attendify.fragments.StudentHomeFragment;
 import com.example.attendify.fragments.StudentProfileFragment;
+import com.example.attendify.fragments.StudentSubjectFragment;
+import com.example.attendify.fragments.StudentQrFragment;
 import com.example.attendify.repository.AuthRepository;
 
 public class MainActivity extends AppCompatActivity {
 
-    private LinearLayout tabHome, tabSubject, tabAttendance, tabHistory, tabProfile;
+    private LinearLayout tabHome, tabSubject, tabAttendance, tabHistory, tabProfile, tabQR;
     private LinearLayout bottomNav;
     private FrameLayout fragmentContainer;
     private int currentTab = -1;
@@ -54,12 +57,14 @@ public class MainActivity extends AppCompatActivity {
         tabAttendance = findViewById(R.id.tab_attendance);
         tabHistory    = findViewById(R.id.tab_history);
         tabProfile    = findViewById(R.id.tab_profile);
+        tabQR         = findViewById(R.id.tab_qr);
 
         tabHome.setOnClickListener(v       -> selectTab(0));
         tabSubject.setOnClickListener(v    -> selectTab(1));
         tabAttendance.setOnClickListener(v -> selectTab(2));
         tabHistory.setOnClickListener(v    -> selectTab(3));
         tabProfile.setOnClickListener(v    -> selectTab(4));
+        tabQR.setOnClickListener(v         -> selectTab(5));
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
@@ -105,6 +110,7 @@ public class MainActivity extends AppCompatActivity {
                 tabAttendance.setVisibility(View.VISIBLE);
                 tabHistory.setVisibility(View.VISIBLE);
                 tabProfile.setVisibility(View.VISIBLE);
+                tabQR.setVisibility(View.GONE);
                 selectTab(currentTab != -1 ? currentTab : 0);
                 break;
 
@@ -114,6 +120,7 @@ public class MainActivity extends AppCompatActivity {
                 tabSubject.setVisibility(View.VISIBLE);
                 tabAttendance.setVisibility(View.GONE);
                 tabHistory.setVisibility(View.VISIBLE);
+                tabQR.setVisibility(View.VISIBLE);
                 tabProfile.setVisibility(View.VISIBLE);
                 selectTab(currentTab != -1 ? currentTab : 0);
                 break;
@@ -125,6 +132,7 @@ public class MainActivity extends AppCompatActivity {
                 tabAttendance.setVisibility(View.VISIBLE);
                 tabHistory.setVisibility(View.VISIBLE);
                 tabProfile.setVisibility(View.VISIBLE);
+                tabQR.setVisibility(View.GONE);
                 selectTab(currentTab != -1 ? currentTab : 0);
                 break;
 
@@ -153,10 +161,11 @@ public class MainActivity extends AppCompatActivity {
 
             case "student":
                 switch (index) {
-                    case 4:  fragment = new StudentProfileFragment(); break;
-                    // case 1: fragment = new StudentSubjectFragment(); break;
+                    case 1:  fragment = new StudentSubjectFragment();  break;
+                    case 4:  fragment = new StudentProfileFragment();  break;
                     // case 3: fragment = new StudentHistoryFragment(); break;
-                    default: fragment = new StudentHomeFragment();    break;
+                    case 5:  fragment = new StudentQrFragment();  break;
+                    default: fragment = new StudentHomeFragment();     break;
                 }
                 break;
 
@@ -165,7 +174,7 @@ public class MainActivity extends AppCompatActivity {
                     // case 2: fragment = new SecretaryAttendanceFragment(); break;
                     // case 3: fragment = new SecretaryHistoryFragment();    break;
                     // case 4: fragment = new SecretaryProfileFragment();    break;
-                    default: fragment = new HomeFragment(); break;
+                    default: fragment = new SecretaryFragment(); break;
                 }
                 break;
 
@@ -192,15 +201,15 @@ public class MainActivity extends AppCompatActivity {
 
     private void updateNavUI(int activeIndex) {
         LinearLayout[] tabs = {
-                tabHome, tabSubject, tabAttendance, tabHistory, tabProfile
+                tabHome, tabSubject, tabAttendance, tabHistory, tabProfile, tabQR
         };
         int[] icons = {
                 R.id.icon_home, R.id.icon_subject, R.id.icon_attendance,
-                R.id.icon_history, R.id.icon_profile
+                R.id.icon_history, R.id.icon_profile, R.id.icon_qr
         };
         int[] labels = {
                 R.id.label_home, R.id.label_subject, R.id.label_attendance,
-                R.id.label_history, R.id.label_profile
+                R.id.label_history, R.id.label_profile, R.id.label_qr
         };
 
         for (int i = 0; i < tabs.length; i++) {

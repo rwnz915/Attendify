@@ -134,6 +134,33 @@
         </LinearLayout>
 
         <LinearLayout
+            android:id="@+id/tab_qr"
+            android:layout_width="0dp"
+            android:layout_height="64dp"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="4dp">
+
+            <ImageView
+                android:id="@+id/icon_qr"
+                android:layout_width="26dp"
+                android:layout_height="26dp"
+                android:padding="2dp"
+                android:src="@drawable/qr_code"
+                app:tint="@color/gray_400" />
+
+            <TextView
+                android:id="@+id/label_qr"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="QR"
+                android:textColor="@color/gray_400"
+                android:textSize="10sp"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <LinearLayout
             android:id="@+id/tab_profile"
             android:layout_width="0dp"
             android:layout_height="64dp"
