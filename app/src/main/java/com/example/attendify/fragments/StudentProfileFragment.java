@@ -17,7 +17,8 @@ import com.example.attendify.repository.AuthRepository;
 
 public class StudentProfileFragment extends Fragment {
 
-    @Nullable @Override
+    @Nullable
+    @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_student_profile, container, false);
@@ -33,18 +34,24 @@ public class StudentProfileFragment extends Fragment {
         lp.height = lp.height + MainActivity.statusBarHeight;
         headerBg.setLayoutParams(lp);
 
-        // Populate from the logged-in student
         UserProfile user = AuthRepository.getInstance().getLoggedInUser();
-        ((TextView) view.findViewById(R.id.tv_profile_name)).setText(user.getName());
+        if (user == null) return;
+
+        // Full name from Firestore firstname + lastname
+        ((TextView) view.findViewById(R.id.tv_profile_name)).setText(user.getFullName());
+
+        // Section e.g. "IT-203"
         ((TextView) view.findViewById(R.id.tv_profile_section)).setText(user.getSection());
 
-        // Student ID is only present for students
+        // Student ID — stored as "studentID" in Firestore
         TextView tvStudentId = view.findViewById(R.id.tv_profile_student_id);
-        if (user.getStudentId() != null) {
-            tvStudentId.setVisibility(View.VISIBLE);
-            tvStudentId.setText(user.getStudentId());
-        } else {
-            tvStudentId.setVisibility(View.GONE);
+        if (tvStudentId != null) {
+            if (user.getStudentID() != null) {
+                tvStudentId.setVisibility(View.VISIBLE);
+                tvStudentId.setText(user.getStudentID());
+            } else {
+                tvStudentId.setVisibility(View.GONE);
+            }
         }
 
         view.findViewById(R.id.btn_logout).setOnClickListener(v -> {

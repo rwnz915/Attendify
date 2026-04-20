@@ -5,7 +5,9 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -23,7 +25,8 @@ import java.util.List;
 
 public class StudentHomeFragment extends Fragment {
 
-    @Nullable @Override
+    @Nullable
+    @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
                              @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
@@ -34,27 +37,56 @@ public class StudentHomeFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // ── 1. Get the logged-in student ──────────────────────────────────────
         UserProfile user = AuthRepository.getInstance().getLoggedInUser();
-        String studentName = user.getName();
+        if (user == null) return;
 
-        ((TextView) view.findViewById(R.id.tv_student_name)).setText(studentName);
+        // Show name immediately from session
+        ((TextView) view.findViewById(R.id.tv_student_name)).setText(user.getFullName());
 
-        // ── 2. Load this student's session history ────────────────────────────
-        List<AttendanceRecord> history =
-                StudentRepository.getInstance().getStudentHistory(studentName);
+        ProgressBar progressBar = view.findViewById(R.id.progress_bar);
+        if (progressBar != null) progressBar.setVisibility(View.VISIBLE);
 
+        // Load history from Firestore using Firebase UID
+        StudentRepository.getInstance().getStudentHistory(user.getId(),
+                new StudentRepository.HistoryCallback() {
+                    @Override
+                    public void onSuccess(List<AttendanceRecord> history) {
+                        if (getActivity() == null) return;
+                        getActivity().runOnUiThread(() -> {
+                            if (progressBar != null) progressBar.setVisibility(View.GONE);
+                            bindUI(view, history);
+                        });
+                    }
+
+                    @Override
+                    public void onFailure(String errorMessage) {
+                        if (getActivity() == null) return;
+                        getActivity().runOnUiThread(() -> {
+                            if (progressBar != null) progressBar.setVisibility(View.GONE);
+                            Toast.makeText(getContext(),
+                                    "Failed to load history: " + errorMessage,
+                                    Toast.LENGTH_SHORT).show();
+                        });
+                    }
+                });
+    }
+
+    // ── Bind all UI after data loads ──────────────────────────────────────────
+
+    private void bindUI(View view, List<AttendanceRecord> history) {
         int totalSessions = history.size();
         int totalPresent = 0, totalLate = 0, totalAbsent = 0;
+
         for (AttendanceRecord r : history) {
             totalPresent += r.getPresent();
             totalLate    += r.getLate();
             totalAbsent  += r.getAbsent();
         }
+
         int attendanceRate = totalSessions > 0
                 ? Math.round((totalPresent * 100f) / totalSessions) : 0;
 
-        // ── 3. Bind header ────────────────────────────────────────────────────
+        // Header stats
         ((TextView) view.findViewById(R.id.tv_attendance_rate))
                 .setText(attendanceRate + "%");
         ((TextView) view.findViewById(R.id.tv_days_present))
@@ -65,12 +97,12 @@ public class StudentHomeFragment extends Fragment {
         CircularProgressIndicator progress = view.findViewById(R.id.progress_attendance);
         progress.setProgress(attendanceRate);
 
-        // ── 4. Bind stat cards ────────────────────────────────────────────────
+        // Stat cards
         ((TextView) view.findViewById(R.id.tv_present_count)).setText(String.valueOf(totalPresent));
         ((TextView) view.findViewById(R.id.tv_late_count)).setText(String.valueOf(totalLate));
         ((TextView) view.findViewById(R.id.tv_absent_count)).setText(String.valueOf(totalAbsent));
 
-        // ── 5. Recent attendance list ─────────────────────────────────────────
+        // Recent attendance list
         LinearLayout attendanceList = view.findViewById(R.id.attendance_list);
         attendanceList.removeAllViews();
 
@@ -83,7 +115,7 @@ public class StudentHomeFragment extends Fragment {
 
             TextView tvStatus = item.findViewById(R.id.tv_record_status);
             tvStatus.setText(record.getStatusLabel());
-            switch (record.getStatusLabel()) {
+            switch (record.getStatusLabel() != null ? record.getStatusLabel() : "") {
                 case "Present":
                     tvStatus.setTextColor(0xFF2E7D32);
                     tvStatus.setBackgroundResource(R.drawable.bg_badge_present);

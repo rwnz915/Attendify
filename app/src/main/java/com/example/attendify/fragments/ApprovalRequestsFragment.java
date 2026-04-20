@@ -5,6 +5,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -21,7 +23,8 @@ import java.util.List;
 
 public class ApprovalRequestsFragment extends Fragment {
 
-    @Nullable @Override
+    @Nullable
+    @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_approval_requests, container, false);
@@ -32,22 +35,45 @@ public class ApprovalRequestsFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         view.findViewById(R.id.btn_back).setOnClickListener(v ->
-                requireActivity().getSupportFragmentManager().popBackStack()
-        );
+                requireActivity().getSupportFragmentManager().popBackStack());
 
-        RecyclerView rv       = view.findViewById(R.id.rv_approvals);
+        RecyclerView rv         = view.findViewById(R.id.rv_approvals);
         LinearLayout emptyState = view.findViewById(R.id.tv_empty);
+        ProgressBar  progressBar = view.findViewById(R.id.progress_bar);
 
-        List<ApprovalRequest> requests = ApprovalRepository.getInstance().getPendingApprovals();
+        if (progressBar != null) progressBar.setVisibility(View.VISIBLE);
+        rv.setVisibility(View.GONE);
+        emptyState.setVisibility(View.GONE);
 
-        if (requests.isEmpty()) {
-            rv.setVisibility(View.GONE);
-            emptyState.setVisibility(View.VISIBLE);
-        } else {
-            rv.setVisibility(View.VISIBLE);
-            emptyState.setVisibility(View.GONE);
-            rv.setLayoutManager(new LinearLayoutManager(requireContext()));
-            rv.setAdapter(new ApprovalsAdapter(requests));
-        }
+        ApprovalRepository.getInstance().getPendingApprovals(
+                new ApprovalRepository.ApprovalsCallback() {
+                    @Override
+                    public void onSuccess(List<ApprovalRequest> requests) {
+                        if (getActivity() == null) return;
+                        getActivity().runOnUiThread(() -> {
+                            if (progressBar != null) progressBar.setVisibility(View.GONE);
+                            if (requests.isEmpty()) {
+                                rv.setVisibility(View.GONE);
+                                emptyState.setVisibility(View.VISIBLE);
+                            } else {
+                                rv.setVisibility(View.VISIBLE);
+                                emptyState.setVisibility(View.GONE);
+                                rv.setLayoutManager(new LinearLayoutManager(requireContext()));
+                                rv.setAdapter(new ApprovalsAdapter(requests));
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onFailure(String errorMessage) {
+                        if (getActivity() == null) return;
+                        getActivity().runOnUiThread(() -> {
+                            if (progressBar != null) progressBar.setVisibility(View.GONE);
+                            Toast.makeText(getContext(),
+                                    "Failed to load approvals: " + errorMessage,
+                                    Toast.LENGTH_SHORT).show();
+                        });
+                    }
+                });
     }
 }

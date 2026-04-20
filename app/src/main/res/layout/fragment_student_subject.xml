@@ -152,6 +152,7 @@
         </HorizontalScrollView>
 
         <!-- SCROLLABLE SUBJECT CARDS -->
+        <!-- SCROLLABLE SUBJECT CARDS -->
         <ScrollView
             android:layout_width="match_parent"
             android:layout_height="0dp"
@@ -160,12 +161,26 @@
             android:overScrollMode="never">
 
             <LinearLayout
-                android:id="@+id/subject_container"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:padding="16dp"
-                android:paddingBottom="88dp"/>
+                android:paddingBottom="88dp">
+
+                <ProgressBar
+                    android:id="@+id/progress_bar"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:visibility="gone" />
+
+                <LinearLayout
+                    android:id="@+id/subject_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"/>
+
+            </LinearLayout>
         </ScrollView>
     </LinearLayout>
 

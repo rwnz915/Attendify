@@ -6,6 +6,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -14,14 +15,21 @@ import androidx.fragment.app.Fragment;
 import com.example.attendify.MainActivity;
 import com.example.attendify.R;
 import com.example.attendify.models.AttendanceRecord;
-import com.example.attendify.repository.AttendanceRepository;
+import com.example.attendify.models.UserProfile;
 import com.example.attendify.repository.ApprovalRepository;
+import com.example.attendify.repository.AttendanceRepository;
+import com.example.attendify.repository.AuthRepository;
+import com.example.attendify.models.ApprovalRequest;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 public class HomeFragment extends Fragment {
 
-    @Nullable @Override
+    @Nullable
+    @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_home, container, false);
@@ -46,28 +54,97 @@ public class HomeFragment extends Fragment {
                         .beginTransaction()
                         .replace(R.id.fragment_container, new ApprovalRequestsFragment())
                         .addToBackStack(null)
-                        .commit()
-        );
+                        .commit());
 
-        // Today's attendance summary
-        AttendanceRecord today = AttendanceRepository.getInstance().getTodayAttendance();
-        ((TextView) view.findViewById(R.id.tv_today_present)).setText(String.valueOf(today.getPresent()));
-        ((TextView) view.findViewById(R.id.tv_today_total)).setText("/ " + (today.getPresent() + today.getAbsent()));
+        loadTodayAttendance(view);
+        loadPendingApprovals(view);
+        loadRecentHistory(view);
+    }
 
-        // Pending approvals count
-        int pendingCount = ApprovalRepository.getInstance().getPendingApprovals().size();
-        ((TextView) view.findViewById(R.id.tv_pending_count)).setText(String.valueOf(pendingCount));
+    // ── Today's attendance summary ────────────────────────────────────────────
 
-        // Recent activity list
-        LinearLayout container2 = view.findViewById(R.id.recent_activity_container);
-        List<AttendanceRecord> records = AttendanceRepository.getInstance().getHistory();
-        LayoutInflater li = LayoutInflater.from(requireContext());
-        for (AttendanceRecord record : records) {
-            View card = li.inflate(R.layout.item_activity_record, container2, false);
-            ((TextView) card.findViewById(R.id.tv_record_date)).setText(record.getDate());
-            ((TextView) card.findViewById(R.id.tv_record_present)).setText(record.getPresent() + " P");
-            ((TextView) card.findViewById(R.id.tv_record_absent)).setText(record.getAbsent() + " A");
-            container2.addView(card);
-        }
+    private void loadTodayAttendance(View view) {
+        UserProfile user = AuthRepository.getInstance().getLoggedInUser();
+        String subjectId = ""; // TODO: pass selected subject when subject picker is added
+
+        // Today's date formatted to match Firestore date strings e.g. "Apr 20, 2026"
+        String today = new SimpleDateFormat("MMM d, yyyy", Locale.ENGLISH).format(new Date());
+
+        AttendanceRepository.getInstance().getTodayAttendance(subjectId, today,
+                new AttendanceRepository.SummaryCallback() {
+                    @Override
+                    public void onSuccess(AttendanceRecord summary) {
+                        if (getActivity() == null) return;
+                        getActivity().runOnUiThread(() -> {
+                            ((TextView) view.findViewById(R.id.tv_today_present))
+                                    .setText(String.valueOf(summary.getPresent()));
+                            ((TextView) view.findViewById(R.id.tv_today_total))
+                                    .setText("/ " + (summary.getPresent() + summary.getAbsent()));
+                        });
+                    }
+
+                    @Override
+                    public void onFailure(String errorMessage) {
+                        // Non-critical — silently ignore or show zero
+                    }
+                });
+    }
+
+    // ── Pending approvals count ───────────────────────────────────────────────
+
+    private void loadPendingApprovals(View view) {
+        ApprovalRepository.getInstance().getPendingApprovals(
+                new ApprovalRepository.ApprovalsCallback() {
+                    @Override
+                    public void onSuccess(List<ApprovalRequest> approvals) {
+                        if (getActivity() == null) return;
+                        getActivity().runOnUiThread(() ->
+                                ((TextView) view.findViewById(R.id.tv_pending_count))
+                                        .setText(String.valueOf(approvals.size())));
+                    }
+
+                    @Override
+                    public void onFailure(String errorMessage) {
+                        // Non-critical — leave count as 0
+                    }
+                });
+    }
+
+    // ── Recent activity list ──────────────────────────────────────────────────
+
+    private void loadRecentHistory(View view) {
+        String subjectId = ""; // TODO: pass selected subject when subject picker is added
+
+        AttendanceRepository.getInstance().getHistory(subjectId,
+                new AttendanceRepository.AttendanceCallback() {
+                    @Override
+                    public void onSuccess(List<AttendanceRecord> records) {
+                        if (getActivity() == null) return;
+                        getActivity().runOnUiThread(() -> {
+                            LinearLayout container = view.findViewById(R.id.recent_activity_container);
+                            LayoutInflater li = LayoutInflater.from(requireContext());
+                            container.removeAllViews();
+                            for (AttendanceRecord record : records) {
+                                View card = li.inflate(R.layout.item_activity_record, container, false);
+                                ((TextView) card.findViewById(R.id.tv_record_date))
+                                        .setText(record.getDate());
+                                ((TextView) card.findViewById(R.id.tv_record_present))
+                                        .setText(record.getPresent() + " P");
+                                ((TextView) card.findViewById(R.id.tv_record_absent))
+                                        .setText(record.getAbsent() + " A");
+                                container.addView(card);
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onFailure(String errorMessage) {
+                        if (getActivity() == null) return;
+                        getActivity().runOnUiThread(() ->
+                                Toast.makeText(getContext(),
+                                        "Failed to load activity: " + errorMessage,
+                                        Toast.LENGTH_SHORT).show());
+                    }
+                });
     }
 }

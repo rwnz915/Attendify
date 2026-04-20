@@ -1,23 +1,26 @@
 package com.example.attendify.repository;
 
-import com.example.attendify.models.MockStudentData;
 import com.example.attendify.models.AttendanceRecord;
 import com.example.attendify.models.Student;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Query;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Access point for student roster and per-student history.
+ * Fetches student roster and per-student history from Firestore.
  *
  * Used by: AttendanceFragment (teacher), StudentHomeFragment (student).
  *
- * HOW TO SWAP IN REAL DATA:
- *   Replace each method body with the appropriate API/DB call.
- *   The return types and signatures stay the same.
+ * Firestore: queries users collection where role == "student"
+ * and optionally filters by section.
  */
 public class StudentRepository {
 
     private static StudentRepository instance;
+    private final FirebaseFirestore db = FirebaseFirestore.getInstance();
 
     private StudentRepository() {}
 
@@ -26,13 +29,90 @@ public class StudentRepository {
         return instance;
     }
 
-    /** Full class roster for today's attendance sheet. */
-    public List<Student> getStudents() {
-        return MockStudentData.getStudents(); // ← swap: ApiService.getStudents()
+    // ── Callback ──────────────────────────────────────────────────────────────
+
+    public interface StudentsCallback {
+        void onSuccess(List<Student> students);
+        void onFailure(String errorMessage);
     }
 
-    /** Per-student session history, identified by name for now. */
-    public List<AttendanceRecord> getStudentHistory(String studentName) {
-        return MockStudentData.getStudentHistory(studentName); // ← swap: ApiService.getStudentHistory(id)
+    public interface HistoryCallback {
+        void onSuccess(List<AttendanceRecord> records);
+        void onFailure(String errorMessage);
+    }
+
+    // ── Full class roster filtered by section (used by teacher) ───────────────
+
+    public void getStudentsBySection(String section, StudentsCallback callback) {
+        db.collection("users")
+                .whereEqualTo("role", "student")
+                .whereEqualTo("section", section)
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    List<Student> list = new ArrayList<>();
+                    int i = 1;
+                    for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                        String firstname = doc.getString("firstname");
+                        String lastname  = doc.getString("lastname");
+                        String fullName  = (lastname != null ? lastname : "")
+                                + ", "
+                                + (firstname != null ? firstname : "");
+
+                        // Default status is Absent until teacher marks them
+                        Student student = new Student(i++, fullName,
+                                Student.STATUS_ABSENT, "--:--");
+                        list.add(student);
+                    }
+                    callback.onSuccess(list);
+                })
+                .addOnFailureListener(e -> callback.onFailure(e.getMessage()));
+    }
+
+    // ── All students (no section filter) ─────────────────────────────────────
+
+    public void getAllStudents(StudentsCallback callback) {
+        db.collection("users")
+                .whereEqualTo("role", "student")
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    List<Student> list = new ArrayList<>();
+                    int i = 1;
+                    for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                        String firstname = doc.getString("firstname");
+                        String lastname  = doc.getString("lastname");
+                        String fullName  = (lastname != null ? lastname : "")
+                                + ", "
+                                + (firstname != null ? firstname : "");
+
+                        Student student = new Student(i++, fullName,
+                                Student.STATUS_ABSENT, "--:--");
+                        list.add(student);
+                    }
+                    callback.onSuccess(list);
+                })
+                .addOnFailureListener(e -> callback.onFailure(e.getMessage()));
+    }
+
+    // ── Per-student attendance history (used by StudentHomeFragment) ──────────
+
+    public void getStudentHistory(String studentId, HistoryCallback callback) {
+        db.collection("attendance")
+                .whereEqualTo("studentId", studentId)
+                .orderBy("date", Query.Direction.DESCENDING)
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    List<AttendanceRecord> list = new ArrayList<>();
+                    for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                        AttendanceRecord record = new AttendanceRecord(
+                                doc.getString("date"),
+                                doc.getString("subjectName"),
+                                doc.getString("time"),
+                                doc.getString("status")
+                        );
+                        list.add(record);
+                    }
+                    callback.onSuccess(list);
+                })
+                .addOnFailureListener(e -> callback.onFailure(e.getMessage()));
     }
 }

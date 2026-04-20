@@ -4,6 +4,8 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ProgressBar;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -14,11 +16,17 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.attendify.MainActivity;
 import com.example.attendify.R;
 import com.example.attendify.adapters.HistoryAdapter;
+import com.example.attendify.models.AttendanceRecord;
+import com.example.attendify.models.UserProfile;
 import com.example.attendify.repository.AttendanceRepository;
+import com.example.attendify.repository.AuthRepository;
+
+import java.util.List;
 
 public class HistoryFragment extends Fragment {
 
-    @Nullable @Override
+    @Nullable
+    @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_history, container, false);
@@ -35,9 +43,38 @@ public class HistoryFragment extends Fragment {
                 header.getPaddingRight(),
                 header.getPaddingBottom());
 
-        RecyclerView rv = view.findViewById(R.id.rv_history);
+        RecyclerView rv      = view.findViewById(R.id.rv_history);
+        ProgressBar progress = view.findViewById(R.id.progress_bar);
+
         rv.setLayoutManager(new LinearLayoutManager(requireContext()));
-        rv.setAdapter(new HistoryAdapter(requireContext(),
-                AttendanceRepository.getInstance().getHistory()));
+        if (progress != null) progress.setVisibility(View.VISIBLE);
+
+        // Use the first subject the teacher handles
+        // When subject selection is added, pass the selected subjectId here
+        UserProfile user = AuthRepository.getInstance().getLoggedInUser();
+        String subjectId = ""; // TODO: pass selected subject ID when subject picker is added
+
+        AttendanceRepository.getInstance().getHistory(subjectId,
+                new AttendanceRepository.AttendanceCallback() {
+                    @Override
+                    public void onSuccess(List<AttendanceRecord> records) {
+                        if (getActivity() == null) return;
+                        getActivity().runOnUiThread(() -> {
+                            if (progress != null) progress.setVisibility(View.GONE);
+                            rv.setAdapter(new HistoryAdapter(requireContext(), records));
+                        });
+                    }
+
+                    @Override
+                    public void onFailure(String errorMessage) {
+                        if (getActivity() == null) return;
+                        getActivity().runOnUiThread(() -> {
+                            if (progress != null) progress.setVisibility(View.GONE);
+                            Toast.makeText(getContext(),
+                                    "Failed to load history: " + errorMessage,
+                                    Toast.LENGTH_SHORT).show();
+                        });
+                    }
+                });
     }
 }
