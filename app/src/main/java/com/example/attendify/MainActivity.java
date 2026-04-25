@@ -5,6 +5,7 @@ import android.app.PendingIntent;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.location.Location;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -43,6 +44,12 @@ public class MainActivity extends AppCompatActivity {
     private static final int REQ_FINE = 1001;
     private static final int REQ_BG = 1002;
 
+    private static final double GEOFENCE_LAT = 14.704375;
+    private static final double GEOFENCE_LNG = 121.036763;
+
+    private FusedLocationProviderClient fusedClient;
+    private LocationCallback locationCallback;
+
     public static int statusBarHeight = 0;
     public static int navBarHeight = 0;
 
@@ -53,6 +60,8 @@ public class MainActivity extends AppCompatActivity {
 
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
+
+        fusedClient = LocationServices.getFusedLocationProviderClient(this);
 
         bottomNav = findViewById(R.id.bottom_nav);
         fragmentContainer = findViewById(R.id.fragment_container);
@@ -100,23 +109,21 @@ public class MainActivity extends AppCompatActivity {
             setupUIForRole(userRole);
         }
 
-        requestLocationPermissions();
+        requestPermissionsFlow();
     }
 
-    // ---------------- ROLE UI ----------------
+    // ---------------- ROLE ----------------
     private void setupUIForRole(String role) {
         bottomNav.setVisibility(View.VISIBLE);
 
-        if (!"student".equals(role)) {
-            tabQR.setVisibility(View.GONE);
-        } else {
-            tabQR.setVisibility(View.VISIBLE);
-        }
+        tabQR.setVisibility("student".equals(role) ? View.VISIBLE : View.GONE);
 
         selectTab(currentTab != -1 ? currentTab : 0);
+
+        startDistanceTracking();
     }
 
-    // ---------------- NAVIGATION ----------------
+    // ---------------- TABS ----------------
     public void selectTab(int index) {
         if (currentTab == index) return;
         currentTab = index;
@@ -127,47 +134,29 @@ public class MainActivity extends AppCompatActivity {
 
             case "teacher":
                 switch (index) {
-                    case 1:
-                        fragment = new com.example.attendify.fragments.SubjectFragment();
-                        break;
-                    case 2:
-                        fragment = new com.example.attendify.fragments.AttendanceFragment();
-                        break;
-                    case 3:
-                        fragment = new com.example.attendify.fragments.HistoryFragment();
-                        break;
-                    case 4:
-                        fragment = new com.example.attendify.fragments.ProfileFragment();
-                        break;
-                    default:
-                        fragment = new com.example.attendify.fragments.HomeFragment();
-                        break;
+                    case 1: fragment = new SubjectFragment(); break;
+                    case 2: fragment = new AttendanceFragment(); break;
+                    case 3: fragment = new HistoryFragment(); break;
+                    case 4: fragment = new ProfileFragment(); break;
+                    default: fragment = new HomeFragment(); break;
                 }
                 break;
 
             case "student":
                 switch (index) {
-                    case 1:
-                        fragment = new com.example.attendify.fragments.StudentSubjectFragment();
-                        break;
-                    case 4:
-                        fragment = new com.example.attendify.fragments.StudentProfileFragment();
-                        break;
-                    case 5:
-                        fragment = new com.example.attendify.fragments.StudentQrFragment();
-                        break;
-                    default:
-                        fragment = new com.example.attendify.fragments.StudentHomeFragment();
-                        break;
+                    case 1: fragment = new StudentSubjectFragment(); break;
+                    case 4: fragment = new StudentProfileFragment(); break;
+                    case 5: fragment = new StudentQrFragment(); break;
+                    default: fragment = new StudentHomeFragment(); break;
                 }
                 break;
 
             case "secretary":
-                fragment = new com.example.attendify.fragments.SecretaryFragment();
+                fragment = new SecretaryFragment();
                 break;
 
             default:
-                fragment = new com.example.attendify.fragments.HomeFragment();
+                fragment = new HomeFragment();
                 break;
         }
 
@@ -223,20 +212,13 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // ---------------- LOGOUT ----------------
-    public void logout() {
-        AuthRepository.getInstance().logout();
-
-        Intent i = new Intent(this, RoleSelectionActivity.class);
-        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        startActivity(i);
-        finish();
-    }
-
     // ---------------- PERMISSIONS ----------------
-    private void requestLocationPermissions() {
+    private void requestPermissionsFlow() {
         ActivityCompat.requestPermissions(this,
-                new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                new String[]{
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION
+                },
                 REQ_FINE);
     }
 
@@ -247,25 +229,70 @@ public class MainActivity extends AppCompatActivity {
 
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
-        if (requestCode == REQ_FINE &&
-                grantResults.length > 0 &&
-                grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+        if (requestCode == REQ_FINE) {
 
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.ACCESS_BACKGROUND_LOCATION},
-                    REQ_BG);
-        }
+            if (grantResults.length > 0 &&
+                    grantResults[0] == PackageManager.PERMISSION_GRANTED) {
 
-        else if (requestCode == REQ_BG &&
-                grantResults.length > 0 &&
-                grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.ACCESS_BACKGROUND_LOCATION},
+                        REQ_BG);
+            }
 
-            setupGeofence();
+        } else if (requestCode == REQ_BG) {
+
+            if (grantResults.length > 0 &&
+                    grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+                setupGeofence();
+            }
         }
     }
 
     // ---------------- GEOFENCE ----------------
-    private PendingIntent getGeofencePendingIntent() {
+    private void setupGeofence() {
+
+        if (geofenceAdded) return;
+
+        Geofence geofence = new Geofence.Builder()
+                .setRequestId("CLASSROOM_101")
+                .setCircularRegion(GEOFENCE_LAT, GEOFENCE_LNG, 50f)
+                .setExpirationDuration(Geofence.NEVER_EXPIRE)
+                .setTransitionTypes(
+                        Geofence.GEOFENCE_TRANSITION_ENTER |
+                                Geofence.GEOFENCE_TRANSITION_EXIT
+                )
+                .build();
+
+        GeofencingRequest request = new GeofencingRequest.Builder()
+                .setInitialTrigger(0)
+                .addGeofence(geofence)
+                .build();
+
+        GeofencingClient client = LocationServices.getGeofencingClient(this);
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            Log.e("GEOFENCE", "Missing FINE location permission");
+            return;
+        }
+
+        try {
+            client.addGeofences(request, getPendingIntent())
+                    .addOnSuccessListener(aVoid -> {
+                        geofenceAdded = true;
+                        Log.d("GEOFENCE", "Added");
+                    })
+                    .addOnFailureListener(e ->
+                            Log.e("GEOFENCE", "FAILED: " + e.getMessage()));
+
+        } catch (SecurityException e) {
+            Log.e("GEOFENCE", "SecurityException: " + e.getMessage());
+        }
+    }
+
+    private PendingIntent getPendingIntent() {
         Intent intent = new Intent(this, GeofenceReceiver.class);
 
         return PendingIntent.getBroadcast(
@@ -276,49 +303,84 @@ public class MainActivity extends AppCompatActivity {
         );
     }
 
-    private void setupGeofence() {
+    // ---------------- DISTANCE TRACKING ----------------
+    private void startDistanceTracking() {
 
-        if (geofenceAdded) return;
+        if (locationCallback != null) return;
+
+        LocationRequest request =
+                new LocationRequest.Builder(
+                        Priority.PRIORITY_HIGH_ACCURACY,
+                        5000
+                ).build();
+
+        locationCallback = new LocationCallback() {
+            @Override
+            public void onLocationResult(@NonNull LocationResult result) {
+
+                Location loc = result.getLastLocation();
+                if (loc == null) return;
+
+                float[] dist = new float[1];
+
+                Location.distanceBetween(
+                        loc.getLatitude(),
+                        loc.getLongitude(),
+                        GEOFENCE_LAT,
+                        GEOFENCE_LNG,
+                        dist
+                );
+
+                int meters = (int) dist[0];
+
+                // ✅ LOG ONLY OUTPUT
+                Log.d("DISTANCE", "Distance to classroom: " + meters + " meters");
+
+                if (meters <= 50) {
+                    Log.d("DISTANCE", "STATUS: INSIDE AREA ✅");
+                } else {
+                    Log.d("DISTANCE", "STATUS: OUTSIDE AREA ❌");
+                }
+            }
+        };
 
         if (ActivityCompat.checkSelfPermission(this,
                 Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED) return;
+                == PackageManager.PERMISSION_GRANTED) {
 
-        Geofence geofence = new Geofence.Builder()
-                .setRequestId("CLASSROOM_101")
-                .setCircularRegion(14.707507, 121.050279, 50)
-                .setExpirationDuration(Geofence.NEVER_EXPIRE)
-                .setTransitionTypes(
-                        Geofence.GEOFENCE_TRANSITION_ENTER |
-                                Geofence.GEOFENCE_TRANSITION_EXIT
-                )
-                .build();
+            fusedClient.requestLocationUpdates(
+                    request,
+                    locationCallback,
+                    getMainLooper()
+            );
+        } else {
+            Log.e("DISTANCE", "Location permission not granted");
+        }
+    }
 
-        GeofencingRequest request = new GeofencingRequest.Builder()
-                .setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER)
-                .addGeofence(geofence)
-                .build();
+    // ---------------- LOGOUT ----------------
+    public void logout() {
+        AuthRepository.getInstance().logout();
 
-        GeofencingClient client = LocationServices.getGeofencingClient(this);
-
-        client.addGeofences(request, getGeofencePendingIntent())
-                .addOnSuccessListener(aVoid -> {
-                    geofenceAdded = true;
-                    Log.d("GEOFENCE", "Added");
-                })
-                .addOnFailureListener(e ->
-                        Log.e("GEOFENCE", "Failed: " + e.getMessage()));
+        Intent i = new Intent(this, RoleSelectionActivity.class);
+        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(i);
+        finish();
     }
 
     @Override
     protected void onSaveInstanceState(@NonNull Bundle outState) {
-        super.onSaveInstanceState(outState);
         outState.putString("userRole", userRole);
         outState.putInt("currentTab", currentTab);
+        super.onSaveInstanceState(outState);
     }
 
     @Override
-    public void onConfigurationChanged(@NonNull Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
+    protected void onDestroy() {
+        super.onDestroy();
+
+        if (fusedClient != null && locationCallback != null) {
+            fusedClient.removeLocationUpdates(locationCallback);
+        }
     }
 }
