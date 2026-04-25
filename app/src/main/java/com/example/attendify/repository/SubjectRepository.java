@@ -11,8 +11,11 @@ import java.util.List;
 /**
  * Fetches subject data from Firestore.
  *
- * Teacher:  reads their subjects subcollection → users/{uid}/subjects
- * Student:  queries the top-level subjects collection filtered by section
+ * Single flat collection: subjects/{autoId}
+ *   Fields: name, section, teacherId, teacher, schedule, color
+ *
+ * Teacher: query subjects where teacherId == uid
+ * Student: query subjects where section  == studentSection
  */
 public class SubjectRepository {
 
@@ -40,29 +43,30 @@ public class SubjectRepository {
         public String name;
         public String section;
         public String teacher;
+        public String teacherId;
         public String schedule;
         public String color;
 
         public SubjectItem() {}
     }
 
-    // ── Teacher: fetch from users/{uid}/subjects subcollection ────────────────
+    // ── Teacher: query flat subjects collection by teacherId ──────────────────
 
     public void getTeacherSubjects(String teacherUid, SubjectsCallback callback) {
-        db.collection("users")
-                .document(teacherUid)
-                .collection("subjects")
+        db.collection("subjects")
+                .whereEqualTo("teacherId", teacherUid)
                 .get()
                 .addOnSuccessListener(snapshot -> {
                     List<SubjectItem> list = new ArrayList<>();
                     for (DocumentSnapshot doc : snapshot.getDocuments()) {
                         SubjectItem item = new SubjectItem();
-                        item.id       = doc.getId();
-                        item.name     = doc.getString("name");
-                        item.section  = doc.getString("section");
-                        item.teacher  = doc.getString("teacher");
-                        item.schedule = doc.getString("schedule");
-                        item.color    = doc.getString("color");
+                        item.id        = doc.getId();
+                        item.name      = doc.getString("name");
+                        item.section   = doc.getString("section");
+                        item.teacher   = doc.getString("teacher");
+                        item.teacherId = doc.getString("teacherId");
+                        item.schedule  = doc.getString("schedule");
+                        item.color     = doc.getString("color");
                         list.add(item);
                     }
                     callback.onSuccess(list);
@@ -70,7 +74,7 @@ public class SubjectRepository {
                 .addOnFailureListener(e -> callback.onFailure(e.getMessage()));
     }
 
-    // ── Student: fetch from top-level subjects collection filtered by section ─
+    // ── Student: query flat subjects collection by section ────────────────────
 
     public void getStudentSubjects(String section, SubjectsCallback callback) {
         db.collection("subjects")
@@ -80,12 +84,13 @@ public class SubjectRepository {
                     List<SubjectItem> list = new ArrayList<>();
                     for (DocumentSnapshot doc : snapshot.getDocuments()) {
                         SubjectItem item = new SubjectItem();
-                        item.id       = doc.getId();
-                        item.name     = doc.getString("name");
-                        item.section  = doc.getString("section");
-                        item.teacher  = doc.getString("teacher");
-                        item.schedule = doc.getString("schedule");
-                        item.color    = doc.getString("color");
+                        item.id        = doc.getId();
+                        item.name      = doc.getString("name");
+                        item.section   = doc.getString("section");
+                        item.teacher   = doc.getString("teacher");
+                        item.teacherId = doc.getString("teacherId");
+                        item.schedule  = doc.getString("schedule");
+                        item.color     = doc.getString("color");
                         list.add(item);
                     }
                     callback.onSuccess(list);
@@ -104,7 +109,6 @@ public class SubjectRepository {
         db.collection("attendance")
                 .whereEqualTo("studentId", studentUid)
                 .whereEqualTo("subjectId", subjectId)
-                .orderBy("date", Query.Direction.DESCENDING)
                 .get()
                 .addOnSuccessListener(snapshot -> {
                     List<AttendanceRecord> list = new ArrayList<>();

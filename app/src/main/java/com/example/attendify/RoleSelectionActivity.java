@@ -6,7 +6,6 @@ import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.attendify.fragments.RoleSelectionFragment;
-import com.example.attendify.repository.AuthRepository;
 
 public class RoleSelectionActivity extends AppCompatActivity {
 
@@ -30,8 +29,6 @@ public class RoleSelectionActivity extends AppCompatActivity {
      * (show a credentials screen first, call your API, then navigate on success).
      */
     public void onRoleSelected(String role) {
-        AuthRepository.getInstance().loginAsRole(role);
-
         Intent intent = new Intent(this, MainActivity.class);
         intent.putExtra("userRole", role);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);

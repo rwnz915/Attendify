@@ -6,7 +6,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -68,7 +67,7 @@ public class HomeFragment extends Fragment {
         String subjectId = ""; // TODO: pass selected subject when subject picker is added
 
         // Today's date formatted to match Firestore date strings e.g. "Apr 20, 2026"
-        String today = new SimpleDateFormat("MMM d, yyyy", Locale.ENGLISH).format(new Date());
+        String today = new SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH).format(new Date());
 
         AttendanceRepository.getInstance().getTodayAttendance(subjectId, today,
                 new AttendanceRepository.SummaryCallback() {
@@ -122,8 +121,18 @@ public class HomeFragment extends Fragment {
                         if (getActivity() == null) return;
                         getActivity().runOnUiThread(() -> {
                             LinearLayout container = view.findViewById(R.id.recent_activity_container);
-                            LayoutInflater li = LayoutInflater.from(requireContext());
                             container.removeAllViews();
+
+                            if (records.isEmpty()) {
+                                TextView empty = new TextView(requireContext());
+                                empty.setText("No attendance records yet.");
+                                empty.setTextColor(0xFF9E9E9E);
+                                empty.setPadding(0, 16, 0, 16);
+                                container.addView(empty);
+                                return;
+                            }
+
+                            LayoutInflater li = LayoutInflater.from(requireContext());
                             for (AttendanceRecord record : records) {
                                 View card = li.inflate(R.layout.item_activity_record, container, false);
                                 ((TextView) card.findViewById(R.id.tv_record_date))
@@ -140,10 +149,16 @@ public class HomeFragment extends Fragment {
                     @Override
                     public void onFailure(String errorMessage) {
                         if (getActivity() == null) return;
-                        getActivity().runOnUiThread(() ->
-                                Toast.makeText(getContext(),
-                                        "Failed to load activity: " + errorMessage,
-                                        Toast.LENGTH_SHORT).show());
+                        getActivity().runOnUiThread(() -> {
+                            // Show inline message instead of a toast so it doesn't feel like a crash
+                            LinearLayout container = view.findViewById(R.id.recent_activity_container);
+                            container.removeAllViews();
+                            TextView empty = new TextView(requireContext());
+                            empty.setText("No attendance records yet.");
+                            empty.setTextColor(0xFF9E9E9E);
+                            empty.setPadding(0, 16, 0, 16);
+                            container.addView(empty);
+                        });
                     }
                 });
     }

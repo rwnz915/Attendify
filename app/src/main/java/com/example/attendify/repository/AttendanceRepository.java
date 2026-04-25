@@ -3,10 +3,14 @@ package com.example.attendify.repository;
 import com.example.attendify.models.AttendanceRecord;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.Query;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Fetches class-wide attendance records from Firestore.
@@ -50,7 +54,6 @@ public class AttendanceRepository {
     public void getHistory(String subjectId, AttendanceCallback callback) {
         db.collection("attendance")
                 .whereEqualTo("subjectId", subjectId)
-                .orderBy("date", Query.Direction.DESCENDING)
                 .get()
                 .addOnSuccessListener(snapshot -> {
                     List<AttendanceRecord> list = new ArrayList<>();
@@ -63,6 +66,7 @@ public class AttendanceRepository {
                         );
                         list.add(record);
                     }
+                    sortByDateDescending(list);
                     callback.onSuccess(list);
                 })
                 .addOnFailureListener(e -> callback.onFailure(e.getMessage()));
@@ -119,7 +123,6 @@ public class AttendanceRepository {
     public void getStudentHistory(String studentId, AttendanceCallback callback) {
         db.collection("attendance")
                 .whereEqualTo("studentId", studentId)
-                .orderBy("date", Query.Direction.DESCENDING)
                 .get()
                 .addOnSuccessListener(snapshot -> {
                     List<AttendanceRecord> list = new ArrayList<>();
@@ -132,8 +135,25 @@ public class AttendanceRepository {
                         );
                         list.add(record);
                     }
+                    sortByDateDescending(list);
                     callback.onSuccess(list);
                 })
                 .addOnFailureListener(e -> callback.onFailure(e.getMessage()));
+    }
+
+    // ── Helper: sort records newest-first ─────────────────────────────────────
+
+    private void sortByDateDescending(List<AttendanceRecord> list) {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH);
+        Collections.sort(list, (a, b) -> {
+            try {
+                Date da = sdf.parse(a.getDate() != null ? a.getDate() : "");
+                Date db = sdf.parse(b.getDate() != null ? b.getDate() : "");
+                if (da == null || db == null) return 0;
+                return db.compareTo(da); // descending
+            } catch (ParseException e) {
+                return 0;
+            }
+        });
     }
 }

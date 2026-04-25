@@ -7,7 +7,6 @@ import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -63,9 +62,8 @@ public class StudentHomeFragment extends Fragment {
                         if (getActivity() == null) return;
                         getActivity().runOnUiThread(() -> {
                             if (progressBar != null) progressBar.setVisibility(View.GONE);
-                            Toast.makeText(getContext(),
-                                    "Failed to load history: " + errorMessage,
-                                    Toast.LENGTH_SHORT).show();
+                            // Show zeros and an empty list — no data is not a crash
+                            bindUI(view, new java.util.ArrayList<>());
                         });
                     }
                 });
@@ -105,6 +103,15 @@ public class StudentHomeFragment extends Fragment {
         // Recent attendance list
         LinearLayout attendanceList = view.findViewById(R.id.attendance_list);
         attendanceList.removeAllViews();
+
+        if (history.isEmpty()) {
+            TextView empty = new TextView(requireContext());
+            empty.setText("No attendance records yet.");
+            empty.setTextColor(0xFF9E9E9E);
+            empty.setPadding(0, 16, 0, 16);
+            attendanceList.addView(empty);
+            return;
+        }
 
         LayoutInflater li = LayoutInflater.from(requireContext());
         for (AttendanceRecord record : history) {

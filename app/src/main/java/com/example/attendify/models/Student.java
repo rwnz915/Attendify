@@ -2,25 +2,28 @@ package com.example.attendify.models;
 
 public class Student {
     public static final int STATUS_PRESENT = 0;
-    public static final int STATUS_LATE = 1;
-    public static final int STATUS_ABSENT = 2;
+    public static final int STATUS_LATE    = 1;
+    public static final int STATUS_ABSENT  = 2;
 
-    private int id;
+    private int    id;
     private String name;
-    private int status;
+    private int    status;
     private String time;
+    private String studentId; // Firestore field: studentID
 
     public Student(int id, String name, int status, String time) {
-        this.id = id;
-        this.name = name;
+        this.id     = id;
+        this.name   = name;
         this.status = status;
-        this.time = time;
+        this.time   = time;
     }
 
-    public int getId() { return id; }
-    public String getName() { return name; }
-    public int getStatus() { return status; }
-    public String getTime() { return time; }
+    public int    getId()        { return id; }
+    public String getName()      { return name; }
+    public int    getStatus()    { return status; }
+    public String getTime()      { return time; }
+    public String getStudentId() { return studentId; }
+    public void setStudentId(String studentId) { this.studentId = studentId; }
 
     public void cycleStatus() {
         status = (status + 1) % 3;

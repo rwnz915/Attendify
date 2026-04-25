@@ -22,14 +22,14 @@ public class AttendanceRecord {
 
     // New constructor for per-student history rows
     public AttendanceRecord(String date, String subject, String time, String statusLabel) {
-        this.date        = date;
-        this.subject     = subject;
-        this.time        = time;
-        this.statusLabel = statusLabel;
+        this.date        = date != null ? date : "";
+        this.subject     = subject != null ? subject : "";
+        this.time        = time != null ? time : "--:--";
+        this.statusLabel = statusLabel != null ? statusLabel : "";
         // Map statusLabel → numeric fields so getPresent/getLate/getAbsent still work
-        this.present = statusLabel.equals("Present") ? 1 : 0;
-        this.late    = statusLabel.equals("Late")    ? 1 : 0;
-        this.absent  = statusLabel.equals("Absent")  ? 1 : 0;
+        this.present = "Present".equals(this.statusLabel) ? 1 : 0;
+        this.late    = "Late".equals(this.statusLabel)    ? 1 : 0;
+        this.absent  = "Absent".equals(this.statusLabel)  ? 1 : 0;
     }
 
     public String getDate()        { return date; }
