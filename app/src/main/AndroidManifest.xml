@@ -8,6 +8,12 @@
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-permission android:name="android.permission.INTERNET"/>
 
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+
+    <!-- For Android 10+ background geofence -->
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION"/>
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -18,6 +24,11 @@
         android:supportsRtl="true"
         android:enableOnBackInvokedCallback="true"
         android:theme="@style/Theme.Attendify">
+
+        <receiver
+            android:name=".geofence.GeofenceReceiver"
+            android:exported="false"/>
+
         <activity
             android:name=".RoleSelectionActivity"
             android:exported="true">
@@ -26,10 +37,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
         <activity
             android:name=".MainActivity"
             android:exported="false"
             android:configChanges="uiMode" />
+
     </application>
 
 </manifest>
