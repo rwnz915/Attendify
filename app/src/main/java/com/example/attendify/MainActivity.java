@@ -2,20 +2,29 @@ package com.example.attendify;
 
 import android.Manifest;
 import android.app.PendingIntent;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.content.res.Configuration;
-import android.location.Location;
+import android.location.LocationManager;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.provider.Settings;
 import android.util.Log;
+import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.app.ActivityCompat;
@@ -30,6 +39,8 @@ import com.example.attendify.geofence.GeofenceReceiver;
 import com.example.attendify.repository.AuthRepository;
 import com.google.android.gms.location.*;
 
+import android.location.Location;
+
 public class MainActivity extends AppCompatActivity {
 
     private LinearLayout tabHome, tabSubject, tabAttendance, tabHistory, tabProfile, tabQR;
@@ -41,8 +52,18 @@ public class MainActivity extends AppCompatActivity {
 
     private boolean geofenceAdded = false;
 
+    // ── Geofence state tracking ──────────────────────────────────────────────
+    // null  = unknown (first fix not yet received)
+    // true  = currently INSIDE the geofence
+    // false = currently OUTSIDE the geofence
+    private Boolean isInsideGeofence = null;
+
+    // Throttle distance toasts: only show a new one every TOAST_INTERVAL_MS
+    private static final long TOAST_INTERVAL_MS = 10_000; // 10 seconds
+    private long lastDistanceToastTime = 0;
+
     private static final int REQ_FINE = 1001;
-    private static final int REQ_BG = 1002;
+    private static final int REQ_BG   = 1002;
 
     private static final double GEOFENCE_LAT = 14.704375;
     private static final double GEOFENCE_LNG = 121.036763;
@@ -50,9 +71,25 @@ public class MainActivity extends AppCompatActivity {
     private FusedLocationProviderClient fusedClient;
     private LocationCallback locationCallback;
 
-    public static int statusBarHeight = 0;
-    public static int navBarHeight = 0;
+    // Launcher to re-check location after returning from Settings
+    private final ActivityResultLauncher<Intent> locationSettingsLauncher =
+            registerForActivityResult(
+                    new ActivityResultContracts.StartActivityForResult(),
+                    result -> {
+                        // User returned from Settings — check again
+                        if (!isLocationEnabled()) {
+                            // Still off — show the dialog again
+                            showLocationOffDialog();
+                        }
+                        // If now on, tracking will start / geofence will be set up
+                        // via the normal flow already triggered earlier
+                    }
+            );
 
+    public static int statusBarHeight = 0;
+    public static int navBarHeight    = 0;
+
+    // ─────────────────────────────────────────
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
@@ -63,33 +100,32 @@ public class MainActivity extends AppCompatActivity {
 
         fusedClient = LocationServices.getFusedLocationProviderClient(this);
 
-        bottomNav = findViewById(R.id.bottom_nav);
+        bottomNav         = findViewById(R.id.bottom_nav);
         fragmentContainer = findViewById(R.id.fragment_container);
 
-        tabHome = findViewById(R.id.tab_home);
-        tabSubject = findViewById(R.id.tab_subject);
+        tabHome       = findViewById(R.id.tab_home);
+        tabSubject    = findViewById(R.id.tab_subject);
         tabAttendance = findViewById(R.id.tab_attendance);
-        tabHistory = findViewById(R.id.tab_history);
-        tabProfile = findViewById(R.id.tab_profile);
-        tabQR = findViewById(R.id.tab_qr);
+        tabHistory    = findViewById(R.id.tab_history);
+        tabProfile    = findViewById(R.id.tab_profile);
+        tabQR         = findViewById(R.id.tab_qr);
 
-        tabHome.setOnClickListener(v -> selectTab(0));
-        tabSubject.setOnClickListener(v -> selectTab(1));
+        tabHome.setOnClickListener(v       -> selectTab(0));
+        tabSubject.setOnClickListener(v    -> selectTab(1));
         tabAttendance.setOnClickListener(v -> selectTab(2));
-        tabHistory.setOnClickListener(v -> selectTab(3));
-        tabProfile.setOnClickListener(v -> selectTab(4));
-        tabQR.setOnClickListener(v -> selectTab(5));
+        tabHistory.setOnClickListener(v    -> selectTab(3));
+        tabProfile.setOnClickListener(v    -> selectTab(4));
+        tabQR.setOnClickListener(v         -> selectTab(5));
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
 
             statusBarHeight = bars.top;
-            navBarHeight = bars.bottom;
+            navBarHeight    = bars.bottom;
 
             bottomNav.setPadding(8, 0, 8, bars.bottom);
 
             int tabHeight = (int) (64 * getResources().getDisplayMetrics().density);
-
             fragmentContainer.setPadding(0, 0, 0,
                     bottomNav.getVisibility() == View.VISIBLE ? tabHeight + bars.bottom : 0);
 
@@ -99,7 +135,7 @@ public class MainActivity extends AppCompatActivity {
         userRole = getIntent().getStringExtra("userRole");
 
         if (savedInstanceState != null) {
-            userRole = savedInstanceState.getString("userRole", userRole);
+            userRole   = savedInstanceState.getString("userRole", userRole);
             currentTab = savedInstanceState.getInt("currentTab", -1);
         }
 
@@ -112,18 +148,73 @@ public class MainActivity extends AppCompatActivity {
         requestPermissionsFlow();
     }
 
-    // ---------------- ROLE ----------------
-    private void setupUIForRole(String role) {
-        bottomNav.setVisibility(View.VISIBLE);
-
-        tabQR.setVisibility("student".equals(role) ? View.VISIBLE : View.GONE);
-
-        selectTab(currentTab != -1 ? currentTab : 0);
-
-        startDistanceTracking();
+    // ─────────────────────────────────────────
+    // Called every time the app comes to the foreground so we always re-check
+    @Override
+    protected void onResume() {
+        super.onResume();
+        checkLocationServices();
     }
 
-    // ---------------- TABS ----------------
+    // ─────────────────────────────────────────
+    // LOCATION SERVICES CHECK
+    // ─────────────────────────────────────────
+
+    /** Returns true when GPS or Network provider is enabled. */
+    private boolean isLocationEnabled() {
+        LocationManager lm = (LocationManager) getSystemService(LOCATION_SERVICE);
+        if (lm == null) return false;
+
+        boolean gpsOn     = lm.isProviderEnabled(LocationManager.GPS_PROVIDER);
+        boolean networkOn = lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+        return gpsOn || networkOn;
+    }
+
+    /** Check and prompt if location is disabled. */
+    private void checkLocationServices() {
+        if (!isLocationEnabled()) {
+            showLocationOffDialog();
+        }
+    }
+
+    /** Dialog that opens Location Settings when dismissed with "Enable". */
+    private void showLocationOffDialog() {
+        // Avoid stacking multiple dialogs
+        if (isFinishing() || isDestroyed()) return;
+
+        new AlertDialog.Builder(this)
+                .setTitle("Location Required")
+                .setMessage(
+                        "Attendify needs your device location to verify attendance. " +
+                                "Please enable Location Services to continue."
+                )
+                .setCancelable(false)           // user must make a choice
+                .setPositiveButton("Enable", (dialog, which) -> openLocationSettings())
+                .setNegativeButton("Exit App",  (dialog, which) -> finishAffinity())
+                .show();
+    }
+
+    /** Opens the system Location Settings screen. */
+    private void openLocationSettings() {
+        Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+        locationSettingsLauncher.launch(intent);
+    }
+
+    // ─────────────────────────────────────────
+    // ROLE
+    // ─────────────────────────────────────────
+    private void setupUIForRole(String role) {
+        bottomNav.setVisibility(View.VISIBLE);
+        tabQR.setVisibility("student".equals(role) ? View.VISIBLE : View.GONE);
+        selectTab(currentTab != -1 ? currentTab : 0);
+        // startDistanceTracking() is called from onRequestPermissionsResult
+        // after ACCESS_FINE_LOCATION is confirmed — NOT here — so the
+        // fusedClient.requestLocationUpdates() call is never silently skipped.
+    }
+
+    // ─────────────────────────────────────────
+    // TABS
+    // ─────────────────────────────────────────
     public void selectTab(int index) {
         if (currentTab == index) return;
         currentTab = index;
@@ -134,20 +225,20 @@ public class MainActivity extends AppCompatActivity {
 
             case "teacher":
                 switch (index) {
-                    case 1: fragment = new SubjectFragment(); break;
-                    case 2: fragment = new AttendanceFragment(); break;
-                    case 3: fragment = new HistoryFragment(); break;
-                    case 4: fragment = new ProfileFragment(); break;
-                    default: fragment = new HomeFragment(); break;
+                    case 1:  fragment = new SubjectFragment();    break;
+                    case 2:  fragment = new AttendanceFragment(); break;
+                    case 3:  fragment = new HistoryFragment();    break;
+                    case 4:  fragment = new ProfileFragment();    break;
+                    default: fragment = new HomeFragment();       break;
                 }
                 break;
 
             case "student":
                 switch (index) {
-                    case 1: fragment = new StudentSubjectFragment(); break;
-                    case 4: fragment = new StudentProfileFragment(); break;
-                    case 5: fragment = new StudentQrFragment(); break;
-                    default: fragment = new StudentHomeFragment(); break;
+                    case 1:  fragment = new StudentSubjectFragment(); break;
+                    case 4:  fragment = new StudentProfileFragment(); break;
+                    case 5:  fragment = new StudentQrFragment();      break;
+                    default: fragment = new StudentHomeFragment();    break;
                 }
                 break;
 
@@ -175,19 +266,19 @@ public class MainActivity extends AppCompatActivity {
         ft.commit();
     }
 
-    // ---------------- NAV UI ----------------
+    // ─────────────────────────────────────────
+    // NAV UI
+    // ─────────────────────────────────────────
     private void updateNavUI(int activeIndex) {
 
         LinearLayout[] tabs = {
                 tabHome, tabSubject, tabAttendance,
                 tabHistory, tabProfile, tabQR
         };
-
         int[] icons = {
                 R.id.icon_home, R.id.icon_subject, R.id.icon_attendance,
                 R.id.icon_history, R.id.icon_profile, R.id.icon_qr
         };
-
         int[] labels = {
                 R.id.label_home, R.id.label_subject, R.id.label_attendance,
                 R.id.label_history, R.id.label_profile, R.id.label_qr
@@ -197,8 +288,8 @@ public class MainActivity extends AppCompatActivity {
 
             if (tabs[i].getVisibility() == View.GONE) continue;
 
-            ImageView icon = tabs[i].findViewById(icons[i]);
-            TextView label = tabs[i].findViewById(labels[i]);
+            ImageView icon  = tabs[i].findViewById(icons[i]);
+            TextView  label = tabs[i].findViewById(labels[i]);
 
             if (icon == null || label == null) continue;
 
@@ -212,7 +303,9 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // ---------------- PERMISSIONS ----------------
+    // ─────────────────────────────────────────
+    // PERMISSIONS
+    // ─────────────────────────────────────────
     private void requestPermissionsFlow() {
         ActivityCompat.requestPermissions(this,
                 new String[]{
@@ -234,9 +327,19 @@ public class MainActivity extends AppCompatActivity {
             if (grantResults.length > 0 &&
                     grantResults[0] == PackageManager.PERMISSION_GRANTED) {
 
+                // ✅ Fine location granted — safe to start tracking NOW
+                startDistanceTracking();
+
+                // Then request background location for geofencing
                 ActivityCompat.requestPermissions(this,
                         new String[]{Manifest.permission.ACCESS_BACKGROUND_LOCATION},
                         REQ_BG);
+
+            } else {
+                Log.e("PERMISSIONS", "ACCESS_FINE_LOCATION denied — toasts will not appear");
+                Toast.makeText(this,
+                        "Location permission required for attendance tracking",
+                        Toast.LENGTH_LONG).show();
             }
 
         } else if (requestCode == REQ_BG) {
@@ -245,11 +348,16 @@ public class MainActivity extends AppCompatActivity {
                     grantResults[0] == PackageManager.PERMISSION_GRANTED) {
 
                 setupGeofence();
+
+            } else {
+                Log.w("PERMISSIONS", "ACCESS_BACKGROUND_LOCATION denied — geofence unavailable");
             }
         }
     }
 
-    // ---------------- GEOFENCE ----------------
+    // ─────────────────────────────────────────
+    // GEOFENCE
+    // ─────────────────────────────────────────
     private void setupGeofence() {
 
         if (geofenceAdded) return;
@@ -273,7 +381,6 @@ public class MainActivity extends AppCompatActivity {
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
-
             Log.e("GEOFENCE", "Missing FINE location permission");
             return;
         }
@@ -294,25 +401,22 @@ public class MainActivity extends AppCompatActivity {
 
     private PendingIntent getPendingIntent() {
         Intent intent = new Intent(this, GeofenceReceiver.class);
-
         return PendingIntent.getBroadcast(
-                this,
-                0,
-                intent,
+                this, 0, intent,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_MUTABLE
         );
     }
 
-    // ---------------- DISTANCE TRACKING ----------------
+    // ─────────────────────────────────────────
+    // DISTANCE TRACKING
+    // ─────────────────────────────────────────
     private void startDistanceTracking() {
 
         if (locationCallback != null) return;
 
-        LocationRequest request =
-                new LocationRequest.Builder(
-                        Priority.PRIORITY_HIGH_ACCURACY,
-                        5000
-                ).build();
+        LocationRequest request = new LocationRequest.Builder(
+                Priority.PRIORITY_HIGH_ACCURACY, 5000
+        ).build();
 
         locationCallback = new LocationCallback() {
             @Override
@@ -322,24 +426,32 @@ public class MainActivity extends AppCompatActivity {
                 if (loc == null) return;
 
                 float[] dist = new float[1];
-
                 Location.distanceBetween(
-                        loc.getLatitude(),
-                        loc.getLongitude(),
-                        GEOFENCE_LAT,
-                        GEOFENCE_LNG,
+                        loc.getLatitude(), loc.getLongitude(),
+                        GEOFENCE_LAT, GEOFENCE_LNG,
                         dist
                 );
 
                 int meters = (int) dist[0];
+                boolean nowInside = meters <= 50;
 
-                // ✅ LOG ONLY OUTPUT
-                Log.d("DISTANCE", "Distance to classroom: " + meters + " meters");
+                // ── Enter / Exit transition toast (fires only on state change) ──
+                if (isInsideGeofence == null || isInsideGeofence != nowInside) {
+                    isInsideGeofence = nowInside;
 
-                if (meters <= 50) {
-                    Log.d("DISTANCE", "STATUS: INSIDE AREA ✅");
-                } else {
-                    Log.d("DISTANCE", "STATUS: OUTSIDE AREA ❌");
+                    if (nowInside) {
+                        showGeofenceToast("✅ Inside Geofence — " + meters + " m from classroom");
+                    } else {
+                        showGeofenceToast("❌ Outside Geofence — " + meters + " m from classroom");
+                    }
+                }
+
+                // ── Periodic distance toast (every 10 s) ────────────────────
+                long nowMs = System.currentTimeMillis();
+                if (nowMs - lastDistanceToastTime >= TOAST_INTERVAL_MS) {
+                    lastDistanceToastTime = nowMs;
+                    String status = nowInside ? "Inside Geofence ✅" : "Outside Geofence ❌";
+                    showDistanceToast("📍 " + meters + " m from classroom — " + status);
                 }
             }
         };
@@ -348,17 +460,44 @@ public class MainActivity extends AppCompatActivity {
                 Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
 
-            fusedClient.requestLocationUpdates(
-                    request,
-                    locationCallback,
-                    getMainLooper()
-            );
+            fusedClient.requestLocationUpdates(request, locationCallback, getMainLooper());
+
         } else {
-            Log.e("DISTANCE", "Location permission not granted");
+            Toast.makeText(MainActivity.this,
+                    "Location permission not granted — tracking unavailable",
+                    Toast.LENGTH_LONG).show();
         }
     }
 
-    // ---------------- LOGOUT ----------------
+    // ─────────────────────────────────────────
+    // TOAST HELPERS
+    // ─────────────────────────────────────────
+
+    /**
+     * Bold, prominent toast for geofence ENTER / EXIT transitions.
+     * Shown at the TOP of the screen so it doesn't collide with the bottom nav.
+     */
+    private void showGeofenceToast(String message) {
+        runOnUiThread(() -> {
+            Toast toast = Toast.makeText(this, message, Toast.LENGTH_LONG);
+            toast.setGravity(Gravity.TOP | Gravity.CENTER_HORIZONTAL,
+                    0, statusBarHeight + 16);
+            toast.show();
+        });
+    }
+
+    /**
+     * Standard bottom toast for the periodic distance update.
+     */
+    private void showDistanceToast(String message) {
+        runOnUiThread(() ->
+                Toast.makeText(this, "📍 " + message, Toast.LENGTH_SHORT).show()
+        );
+    }
+
+    // ─────────────────────────────────────────
+    // LOGOUT
+    // ─────────────────────────────────────────
     public void logout() {
         AuthRepository.getInstance().logout();
 
@@ -368,6 +507,9 @@ public class MainActivity extends AppCompatActivity {
         finish();
     }
 
+    // ─────────────────────────────────────────
+    // LIFECYCLE
+    // ─────────────────────────────────────────
     @Override
     protected void onSaveInstanceState(@NonNull Bundle outState) {
         outState.putString("userRole", userRole);
@@ -378,7 +520,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-
         if (fusedClient != null && locationCallback != null) {
             fusedClient.removeLocationUpdates(locationCallback);
         }
