@@ -62,11 +62,27 @@ public class MainActivity extends AppCompatActivity {
     private static final long TOAST_INTERVAL_MS = 10_000; // 10 seconds
     private long lastDistanceToastTime = 0;
 
+    // ── GPS smoothing ────────────────────────────────────────────────────────
+    // Discard any fix whose reported accuracy is worse than this (in metres).
+    private static final float MAX_ACCURACY_METERS = 30f;
+
+    // Rolling average window — keeps the last N valid distance readings
+    private static final int SMOOTH_WINDOW = 5;
+    private final java.util.ArrayDeque<Integer> distanceWindow = new java.util.ArrayDeque<>(SMOOTH_WINDOW);
+
     private static final int REQ_FINE = 1001;
     private static final int REQ_BG   = 1002;
 
     private static final double GEOFENCE_LAT = 14.704375;
     private static final double GEOFENCE_LNG = 121.036763;
+
+    // ── Hysteresis thresholds ────────────────────────────────────────────────
+    // Two thresholds instead of one to prevent bouncing at the boundary.
+    // Must go BELOW ENTER_RADIUS to be considered inside,
+    // must go ABOVE EXIT_RADIUS  to be considered outside.
+    // The gap between them (45–60 m) is a dead zone where state never changes.
+    private static final int GEOFENCE_ENTER_RADIUS = 45;  // cross inward  at 45 m
+    private static final int GEOFENCE_EXIT_RADIUS  = 60;  // cross outward at 60 m
 
     private FusedLocationProviderClient fusedClient;
     private LocationCallback locationCallback;
@@ -415,8 +431,11 @@ public class MainActivity extends AppCompatActivity {
         if (locationCallback != null) return;
 
         LocationRequest request = new LocationRequest.Builder(
-                Priority.PRIORITY_HIGH_ACCURACY, 5000
-        ).build();
+                Priority.PRIORITY_HIGH_ACCURACY, 10_000   // request every 10 s
+        )
+                .setMinUpdateIntervalMillis(8_000)                 // never faster than 8 s
+                .setMinUpdateDistanceMeters(2f)                    // skip if moved < 2 m
+                .build();
 
         locationCallback = new LocationCallback() {
             @Override
@@ -432,17 +451,42 @@ public class MainActivity extends AppCompatActivity {
                         dist
                 );
 
-                int meters = (int) dist[0];
-                boolean nowInside = meters <= 50;
+                // ── Accuracy filter — discard noisy fixes ────────────────
+                if (loc.getAccuracy() > MAX_ACCURACY_METERS) return;
+
+                int rawMeters = (int) dist[0];
+
+                // ── Rolling average — smooth out GPS jitter ──────────────────
+                if (distanceWindow.size() >= SMOOTH_WINDOW) distanceWindow.poll();
+                distanceWindow.add(rawMeters);
+
+                int smoothed = 0;
+                for (int d : distanceWindow) smoothed += d;
+                smoothed /= distanceWindow.size();
+
+                // ── Hysteresis — prevent boundary bouncing ───────────────
+                // Only change state when clearly crossing a threshold,
+                // ignore readings in the dead zone (45–60 m).
+                boolean nowInside;
+                if (isInsideGeofence == null) {
+                    // First fix: pick initial state based on enter threshold
+                    nowInside = smoothed <= GEOFENCE_ENTER_RADIUS;
+                } else if (isInsideGeofence) {
+                    // Currently INSIDE — only flip outside if beyond exit radius
+                    nowInside = smoothed < GEOFENCE_EXIT_RADIUS;
+                } else {
+                    // Currently OUTSIDE — only flip inside if within enter radius
+                    nowInside = smoothed <= GEOFENCE_ENTER_RADIUS;
+                }
 
                 // ── Enter / Exit transition toast (fires only on state change) ──
                 if (isInsideGeofence == null || isInsideGeofence != nowInside) {
                     isInsideGeofence = nowInside;
 
                     if (nowInside) {
-                        showGeofenceToast("✅ Inside Geofence — " + meters + " m from classroom");
+                        showGeofenceToast("✅ Inside Geofence — " + smoothed + " m from classroom");
                     } else {
-                        showGeofenceToast("❌ Outside Geofence — " + meters + " m from classroom");
+                        showGeofenceToast("❌ Outside Geofence — " + smoothed + " m from classroom");
                     }
                 }
 
@@ -451,7 +495,7 @@ public class MainActivity extends AppCompatActivity {
                 if (nowMs - lastDistanceToastTime >= TOAST_INTERVAL_MS) {
                     lastDistanceToastTime = nowMs;
                     String status = nowInside ? "Inside Geofence ✅" : "Outside Geofence ❌";
-                    showDistanceToast("📍 " + meters + " m from classroom — " + status);
+                    showDistanceToast("📍 " + smoothed + " m from classroom — " + status);
                 }
             }
         };
