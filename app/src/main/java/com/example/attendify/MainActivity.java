@@ -81,8 +81,8 @@ public class MainActivity extends AppCompatActivity {
     // Must go BELOW ENTER_RADIUS to be considered inside,
     // must go ABOVE EXIT_RADIUS  to be considered outside.
     // The gap between them (45–60 m) is a dead zone where state never changes.
-    private static final int GEOFENCE_ENTER_RADIUS = 45;  // cross inward  at 45 m
-    private static final int GEOFENCE_EXIT_RADIUS  = 60;  // cross outward at 60 m
+    private static final int GEOFENCE_ENTER_RADIUS = 50;  // cross inward  at 45 m
+    private static final int GEOFENCE_EXIT_RADIUS  = 100;  // cross outward at 60 m
 
     private FusedLocationProviderClient fusedClient;
     private LocationCallback locationCallback;

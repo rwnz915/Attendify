@@ -54,6 +54,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:id="@+id/tv_teacher_name"
                         android:text="Teacher"
                         android:textColor="@color/white"
                         android:textSize="18sp"
@@ -95,24 +96,27 @@
                     android:layout_weight="1"
                     android:orientation="vertical">
                     <TextView
+                        android:id="@+id/tv_class_label"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/todays_class"
                         android:textColor="#CCFFFFff"
                         android:textSize="12sp" />
                     <TextView
+                        android:id="@+id/tv_today_subject_name"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="@string/subject_entrepreneurship"
+                        android:text="—"
                         android:textColor="@color/white"
                         android:textSize="20sp"
                         android:textStyle="bold" />
                     <TextView
+                        android:id="@+id/tv_today_subject_time"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="6dp"
-                        android:text="@string/class_time"
+                        android:text="—"
                         android:textColor="#CCFFFFff"
                         android:textSize="12sp" />
                 </LinearLayout>
@@ -183,7 +187,7 @@
                             android:id="@+id/tv_today_present"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="28"
+                            android:text="0"
                             android:textColor="@color/gray_800"
                             android:textSize="24sp"
                             android:textStyle="bold" />
@@ -191,7 +195,7 @@
                             android:id="@+id/tv_today_total"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="/ 32"
+                            android:text="/ 0"
                             android:textColor="@color/gray_500"
                             android:textSize="14sp"
                             android:layout_marginStart="4dp"
@@ -256,7 +260,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
-                        android:text="5"
+                        android:text="0"
                         android:textColor="@color/gray_800"
                         android:textSize="24sp"
                         android:textStyle="bold" />

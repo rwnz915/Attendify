@@ -38,7 +38,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:padding="22dp"
-                    android:src="@drawable/book"
+                    android:src="@drawable/logo"
                     app:tint="@color/blue_600" />
             </com.google.android.material.card.MaterialCardView>
 

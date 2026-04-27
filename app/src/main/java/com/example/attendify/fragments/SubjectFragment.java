@@ -438,7 +438,7 @@ public class SubjectFragment extends Fragment {
             tvName.setTextColor(Color.parseColor("#111827"));
 
             TextView tvId = new TextView(requireContext());
-            tvId.setText(s.getStudentId() != null ? s.getStudentId() : "");
+            tvId.setText(s.getSchoolId() != null ? s.getSchoolId() : "");
             tvId.setTextSize(12);
             tvId.setTextColor(Color.parseColor("#9CA3AF"));
             LinearLayout.LayoutParams idLp = new LinearLayout.LayoutParams(

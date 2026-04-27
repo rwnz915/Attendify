@@ -9,7 +9,8 @@ public class Student {
     private String name;
     private int    status;
     private String time;
-    private String studentId; // Firestore field: studentID
+    private String studentId; // Firebase Auth UID — used for Firestore queries
+    private String schoolId;  // School-assigned ID e.g. "02000413198" — display only
 
     public Student(int id, String name, int status, String time) {
         this.id     = id;
@@ -23,7 +24,15 @@ public class Student {
     public int    getStatus()    { return status; }
     public String getTime()      { return time; }
     public String getStudentId() { return studentId; }
-    public void setStudentId(String studentId) { this.studentId = studentId; }
+    public void   setStudentId(String studentId) { this.studentId = studentId; }
+    public String getSchoolId()  { return schoolId; }
+    public void   setSchoolId(String schoolId)   { this.schoolId = schoolId; }
+
+    /** Sets status and time directly from a Firestore record without cycling. */
+    public void setStatusFromDb(int statusCode, String arrivalTime) {
+        this.status = statusCode;
+        this.time   = (arrivalTime != null && !arrivalTime.isEmpty()) ? arrivalTime : "--:--";
+    }
 
     public void cycleStatus() {
         status = (status + 1) % 3;

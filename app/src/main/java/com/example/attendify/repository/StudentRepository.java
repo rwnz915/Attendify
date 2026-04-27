@@ -65,7 +65,8 @@ public class StudentRepository {
                         // Default status is Absent until teacher marks them
                         Student student = new Student(i++, fullName,
                                 Student.STATUS_ABSENT, "--:--");
-                        student.setStudentId(doc.getString("studentID"));
+                        student.setStudentId(doc.getId());
+                        student.setSchoolId(doc.getString("studentID"));
                         list.add(student);
                     }
                     callback.onSuccess(list);
@@ -91,7 +92,8 @@ public class StudentRepository {
 
                         Student student = new Student(i++, fullName,
                                 Student.STATUS_ABSENT, "--:--");
-                        student.setStudentId(doc.getString("studentID"));
+                        student.setStudentId(doc.getId());
+                        student.setSchoolId(doc.getString("studentID"));
                         list.add(student);
                     }
                     callback.onSuccess(list);

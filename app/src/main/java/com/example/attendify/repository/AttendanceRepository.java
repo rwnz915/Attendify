@@ -92,6 +92,80 @@ public class AttendanceRepository {
                 .addOnFailureListener(e -> callback.onFailure(e.getMessage()));
     }
 
+    // ── Today's summary across multiple subjects (Home page) ─────────────────
+
+    /**
+     * For each subjectId in the list, query today's attendance and aggregate totals.
+     * The callback fires once all queries complete (or immediately on any failure).
+     */
+    public void getTodaySubjectSummaries(
+            List<com.example.attendify.repository.SubjectRepository.SubjectItem> subjects,
+            String date,
+            SubjectSummariesCallback callback) {
+
+        if (subjects == null || subjects.isEmpty()) {
+            callback.onSuccess(new java.util.ArrayList<>());
+            return;
+        }
+
+        List<SubjectSummary> results = new java.util.ArrayList<>();
+        int[] remaining = {subjects.size()};
+
+        for (com.example.attendify.repository.SubjectRepository.SubjectItem subj : subjects) {
+            db.collection("attendance")
+                    .whereEqualTo("subjectId", subj.id)
+                    .whereEqualTo("date", date)
+                    .get()
+                    .addOnSuccessListener(snapshot -> {
+                        int present = 0, absent = 0, late = 0;
+                        for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                            String status = doc.getString("status");
+                            if ("Present".equals(status)) present++;
+                            else if ("Absent".equals(status)) absent++;
+                            else if ("Late".equals(status))   late++;
+                        }
+                        SubjectSummary s = new SubjectSummary();
+                        s.subjectId   = subj.id;
+                        s.subjectName = subj.name;
+                        s.section     = subj.section;
+                        s.schedule    = subj.schedule;
+                        s.date        = date;
+                        s.present     = present;
+                        s.absent      = absent;
+                        s.late        = late;
+                        s.total       = present + absent + late;
+                        synchronized (results) {
+                            results.add(s);
+                            remaining[0]--;
+                            if (remaining[0] == 0) callback.onSuccess(results);
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        synchronized (results) {
+                            remaining[0]--;
+                            if (remaining[0] == 0) callback.onSuccess(results);
+                        }
+                    });
+        }
+    }
+
+    public static class SubjectSummary {
+        public String subjectId;
+        public String subjectName;
+        public String section;
+        public String schedule;
+        public String date;
+        public int    present;
+        public int    absent;
+        public int    late;
+        public int    total;
+    }
+
+    public interface SubjectSummariesCallback {
+        void onSuccess(List<SubjectSummary> summaries);
+        void onFailure(String errorMessage);
+    }
+
     // ── Record a single student's attendance ──────────────────────────────────
 
     public interface SubmitCallback {

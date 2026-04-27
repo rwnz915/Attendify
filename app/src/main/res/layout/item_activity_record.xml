@@ -29,9 +29,10 @@
                 android:textSize="15sp"
                 android:textStyle="bold" />
             <TextView
+                android:id="@+id/tv_record_subject"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="IT - 203 • Entrepreneurship"
+                android:text="IT-203 • Entrepreneurship"
                 android:textColor="@color/gray_500"
                 android:textSize="12sp" />
         </LinearLayout>
@@ -44,7 +45,7 @@
                 android:id="@+id/tv_record_present"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginEnd="6dp"
+                android:layout_marginEnd="4dp"
                 android:background="@drawable/bg_badge_present"
                 android:paddingStart="8dp"
                 android:paddingTop="4dp"
@@ -54,6 +55,21 @@
                 android:textColor="@color/green_700"
                 android:textSize="12sp"
                 android:textStyle="bold" />
+            <TextView
+                android:id="@+id/tv_record_late"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="4dp"
+                android:background="@drawable/bg_quick_yellow"
+                android:paddingStart="8dp"
+                android:paddingTop="4dp"
+                android:paddingEnd="8dp"
+                android:paddingBottom="4dp"
+                android:text="0 L"
+                android:textColor="#D97706"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
             <TextView
                 android:id="@+id/tv_record_absent"
                 android:layout_width="wrap_content"
