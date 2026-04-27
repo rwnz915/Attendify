@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -5,28 +6,45 @@
     android:orientation="vertical"
     android:padding="24dp">
 
+    <!-- QR image -->
     <ImageView
         android:id="@+id/img_qr"
         android:layout_width="250dp"
         android:layout_height="250dp"
         android:background="@android:color/white" />
 
+    <!-- Subject name + section + schedule -->
     <TextView
         android:id="@+id/tv_subject"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"
-        android:text="Subject: MATH101"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        android:textColor="@android:color/black"/>
+        android:gravity="center"
+        android:text="Loading subject…"
+        android:textColor="@android:color/black"
+        android:textSize="16sp"
+        android:textStyle="bold" />
 
+    <!-- Student full name + school ID -->
     <TextView
         android:id="@+id/tv_student"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:text="Student ID: 20241001"
-        android:textSize="16sp"
-        android:textColor="@android:color/darker_gray"/>
+        android:gravity="center"
+        android:text=""
+        android:textColor="@android:color/darker_gray"
+        android:textSize="14sp" />
+
+    <!-- Active / error status message -->
+    <TextView
+        android:id="@+id/tv_qr_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:gravity="center"
+        android:text=""
+        android:textColor="@android:color/darker_gray"
+        android:textSize="13sp" />
+
 </LinearLayout>
