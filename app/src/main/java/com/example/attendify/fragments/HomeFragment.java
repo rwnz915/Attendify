@@ -14,11 +14,10 @@ import androidx.fragment.app.Fragment;
 import com.example.attendify.MainActivity;
 import com.example.attendify.R;
 import com.example.attendify.models.UserProfile;
-import com.example.attendify.repository.ApprovalRepository;
+import com.example.attendify.repository.ExcuseLetterRepository;
 import com.example.attendify.repository.AttendanceRepository;
 import com.example.attendify.repository.AuthRepository;
 import com.example.attendify.repository.SubjectRepository;
-import com.example.attendify.models.ApprovalRequest;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -85,14 +84,18 @@ public class HomeFragment extends Fragment {
     // ── Pending approvals ─────────────────────────────────────────────────────
 
     private void loadPendingApprovals(View view) {
-        ApprovalRepository.getInstance().getPendingApprovals(
-                new ApprovalRepository.ApprovalsCallback() {
+        UserProfile me = AuthRepository.getInstance().getLoggedInUser();
+        if (me == null) return;
+
+        ExcuseLetterRepository.getInstance().getPendingByTeacher(
+                me.getId(),
+                new ExcuseLetterRepository.ListCallback() {
                     @Override
-                    public void onSuccess(List<ApprovalRequest> approvals) {
+                    public void onSuccess(List<com.example.attendify.models.ExcuseLetter> letters) {
                         if (getActivity() == null) return;
                         getActivity().runOnUiThread(() ->
                                 ((TextView) view.findViewById(R.id.tv_pending_count))
-                                        .setText(String.valueOf(approvals.size())));
+                                        .setText(String.valueOf(letters.size())));
                     }
                     @Override public void onFailure(String errorMessage) {}
                 });

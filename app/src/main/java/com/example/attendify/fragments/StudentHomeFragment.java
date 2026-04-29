@@ -17,6 +17,7 @@ import com.example.attendify.models.UserProfile;
 import com.example.attendify.repository.AttendanceRepository;
 import com.example.attendify.repository.AuthRepository;
 import com.example.attendify.repository.SubjectRepository;
+import com.example.attendify.fragments.ExcuseLetterFragment;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -181,6 +182,14 @@ public class StudentHomeFragment extends Fragment {
                                 });
                     }
                 });
+
+        // Wire up "Excuse Letter" quick action
+        view.findViewById(R.id.btn_class_list).setOnClickListener(v ->
+                requireActivity().getSupportFragmentManager()
+                        .beginTransaction()
+                        .replace(R.id.fragment_container, new ExcuseLetterFragment())
+                        .addToBackStack(null)
+                        .commit());
     }
 
     // ── Today's Class card ────────────────────────────────────────────────────
