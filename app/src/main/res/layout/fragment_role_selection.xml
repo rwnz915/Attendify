@@ -5,7 +5,7 @@
     android:layout_height="match_parent"
     android:background="@color/white">
 
-    <!-- Background Decoration -->
+    <!-- Subtle Background Decoration -->
 
     <ScrollView
         android:layout_width="match_parent"
@@ -18,26 +18,26 @@
             android:layout_height="wrap_content"
             android:gravity="center_horizontal"
             android:orientation="vertical"
-            android:padding="32dp">
+            android:padding="24dp">
 
-            <View
+            <Space
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_weight="1" />
 
             <!-- App Logo & Title -->
             <com.google.android.material.card.MaterialCardView
-                android:layout_width="88dp"
-                android:layout_height="88dp"
-                app:cardCornerRadius="24dp"
-                app:cardElevation="0dp"
-                app:strokeWidth="1dp"
-                app:strokeColor="@color/gray_100">
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                app:cardCornerRadius="30dp"
+                app:cardElevation="8dp"
+                app:cardBackgroundColor="@color/white"
+                app:strokeWidth="0dp">
 
                 <ImageView
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:padding="22dp"
+                    android:padding="26dp"
                     android:src="@drawable/logo"
                     app:tint="@color/blue_600" />
             </com.google.android.material.card.MaterialCardView>
@@ -45,23 +45,24 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
+                android:layout_marginTop="28dp"
                 android:fontFamily="sans-serif-black"
-                android:text="Attendify"
+                android:text="@string/app_name"
                 android:textColor="@color/gray_900"
-                android:textSize="38sp"
-                android:letterSpacing="-0.03" />
+                android:textSize="44sp"
+                android:letterSpacing="-0.04" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="Choose your profile to proceed"
+                android:text="@string/role_selection_title"
                 android:textColor="@color/gray_500"
                 android:textSize="17sp"
-                android:fontFamily="sans-serif-medium" />
+                android:fontFamily="sans-serif-medium"
+                android:alpha="0.8" />
 
-            <View
+            <Space
                 android:layout_width="match_parent"
                 android:layout_height="48dp" />
 
@@ -70,62 +71,61 @@
                 android:id="@+id/card_teacher"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
+                android:layout_marginBottom="20dp"
                 android:clickable="true"
                 android:focusable="true"
-                app:cardCornerRadius="28dp"
-                app:cardElevation="2dp"
-                app:rippleColor="#20FFFFFF">
+                android:foreground="?attr/selectableItemBackground"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="2dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:background="@drawable/bg_role_teacher"
                     android:gravity="center_vertical"
-                    android:padding="22dp">
+                    android:padding="20dp">
 
-                    <FrameLayout
-                        android:layout_width="56dp"
-                        android:layout_height="56dp">
-                        <View
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:background="@drawable/bg_icon_white_transparent" />
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="60dp"
+                        android:layout_height="60dp"
+                        app:cardCornerRadius="16dp"
+                        app:cardElevation="0dp"
+                        app:cardBackgroundColor="#33FFFFFF">
                         <ImageView
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
                             android:padding="16dp"
-                            android:src="@drawable/book"
+                            android:src="@drawable/ic_teacher"
                             app:tint="@color/white" />
-                    </FrameLayout>
+                    </com.google.android.material.card.MaterialCardView>
 
                     <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="20dp"
+                        android:layout_marginStart="18dp"
                         android:layout_weight="1"
                         android:orientation="vertical">
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Teacher"
+                            android:text="@string/role_teacher"
                             android:textColor="@color/white"
-                            android:textSize="21sp"
+                            android:textSize="22sp"
                             android:fontFamily="sans-serif-bold" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Manage your classes easily"
-                            android:textColor="#F5F5F5"
-                            android:textSize="13sp"
+                            android:text="@string/role_teacher_desc"
+                            android:textColor="@color/white"
+                            android:textSize="14sp"
                             android:alpha="0.85" />
                     </LinearLayout>
 
                     <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
                         android:src="@drawable/ic_chevron_right"
                         app:tint="@color/white"
                         android:alpha="0.7" />
@@ -137,62 +137,61 @@
                 android:id="@+id/card_student"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
+                android:layout_marginBottom="20dp"
                 android:clickable="true"
                 android:focusable="true"
-                app:cardCornerRadius="28dp"
-                app:cardElevation="2dp"
-                app:rippleColor="#20FFFFFF">
+                android:foreground="?attr/selectableItemBackground"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="2dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:background="@drawable/bg_role_student"
                     android:gravity="center_vertical"
-                    android:padding="22dp">
+                    android:padding="20dp">
 
-                    <FrameLayout
-                        android:layout_width="56dp"
-                        android:layout_height="56dp">
-                        <View
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:background="@drawable/bg_icon_white_transparent" />
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="60dp"
+                        android:layout_height="60dp"
+                        app:cardCornerRadius="16dp"
+                        app:cardElevation="0dp"
+                        app:cardBackgroundColor="#33FFFFFF">
                         <ImageView
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
                             android:padding="16dp"
-                            android:src="@drawable/user"
+                            android:src="@drawable/ic_user"
                             app:tint="@color/white" />
-                    </FrameLayout>
+                    </com.google.android.material.card.MaterialCardView>
 
                     <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="20dp"
+                        android:layout_marginStart="18dp"
                         android:layout_weight="1"
                         android:orientation="vertical">
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Student"
+                            android:text="@string/role_student"
                             android:textColor="@color/white"
-                            android:textSize="21sp"
+                            android:textSize="22sp"
                             android:fontFamily="sans-serif-bold" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Check your attendance status"
-                            android:textColor="#F5F5F5"
-                            android:textSize="13sp"
+                            android:text="@string/role_student_desc"
+                            android:textColor="@color/white"
+                            android:textSize="14sp"
                             android:alpha="0.85" />
                     </LinearLayout>
 
                     <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
                         android:src="@drawable/ic_chevron_right"
                         app:tint="@color/white"
                         android:alpha="0.7" />
@@ -204,72 +203,71 @@
                 android:id="@+id/card_secretary"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
+                android:layout_marginBottom="20dp"
                 android:clickable="true"
                 android:focusable="true"
-                app:cardCornerRadius="28dp"
-                app:cardElevation="2dp"
-                app:rippleColor="#20FFFFFF">
+                android:foreground="?attr/selectableItemBackground"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="2dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:background="@drawable/bg_role_secretary"
                     android:gravity="center_vertical"
-                    android:padding="22dp">
+                    android:padding="20dp">
 
-                    <FrameLayout
-                        android:layout_width="56dp"
-                        android:layout_height="56dp">
-                        <View
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:background="@drawable/bg_icon_white_transparent" />
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="60dp"
+                        android:layout_height="60dp"
+                        app:cardCornerRadius="16dp"
+                        app:cardElevation="0dp"
+                        app:cardBackgroundColor="#33FFFFFF">
                         <ImageView
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
                             android:padding="16dp"
-                            android:src="@drawable/ic_document"
+                            android:src="@drawable/ic_secretary"
                             app:tint="@color/white" />
-                    </FrameLayout>
+                    </com.google.android.material.card.MaterialCardView>
 
                     <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="20dp"
+                        android:layout_marginStart="18dp"
                         android:layout_weight="1"
                         android:orientation="vertical">
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Secretary"
+                            android:text="@string/role_secretary"
                             android:textColor="@color/white"
-                            android:textSize="21sp"
+                            android:textSize="22sp"
                             android:fontFamily="sans-serif-bold" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Assist with administration"
-                            android:textColor="#F5F5F5"
-                            android:textSize="13sp"
+                            android:text="@string/role_secretary_desc"
+                            android:textColor="@color/white"
+                            android:textSize="14sp"
                             android:alpha="0.85" />
                     </LinearLayout>
 
                     <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
                         android:src="@drawable/ic_chevron_right"
                         app:tint="@color/white"
                         android:alpha="0.7" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <View
+            <Space
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
-                android:layout_weight="1.5" />
+                android:layout_weight="1.2" />
 
         </LinearLayout>
     </ScrollView>

@@ -16,6 +16,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import com.google.android.material.textfield.TextInputLayout;
 import com.example.attendify.R;
 import com.example.attendify.RoleSelectionActivity;
 import com.example.attendify.models.UserProfile;
@@ -68,6 +69,8 @@ public class RoleSelectionFragment extends Fragment {
         // Views
         TextView  tvTitle   = dialog.findViewById(R.id.dialog_title);
         ImageView ivIcon    = dialog.findViewById(R.id.dialog_role_icon);
+        TextInputLayout tilEmail = dialog.findViewById(R.id.til_email);
+        TextInputLayout tilPass  = dialog.findViewById(R.id.til_password);
         EditText  etEmail   = dialog.findViewById(R.id.et_email);
         EditText  etPass    = dialog.findViewById(R.id.et_password);
         TextView  tvError   = dialog.findViewById(R.id.tv_error);
@@ -78,15 +81,15 @@ public class RoleSelectionFragment extends Fragment {
         switch (role) {
             case "teacher":
                 tvTitle.setText("Teacher Login");
-                ivIcon.setImageResource(R.drawable.book);
+                ivIcon.setImageResource(R.drawable.ic_teacher);
                 break;
             case "student":
                 tvTitle.setText("Student Login");
-                ivIcon.setImageResource(R.drawable.user);
+                ivIcon.setImageResource(R.drawable.ic_user);
                 break;
             case "secretary":
                 tvTitle.setText("Secretary Login");
-                ivIcon.setImageResource(R.drawable.ic_document);
+                ivIcon.setImageResource(R.drawable.ic_secretary);
                 break;
         }
 
@@ -98,21 +101,22 @@ public class RoleSelectionFragment extends Fragment {
             String email    = etEmail.getText().toString().trim();
             String password = etPass.getText().toString().trim();
 
+            tilEmail.setError(null);
+            tilPass.setError(null);
+            tvError.setVisibility(View.GONE);
+
             // Basic validation
             if (email.isEmpty()) {
-                tvError.setText("Please enter your email.");
-                tvError.setVisibility(View.VISIBLE);
+                tilEmail.setError(getString(R.string.error_empty_email));
                 return;
             }
             if (password.isEmpty()) {
-                tvError.setText("Please enter your password.");
-                tvError.setVisibility(View.VISIBLE);
+                tilPass.setError(getString(R.string.error_empty_password));
                 return;
             }
 
-            tvError.setVisibility(View.GONE);
             btnLogin.setEnabled(false);
-            btnLogin.setText("Signing in...");
+            btnLogin.setText("Signing in..."); // Can keep as is or add to strings
 
             // Call Firebase login
             AuthRepository.getInstance().login(email, password, role,
@@ -133,7 +137,7 @@ public class RoleSelectionFragment extends Fragment {
                                 tvError.setText(errorMessage);
                                 tvError.setVisibility(View.VISIBLE);
                                 btnLogin.setEnabled(true);
-                                btnLogin.setText("Sign In");
+                                btnLogin.setText(R.string.btn_sign_in);
                             });
                         }
                     });

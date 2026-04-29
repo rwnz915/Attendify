@@ -70,7 +70,7 @@
                 android:layout_width="26dp"
                 android:layout_height="26dp"
                 android:padding="2dp"
-                android:src="@drawable/book"
+                android:src="@drawable/ic_book"
                 app:tint="@color/gray_400" />
 
             <TextView
@@ -173,7 +173,7 @@
                 android:layout_width="26dp"
                 android:layout_height="26dp"
                 android:padding="2dp"
-                android:src="@drawable/user"
+                android:src="@drawable/ic_user"
                 app:tint="@color/gray_400" />
             <TextView
                 android:id="@+id/label_profile"

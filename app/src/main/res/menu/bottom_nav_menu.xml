@@ -7,7 +7,7 @@
 
     <item
         android:id="@+id/nav_subject"
-        android:icon="@drawable/book"
+        android:icon="@drawable/ic_book"
         android:title="Subject" />
 
     <item

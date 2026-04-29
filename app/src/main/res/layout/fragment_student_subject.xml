@@ -63,7 +63,7 @@
                     <ImageView
                         android:layout_width="20dp"
                         android:layout_height="20dp"
-                        android:src="@drawable/book"
+                        android:src="@drawable/ic_book"
                         app:tint="#FFFFFF"/>
                 </LinearLayout>
             </LinearLayout>
