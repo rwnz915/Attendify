@@ -161,7 +161,7 @@
             android:gravity="center"
             android:paddingTop="16dp"
             android:paddingBottom="16dp"
-            android:text="+ Submit New Excuse Letter"
+            android:text="Submit New Excuse Letter"
             android:textColor="@color/white"
             android:textSize="15sp"
             android:textStyle="bold" />

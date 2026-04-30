@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/gray_50"
+    android:orientation="vertical">
+
+    <!-- Blue Header — id used in fragment to add status bar padding -->
+    <LinearLayout
+        android:id="@+id/history_header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_student_header"
+        android:orientation="vertical"
+        android:paddingStart="24dp"
+        android:paddingTop="28dp"
+        android:paddingEnd="24dp"
+        android:paddingBottom="28dp">
+        <TextView
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="@string/history_title"
+            android:textColor="@color/white" android:textSize="24sp" android:textStyle="bold" />
+        <TextView
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="@string/past_30"
+            android:textColor="#CCFFFFff" android:textSize="13sp" />
+    </LinearLayout>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rv_history"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="16dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        android:paddingBottom="16dp" />
+
+</LinearLayout>

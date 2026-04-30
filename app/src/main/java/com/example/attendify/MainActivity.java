@@ -221,7 +221,10 @@ public class MainActivity extends AppCompatActivity {
     // ─────────────────────────────────────────
     private void setupUIForRole(String role) {
         bottomNav.setVisibility(View.VISIBLE);
+
         tabQR.setVisibility("student".equals(role) ? View.VISIBLE : View.GONE);
+        tabAttendance.setVisibility("student".equals(role) ? View.GONE : View.VISIBLE);
+
         selectTab(currentTab != -1 ? currentTab : 0);
         // startDistanceTracking() is called from onRequestPermissionsResult
         // after ACCESS_FINE_LOCATION is confirmed — NOT here — so the
@@ -253,6 +256,7 @@ public class MainActivity extends AppCompatActivity {
                 switch (index) {
                     case 1:  fragment = new StudentSubjectFragment(); break;
                     case 4:  fragment = new StudentProfileFragment(); break;
+                    case 3:  fragment = new StudentHistoryFragment();    break;
                     case 5:  fragment = new StudentQrFragment();      break;
                     default: fragment = new StudentHomeFragment();    break;
                 }

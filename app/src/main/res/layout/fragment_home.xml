@@ -22,7 +22,6 @@
             app:layout_constraintBottom_toBottomOf="@+id/header_spacer"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <!-- This ID is kept for potential programmatic padding adjustments -->
         <LinearLayout
             android:id="@+id/home_header"
             android:layout_width="match_parent"
@@ -93,11 +92,12 @@
                         android:src="@drawable/bell"
                         app:tint="@color/white" />
 
+                    <!-- FIXED: margin reduced from 10dp to 4dp for precise top|end positioning -->
                     <View
                         android:layout_width="8dp"
                         android:layout_height="8dp"
                         android:layout_gravity="top|end"
-                        android:layout_margin="10dp"
+                        android:layout_margin="4dp"
                         android:background="@drawable/bg_dot_red" />
                 </FrameLayout>
             </androidx.constraintlayout.widget.ConstraintLayout>
@@ -197,7 +197,7 @@
             android:layout_marginEnd="6dp"
             app:cardBackgroundColor="@color/white"
             app:cardCornerRadius="20dp"
-            app:cardElevation="4dp"
+            app:cardElevation="2dp"
             app:layout_constraintEnd_toStartOf="@+id/card_pending_approvals"
             app:layout_constraintHorizontal_weight="1"
             app:layout_constraintStart_toStartOf="parent"
@@ -262,7 +262,7 @@
             android:layout_marginEnd="24dp"
             app:cardBackgroundColor="@color/white"
             app:cardCornerRadius="20dp"
-            app:cardElevation="4dp"
+            app:cardElevation="2dp"
             app:layout_constraintBottom_toBottomOf="@+id/card_attendance"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_weight="1"
@@ -317,14 +317,17 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/card_attendance" />
 
+        <!-- FIXED: layout_width 0dp + start/end constraints added -->
         <LinearLayout
             android:id="@+id/ll_quick_actions"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="24dp"
             android:layout_marginTop="16dp"
             android:layout_marginEnd="24dp"
             android:orientation="horizontal"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/tv_quick_actions_title">
 
             <LinearLayout
@@ -425,14 +428,18 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/ll_quick_actions" />
 
+        <!-- FIXED: layout_width 0dp + start/end/bottom constraints added -->
         <LinearLayout
             android:id="@+id/recent_activity_container"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="24dp"
             android:layout_marginTop="16dp"
             android:layout_marginEnd="24dp"
             android:orientation="vertical"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/tv_recent_activity_title" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>

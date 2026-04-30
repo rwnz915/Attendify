@@ -96,6 +96,9 @@ public class AttendanceFragment extends Fragment {
         recyclerView  = view.findViewById(R.id.rv_students);
         progressBar   = view.findViewById(R.id.progress_bar);
 
+        View searchButton = view.findViewById(R.id.btn_search_toggle);
+        View searchBar = view.findViewById(R.id.search_bar_container);
+
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
         adapter = new StudentAdapter(requireContext(), new ArrayList<>());
         adapter.setOnStudentClickListener(position -> {
@@ -117,6 +120,14 @@ public class AttendanceFragment extends Fragment {
         filterPresent.setOnClickListener(v -> applyFilter("Present"));
         filterLate.setOnClickListener(v    -> applyFilter("Late"));
         filterAbsent.setOnClickListener(v  -> applyFilter("Absent"));
+
+        searchButton.setOnClickListener(v -> {
+            if (searchBar.getVisibility() == View.GONE) {
+                searchBar.setVisibility(View.VISIBLE);
+            } else {
+                searchBar.setVisibility(View.GONE);
+            }
+        });
 
         // Step 1: resolve current subject by time, then load students
         resolveCurrentSubjectAndLoad();
