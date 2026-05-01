@@ -22,6 +22,7 @@
             android:orientation="vertical">
 
             <com.google.android.material.card.MaterialCardView
+                android:id="@+id/icon_card"
                 android:layout_width="72dp"
                 android:layout_height="72dp"
                 android:layout_marginBottom="16dp"

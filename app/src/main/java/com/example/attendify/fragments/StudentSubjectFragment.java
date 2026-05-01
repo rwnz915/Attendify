@@ -34,6 +34,13 @@ import java.util.Set;
 
 public class StudentSubjectFragment extends Fragment {
 
+    // Purple-anchored palette that complements the student theme (#6D28D9 → #8B5CF6).
+    // Used as fallback when subject.color is null in Firestore.
+    private static final String[] PRESET_COLORS = {
+            "#7C3AED", "#0D9488", "#6D28D9", "#1D4ED8",
+            "#9333EA", "#0891B2", "#A855F7", "#4F46E5"
+    };
+
     private UserProfile currentUser;
     private List<SubjectItem> subjectList = new ArrayList<>();
     private String activeSection = "All";
@@ -208,7 +215,7 @@ public class StudentSubjectFragment extends Fragment {
         bg.setShape(GradientDrawable.RECTANGLE);
         bg.setCornerRadius(dp(20));
         if (active) {
-            bg.setColor(Color.parseColor("#1E293B"));
+            bg.setColor(Color.parseColor("#6D28D9"));
             chip.setTextColor(Color.WHITE);
         } else {
             bg.setColor(Color.WHITE);
@@ -231,10 +238,13 @@ public class StudentSubjectFragment extends Fragment {
         GradientDrawable bg = new GradientDrawable();
         bg.setShape(GradientDrawable.RECTANGLE);
         bg.setCornerRadius(dp(20));
+        // Use subject.color from Firestore; fall back to the purple-themed preset palette
+        int cardIndex = subjectList.indexOf(subject);
+        String fallback = PRESET_COLORS[cardIndex >= 0 ? cardIndex % PRESET_COLORS.length : 0];
         try {
-            bg.setColor(Color.parseColor(subject.color != null ? subject.color : "#3B82F6"));
+            bg.setColor(Color.parseColor(subject.color != null ? subject.color : fallback));
         } catch (Exception e) {
-            bg.setColor(Color.parseColor("#3B82F6"));
+            bg.setColor(Color.parseColor(fallback));
         }
         card.setBackground(bg);
 
@@ -370,8 +380,10 @@ public class StudentSubjectFragment extends Fragment {
         header.setOrientation(LinearLayout.VERTICAL);
         header.setPadding(dp(20), dp(28), dp(60), dp(20));
         GradientDrawable headerBg = new GradientDrawable();
-        try { headerBg.setColor(Color.parseColor(subject.color != null ? subject.color : "#3B82F6")); }
-        catch (Exception e) { headerBg.setColor(Color.parseColor("#3B82F6")); }
+        int sheetIdx = subjectList.indexOf(subject);
+        String sheetFallback = PRESET_COLORS[sheetIdx >= 0 ? sheetIdx % PRESET_COLORS.length : 0];
+        try { headerBg.setColor(Color.parseColor(subject.color != null ? subject.color : sheetFallback)); }
+        catch (Exception e) { headerBg.setColor(Color.parseColor(sheetFallback)); }
         headerBg.setCornerRadii(new float[]{ dp(28),dp(28), dp(28),dp(28), 0,0, 0,0 });
         header.setBackground(headerBg);
 

@@ -1,6 +1,7 @@
 package com.example.attendify.fragments;
 
 import android.app.Dialog;
+import android.content.res.ColorStateList;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -14,8 +15,10 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputLayout;
 import com.example.attendify.R;
 import com.example.attendify.RoleSelectionActivity;
@@ -77,21 +80,51 @@ public class RoleSelectionFragment extends Fragment {
         Button    btnLogin  = dialog.findViewById(R.id.btn_login);
         Button    btnCancel = dialog.findViewById(R.id.btn_cancel);
 
-        // Customise dialog per role
+        // ── Per-role theming: icon, title, accent color ──────────────────────
+        int accentColor, iconBgColor, iconDrawable;
         switch (role) {
-            case "teacher":
-                tvTitle.setText("Teacher Login");
-                ivIcon.setImageResource(R.drawable.ic_teacher);
-                break;
             case "student":
                 tvTitle.setText("Student Login");
-                ivIcon.setImageResource(R.drawable.ic_user);
+                iconDrawable = R.drawable.ic_user;
+                accentColor  = ContextCompat.getColor(requireContext(), R.color.purple_600);
+                iconBgColor  = ContextCompat.getColor(requireContext(), R.color.purple_50);
                 break;
             case "secretary":
                 tvTitle.setText("Secretary Login");
-                ivIcon.setImageResource(R.drawable.ic_secretary);
+                iconDrawable = R.drawable.ic_secretary;
+                accentColor  = ContextCompat.getColor(requireContext(), R.color.green_700);
+                iconBgColor  = ContextCompat.getColor(requireContext(), R.color.green_50);
+                break;
+            default: // teacher
+                tvTitle.setText("Teacher Login");
+                iconDrawable = R.drawable.ic_teacher;
+                accentColor  = ContextCompat.getColor(requireContext(), R.color.blue_600);
+                iconBgColor  = ContextCompat.getColor(requireContext(), R.color.blue_50);
                 break;
         }
+
+        // Apply accent to icon
+        ivIcon.setImageResource(iconDrawable);
+        ivIcon.setColorFilter(accentColor);
+        // Icon card background
+        View iconCard = dialog.findViewById(R.id.icon_card);
+        if (iconCard != null)
+            iconCard.setBackgroundTintList(ColorStateList.valueOf(iconBgColor));
+
+        // Apply accent to input fields (box stroke + hint)
+        ColorStateList accentList = ColorStateList.valueOf(accentColor);
+        if (tilEmail != null) {
+            tilEmail.setBoxStrokeColorStateList(accentList);
+            tilEmail.setHintTextColor(accentList);
+        }
+        if (tilPass != null) {
+            tilPass.setBoxStrokeColorStateList(accentList);
+            tilPass.setHintTextColor(accentList);
+        }
+
+        // Apply accent to login button
+        if (btnLogin instanceof MaterialButton)
+            ((MaterialButton) btnLogin).setBackgroundTintList(accentList);
 
         // Cancel
         btnCancel.setOnClickListener(v -> dialog.dismiss());

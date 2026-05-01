@@ -35,6 +35,8 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 
 import com.example.attendify.fragments.*;
+import com.example.attendify.fragments.SecretaryHomeFragment;
+import com.example.attendify.fragments.SecretaryQrFragment;
 import com.example.attendify.geofence.GeofenceReceiver;
 import com.example.attendify.repository.AuthRepository;
 import com.google.android.gms.location.*;
@@ -222,8 +224,14 @@ public class MainActivity extends AppCompatActivity {
     private void setupUIForRole(String role) {
         bottomNav.setVisibility(View.VISIBLE);
 
-        tabQR.setVisibility("student".equals(role) ? View.VISIBLE : View.GONE);
-        tabAttendance.setVisibility("student".equals(role) ? View.GONE : View.VISIBLE);
+        // Secretary gets Home, Subject (section-filtered), History, QR, Profile
+        boolean isSecretary = "secretary".equals(role);
+        boolean isStudent   = "student".equals(role);
+
+        tabQR.setVisibility((isStudent || isSecretary) ? View.VISIBLE : View.GONE);
+        tabAttendance.setVisibility((isStudent || isSecretary) ? View.GONE : View.VISIBLE);
+        // Secretary now has a Subject tab showing their section's subjects only
+        tabSubject.setVisibility(View.VISIBLE);
 
         selectTab(currentTab != -1 ? currentTab : 0);
         // startDistanceTracking() is called from onRequestPermissionsResult
@@ -263,7 +271,13 @@ public class MainActivity extends AppCompatActivity {
                 break;
 
             case "secretary":
-                fragment = new SecretaryFragment();
+                switch (index) {
+                    case 1:  fragment = new SecretarySubjectFragment();      break; // Subjects
+                    case 3:  fragment = new SecretaryHistoryFragment();      break; // History
+                    case 4:  fragment = new SecretaryProfileFragment();      break; // Profile
+                    case 5:  fragment = new SecretaryQrFragment();           break; // QR Scanner
+                    default: fragment = new SecretaryHomeFragment();         break; // Home (0)
+                }
                 break;
 
             default:
