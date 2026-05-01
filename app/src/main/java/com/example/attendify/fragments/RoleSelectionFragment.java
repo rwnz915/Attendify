@@ -1,17 +1,16 @@
 package com.example.attendify.fragments;
 
-import android.app.Dialog;
+import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.Window;
-import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -19,6 +18,7 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.textfield.TextInputLayout;
 import com.example.attendify.R;
 import com.example.attendify.RoleSelectionActivity;
@@ -26,6 +26,22 @@ import com.example.attendify.models.UserProfile;
 import com.example.attendify.repository.AuthRepository;
 
 public class RoleSelectionFragment extends Fragment {
+
+    private static final String PREF_REMEMBER  = "remember_me";
+    private static final String PREF_EMAIL     = "saved_email";
+    private static final String PREF_ROLE      = "saved_role";
+
+    private String selectedRole = "teacher";
+
+    private TextView  tabTeacher, tabStudent, tabSecretary;
+    private TextView  tvLoginTitle, tvError;
+    private ImageView ivRoleIcon;
+    private MaterialCardView iconCard;
+    private TextInputLayout tilEmail, tilPassword;
+    private EditText  etEmail, etPassword;
+    private com.google.android.material.checkbox.MaterialCheckBox cbRememberMe;
+
+    private MaterialButton btnLogin;
 
     @Nullable
     @Override
@@ -39,143 +55,183 @@ public class RoleSelectionFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // Each role card now shows the login dialog first
-        view.findViewById(R.id.card_teacher).setOnClickListener(v ->
-                showLoginDialog("teacher"));
+        tabTeacher    = view.findViewById(R.id.tab_teacher);
+        tabStudent    = view.findViewById(R.id.tab_student);
+        tabSecretary  = view.findViewById(R.id.tab_secretary);
+        //tvLoginTitle  = view.findViewById(R.id.tv_login_title);
+        tvError       = view.findViewById(R.id.tv_error);
+        //ivRoleIcon    = view.findViewById(R.id.iv_role_icon);
+        iconCard      = view.findViewById(R.id.icon_card);
+        tilEmail      = view.findViewById(R.id.til_email);
+        tilPassword   = view.findViewById(R.id.til_password);
+        etEmail       = view.findViewById(R.id.et_email);
+        etPassword    = view.findViewById(R.id.et_password);
+        cbRememberMe  = view.findViewById(R.id.cb_remember_me);
+        btnLogin      = view.findViewById(R.id.btn_login);
 
-        view.findViewById(R.id.card_student).setOnClickListener(v ->
-                showLoginDialog("student"));
+        // Tab clicks
+        tabTeacher.setOnClickListener(v  -> selectRole("teacher"));
+        tabStudent.setOnClickListener(v  -> selectRole("student"));
+        tabSecretary.setOnClickListener(v -> selectRole("secretary"));
 
-        view.findViewById(R.id.card_secretary).setOnClickListener(v ->
-                showLoginDialog("secretary"));
+        // Restore saved credentials
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
+        boolean remembered = prefs.getBoolean(PREF_REMEMBER, false);
+        if (remembered) {
+            etEmail.setText(prefs.getString(PREF_EMAIL, ""));
+            cbRememberMe.setChecked(true);
+            String savedRole = prefs.getString(PREF_ROLE, "teacher");
+            selectRole(savedRole);
+        } else {
+            selectRole("teacher");
+        }
+
+        btnLogin.setOnClickListener(v -> attemptLogin());
     }
 
-    // ── Login Dialog ──────────────────────────────────────────────────────────
+    // ── Role tab switching ────────────────────────────────────────────────────
 
-    private void showLoginDialog(String role) {
-        if (getContext() == null) return;
+    private void selectRole(String role) {
+        selectedRole = role;
 
-        Dialog dialog = new Dialog(requireContext());
-        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-        dialog.setContentView(R.layout.dialog_login);
-        dialog.setCancelable(true);
+        int blueColor    = ContextCompat.getColor(requireContext(), R.color.blue_600);
+        int purpleColor  = ContextCompat.getColor(requireContext(), R.color.purple_600);
+        int greenColor   = ContextCompat.getColor(requireContext(), R.color.green_700);
+        int gray500      = ContextCompat.getColor(requireContext(), R.color.gray_500);
 
-        // Round corners on the dialog window
-        if (dialog.getWindow() != null) {
-            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
-            dialog.getWindow().setLayout(
-                    (int) (getResources().getDisplayMetrics().widthPixels * 0.92),
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-            );
-        }
+        int accentColor, iconBgColor, iconDrawable, tabSelectedBg;
+        String loginTitle;
 
-        // Views
-        TextView  tvTitle   = dialog.findViewById(R.id.dialog_title);
-        ImageView ivIcon    = dialog.findViewById(R.id.dialog_role_icon);
-        TextInputLayout tilEmail = dialog.findViewById(R.id.til_email);
-        TextInputLayout tilPass  = dialog.findViewById(R.id.til_password);
-        EditText  etEmail   = dialog.findViewById(R.id.et_email);
-        EditText  etPass    = dialog.findViewById(R.id.et_password);
-        TextView  tvError   = dialog.findViewById(R.id.tv_error);
-        Button    btnLogin  = dialog.findViewById(R.id.btn_login);
-        Button    btnCancel = dialog.findViewById(R.id.btn_cancel);
-
-        // ── Per-role theming: icon, title, accent color ──────────────────────
-        int accentColor, iconBgColor, iconDrawable;
         switch (role) {
             case "student":
-                tvTitle.setText("Student Login");
-                iconDrawable = R.drawable.ic_user;
-                accentColor  = ContextCompat.getColor(requireContext(), R.color.purple_600);
-                iconBgColor  = ContextCompat.getColor(requireContext(), R.color.purple_50);
+                accentColor   = purpleColor;
+                iconBgColor   = ContextCompat.getColor(requireContext(), R.color.purple_50);
+                iconDrawable  = R.drawable.ic_user;
+                loginTitle    = "Student Login";
                 break;
             case "secretary":
-                tvTitle.setText("Secretary Login");
-                iconDrawable = R.drawable.ic_secretary;
-                accentColor  = ContextCompat.getColor(requireContext(), R.color.green_700);
-                iconBgColor  = ContextCompat.getColor(requireContext(), R.color.green_50);
+                accentColor   = greenColor;
+                iconBgColor   = ContextCompat.getColor(requireContext(), R.color.green_50);
+                iconDrawable  = R.drawable.ic_secretary;
+                loginTitle    = "Secretary Login";
                 break;
             default: // teacher
-                tvTitle.setText("Teacher Login");
-                iconDrawable = R.drawable.ic_teacher;
-                accentColor  = ContextCompat.getColor(requireContext(), R.color.blue_600);
-                iconBgColor  = ContextCompat.getColor(requireContext(), R.color.blue_50);
+                accentColor   = blueColor;
+                iconBgColor   = ContextCompat.getColor(requireContext(), R.color.blue_50);
+                iconDrawable  = R.drawable.ic_teacher;
+                loginTitle    = "Teacher Login";
                 break;
         }
 
-        // Apply accent to icon
-        ivIcon.setImageResource(iconDrawable);
-        ivIcon.setColorFilter(accentColor);
-        // Icon card background
-        View iconCard = dialog.findViewById(R.id.icon_card);
-        if (iconCard != null)
-            iconCard.setBackgroundTintList(ColorStateList.valueOf(iconBgColor));
+        // Update icon + title
+        //.setImageResource(iconDrawable);
+        //ivRoleIcon.setColorFilter(accentColor);
+        //iconCard.setCardBackgroundColor(iconBgColor);
+        //tvLoginTitle.setText(loginTitle);
 
-        // Apply accent to input fields (box stroke + hint)
+        // Update tab visuals
+        resetTab(tabTeacher);
+        resetTab(tabStudent);
+        resetTab(tabSecretary);
+
+        tabTeacher.setTextColor(gray500);
+        tabStudent.setTextColor(gray500);
+        tabSecretary.setTextColor(gray500);
+
+        TextView activeTab = role.equals("student") ? tabStudent
+                : role.equals("secretary") ? tabSecretary
+                : tabTeacher;
+        activeTab.setBackgroundResource(getTabBgForRole(role));
+        activeTab.setTextColor(accentColor);  // ← change from white to accentColor
+
+        // Update field accent colors
         ColorStateList accentList = ColorStateList.valueOf(accentColor);
-        if (tilEmail != null) {
-            tilEmail.setBoxStrokeColorStateList(accentList);
-            tilEmail.setHintTextColor(accentList);
+        tilEmail.setBoxStrokeColorStateList(accentList);
+        tilEmail.setHintTextColor(accentList);
+        tilPassword.setBoxStrokeColorStateList(accentList);
+        tilPassword.setHintTextColor(accentList);
+        cbRememberMe.setButtonTintList(accentList);
+        btnLogin.setBackgroundTintList(accentList);
+
+        // Clear errors
+        tvError.setVisibility(View.GONE);
+        tilEmail.setError(null);
+        tilPassword.setError(null);
+    }
+
+    private void resetTab(TextView tab) {
+        tab.setBackgroundResource(android.R.color.transparent);
+        tab.setTextColor(ContextCompat.getColor(requireContext(), R.color.gray_500));
+    }
+
+    private int getTabBgForRole(String role) {
+        // All selected tabs use a colored pill — reuse bg_tab_selected_blue shape
+        // but tint is handled via setBackgroundResource + tint workaround below
+        switch (role) {
+            case "student":   return R.drawable.bg_tab_selected_purple;
+            case "secretary": return R.drawable.bg_tab_selected_green;
+            default:          return R.drawable.bg_tab_selected_blue;
         }
-        if (tilPass != null) {
-            tilPass.setBoxStrokeColorStateList(accentList);
-            tilPass.setHintTextColor(accentList);
+    }
+
+    // ── Login ─────────────────────────────────────────────────────────────────
+
+    private void attemptLogin() {
+        String email    = etEmail.getText().toString().trim();
+        String password = etPassword.getText().toString().trim();
+
+        tilEmail.setError(null);
+        tilPassword.setError(null);
+        tvError.setVisibility(View.GONE);
+
+        if (email.isEmpty()) {
+            tilEmail.setError(getString(R.string.error_empty_email));
+            return;
+        }
+        if (password.isEmpty()) {
+            tilPassword.setError(getString(R.string.error_empty_password));
+            return;
         }
 
-        // Apply accent to login button
-        if (btnLogin instanceof MaterialButton)
-            ((MaterialButton) btnLogin).setBackgroundTintList(accentList);
+        btnLogin.setEnabled(false);
+        btnLogin.setText("Signing in…");
 
-        // Cancel
-        btnCancel.setOnClickListener(v -> dialog.dismiss());
+        AuthRepository.getInstance().login(email, password, selectedRole,
+                new AuthRepository.LoginCallback() {
+                    @Override
+                    public void onSuccess(UserProfile user) {
+                        if (getActivity() == null) return;
 
-        // Login
-        btnLogin.setOnClickListener(v -> {
-            String email    = etEmail.getText().toString().trim();
-            String password = etPass.getText().toString().trim();
-
-            tilEmail.setError(null);
-            tilPass.setError(null);
-            tvError.setVisibility(View.GONE);
-
-            // Basic validation
-            if (email.isEmpty()) {
-                tilEmail.setError(getString(R.string.error_empty_email));
-                return;
-            }
-            if (password.isEmpty()) {
-                tilPass.setError(getString(R.string.error_empty_password));
-                return;
-            }
-
-            btnLogin.setEnabled(false);
-            btnLogin.setText("Signing in..."); // Can keep as is or add to strings
-
-            // Call Firebase login
-            AuthRepository.getInstance().login(email, password, role,
-                    new AuthRepository.LoginCallback() {
-
-                        @Override
-                        public void onSuccess(UserProfile user) {
-                            if (getActivity() == null) return;
-                            dialog.dismiss();
-                            // Navigate to MainActivity
-                            ((RoleSelectionActivity) getActivity()).onRoleSelected(role);
+                        // Save remember me
+                        SharedPreferences prefs = PreferenceManager
+                                .getDefaultSharedPreferences(requireContext());
+                        if (cbRememberMe.isChecked()) {
+                            prefs.edit()
+                                    .putBoolean(PREF_REMEMBER, true)
+                                    .putString(PREF_EMAIL, email)
+                                    .putString(PREF_ROLE, selectedRole)
+                                    .apply();
+                        } else {
+                            prefs.edit()
+                                    .putBoolean(PREF_REMEMBER, false)
+                                    .remove(PREF_EMAIL)
+                                    .remove(PREF_ROLE)
+                                    .apply();
                         }
 
-                        @Override
-                        public void onFailure(String errorMessage) {
-                            if (getActivity() == null) return;
-                            getActivity().runOnUiThread(() -> {
-                                tvError.setText(errorMessage);
-                                tvError.setVisibility(View.VISIBLE);
-                                btnLogin.setEnabled(true);
-                                btnLogin.setText(R.string.btn_sign_in);
-                            });
-                        }
-                    });
-        });
+                        ((RoleSelectionActivity) getActivity()).onRoleSelected(selectedRole);
+                    }
 
-        dialog.show();
+                    @Override
+                    public void onFailure(String errorMessage) {
+                        if (getActivity() == null) return;
+                        getActivity().runOnUiThread(() -> {
+                            tvError.setText(errorMessage);
+                            tvError.setVisibility(View.VISIBLE);
+                            btnLogin.setEnabled(true);
+                            btnLogin.setText(R.string.btn_sign_in);
+                        });
+                    }
+                });
     }
 }

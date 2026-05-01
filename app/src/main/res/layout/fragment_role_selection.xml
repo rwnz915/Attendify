@@ -1,37 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/white">
+    android:background="@color/white"
+    android:fillViewport="true"
+    android:scrollbars="none">
 
     <LinearLayout
-        android:id="@+id/main_layout"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
         android:gravity="center_horizontal"
         android:orientation="vertical"
-        android:paddingStart="20dp"
-        android:paddingEnd="20dp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        android:paddingBottom="32dp">
 
         <Space
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1" />
+            android:layout_height="48dp" />
 
-        <!-- App Logo -->
+        <!-- Logo -->
         <com.google.android.material.card.MaterialCardView
-            android:layout_width="120dp"
-            android:layout_height="120dp"
+            android:layout_width="96dp"
+            android:layout_height="96dp"
+            android:layout_gravity="center_horizontal"
             app:cardCornerRadius="22dp"
             app:cardElevation="4dp"
             app:cardBackgroundColor="@color/white"
             app:strokeWidth="0dp">
-
             <ImageView
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -43,14 +40,16 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="14dp"
             android:fontFamily="sans-serif-black"
             android:text="@string/app_name"
             android:textColor="@color/gray_900"
-            android:textSize="36sp"
-            android:letterSpacing="-0.04" />
+            android:textSize="32sp"
+            android:letterSpacing="-0.04"
+            android:layout_gravity="center_horizontal" />
 
         <TextView
+            android:id="@+id/tv_role_selection_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
@@ -58,243 +57,189 @@
             android:textColor="@color/gray_500"
             android:textSize="15sp"
             android:fontFamily="sans-serif-medium"
-            android:alpha="0.8" />
+            android:alpha="0.8"
+            android:layout_gravity="center_horizontal" />
 
-        <Space
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1" />
+        <Space android:layout_width="match_parent" android:layout_height="28dp" />
 
-        <!-- Teacher -->
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/card_teacher"
+        <LinearLayout
+            android:id="@+id/role_tab_container"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:minHeight="80dp"
-            android:layout_marginBottom="12dp"
-            android:clickable="true"
-            android:focusable="true"
-            android:foreground="?attr/selectableItemBackground"
-            app:cardCornerRadius="22dp"
-            app:cardElevation="2dp">
+            android:orientation="horizontal">
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@drawable/bg_role_teacher"
-                android:gravity="center_vertical"
-                android:paddingStart="16dp"
-                android:paddingEnd="16dp"
-                android:paddingTop="18dp"
-                android:paddingBottom="18dp">
+            <TextView
+                android:id="@+id/tab_teacher"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="Teacher"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:background="@android:color/transparent"
+                android:textColor="@color/blue_600"
+                android:paddingEnd="0dp"
+                android:paddingStart="0dp" />
 
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="52dp"
-                    android:layout_height="52dp"
-                    app:cardCornerRadius="14dp"
-                    app:cardElevation="0dp"
-                    app:cardBackgroundColor="#33FFFFFF">
-                    <ImageView
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:padding="13dp"
-                        android:src="@drawable/ic_teacher"
-                        app:tint="@color/white" />
-                </com.google.android.material.card.MaterialCardView>
+            <View
+                android:layout_width="1dp"
+                android:layout_height="20dp"
+                android:layout_gravity="center_vertical"
+                android:background="@color/gray_500" />
 
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="16dp"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
+            <TextView
+                android:id="@+id/tab_student"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="Student"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:background="@android:color/transparent"
+                android:textColor="@color/blue_600"
+                android:paddingEnd="0dp"
+                android:paddingStart="0dp" />
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/role_teacher"
-                        android:textColor="@color/white"
-                        android:textSize="20sp"
-                        android:fontFamily="sans-serif-bold" />
+            <View
+                android:layout_width="1dp"
+                android:layout_height="20dp"
+                android:layout_gravity="center_vertical"
+                android:background="@color/gray_500" />
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="@string/role_teacher_desc"
-                        android:textColor="@color/white"
-                        android:textSize="13sp"
-                        android:alpha="0.85" />
-                </LinearLayout>
+            <TextView
+                android:id="@+id/tab_secretary"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="Secretary"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:background="@android:color/transparent"
+                android:textColor="@color/blue_600"
+                android:paddingEnd="0dp"
+                android:paddingStart="0dp" />
 
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@drawable/ic_chevron_right"
-                    app:tint="@color/white"
-                    android:alpha="0.7" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
+        </LinearLayout>
 
-        <!-- Student -->
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/card_student"
+        <Space android:layout_width="match_parent" android:layout_height="24dp" />
+
+        <!-- Email Field -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/til_email"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:minHeight="80dp"
             android:layout_marginBottom="12dp"
-            android:clickable="true"
-            android:focusable="true"
-            android:foreground="?attr/selectableItemBackground"
-            app:cardCornerRadius="22dp"
-            app:cardElevation="2dp">
-
-            <LinearLayout
+            android:hint="@string/hint_email"
+            app:boxCornerRadiusBottomEnd="16dp"
+            app:boxCornerRadiusBottomStart="16dp"
+            app:boxCornerRadiusTopEnd="16dp"
+            app:boxCornerRadiusTopStart="16dp"
+            app:boxStrokeColor="@color/blue_600"
+            app:hintTextColor="@color/blue_600"
+            app:startIconDrawable="@drawable/ic_person"
+            app:startIconTint="@color/gray_500">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/et_email"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@drawable/bg_role_student"
-                android:gravity="center_vertical"
-                android:paddingStart="16dp"
-                android:paddingEnd="16dp"
-                android:paddingTop="18dp"
-                android:paddingBottom="18dp">
+                android:inputType="textEmailAddress"
+                android:paddingVertical="18dp"
+                android:textColor="@color/gray_900"
+                android:textSize="16sp" />
+        </com.google.android.material.textfield.TextInputLayout>
 
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="52dp"
-                    android:layout_height="52dp"
-                    app:cardCornerRadius="14dp"
-                    app:cardElevation="0dp"
-                    app:cardBackgroundColor="#33FFFFFF">
-                    <ImageView
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:padding="13dp"
-                        android:src="@drawable/ic_user"
-                        app:tint="@color/white" />
-                </com.google.android.material.card.MaterialCardView>
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="16dp"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/role_student"
-                        android:textColor="@color/white"
-                        android:textSize="20sp"
-                        android:fontFamily="sans-serif-bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="@string/role_student_desc"
-                        android:textColor="@color/white"
-                        android:textSize="13sp"
-                        android:alpha="0.85" />
-                </LinearLayout>
-
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@drawable/ic_chevron_right"
-                    app:tint="@color/white"
-                    android:alpha="0.7" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Secretary -->
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/card_secretary"
+        <!-- Password Field -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/til_password"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:minHeight="80dp"
-            android:layout_marginBottom="12dp"
-            android:clickable="true"
-            android:focusable="true"
-            android:foreground="?attr/selectableItemBackground"
-            app:cardCornerRadius="22dp"
-            app:cardElevation="2dp">
-
-            <LinearLayout
+            android:layout_marginBottom="8dp"
+            android:hint="@string/hint_password"
+            app:boxCornerRadiusBottomEnd="16dp"
+            app:boxCornerRadiusBottomStart="16dp"
+            app:boxCornerRadiusTopEnd="16dp"
+            app:boxCornerRadiusTopStart="16dp"
+            app:boxStrokeColor="@color/blue_600"
+            app:endIconMode="password_toggle"
+            app:hintTextColor="@color/blue_600"
+            app:startIconDrawable="@drawable/ic_lock"
+            app:startIconTint="@color/gray_500">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/et_password"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@drawable/bg_role_secretary"
-                android:gravity="center_vertical"
-                android:paddingStart="16dp"
-                android:paddingEnd="16dp"
-                android:paddingTop="18dp"
-                android:paddingBottom="18dp">
+                android:inputType="textPassword"
+                android:paddingVertical="18dp"
+                android:textColor="@color/gray_900"
+                android:textSize="16sp" />
+        </com.google.android.material.textfield.TextInputLayout>
 
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="52dp"
-                    android:layout_height="52dp"
-                    app:cardCornerRadius="14dp"
-                    app:cardElevation="0dp"
-                    app:cardBackgroundColor="#33FFFFFF">
-                    <ImageView
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:padding="13dp"
-                        android:src="@drawable/ic_secretary"
-                        app:tint="@color/white" />
-                </com.google.android.material.card.MaterialCardView>
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="16dp"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/role_secretary"
-                        android:textColor="@color/white"
-                        android:textSize="20sp"
-                        android:fontFamily="sans-serif-bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="@string/role_secretary_desc"
-                        android:textColor="@color/white"
-                        android:textSize="13sp"
-                        android:alpha="0.85" />
-                </LinearLayout>
-
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@drawable/ic_chevron_right"
-                    app:tint="@color/white"
-                    android:alpha="0.7" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <Space
+        <!-- Remember Me -->
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1" />
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="4dp">
+
+            <com.google.android.material.checkbox.MaterialCheckBox
+                android:id="@+id/cb_remember_me"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Remember me"
+                android:textColor="@color/gray_600"
+                android:textSize="14sp"
+                app:buttonTint="@color/blue_600"
+                app:useMaterialThemeColors="false" />
+        </LinearLayout>
+
+        <!-- Error Message -->
+        <TextView
+            android:id="@+id/tv_error"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="4dp"
+            android:fontFamily="sans-serif-medium"
+            android:gravity="center"
+            android:text=""
+            android:textColor="@color/red_600"
+            android:textSize="14sp"
+            android:visibility="gone" />
+
+        <!-- Login Button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_login"
+            android:layout_width="match_parent"
+            android:layout_height="58dp"
+            android:layout_marginTop="12dp"
+            android:backgroundTint="@color/blue_600"
+            android:fontFamily="sans-serif-bold"
+            android:letterSpacing="0.02"
+            android:text="@string/btn_sign_in"
+            android:textColor="@color/white"
+            android:textSize="17sp"
+            app:cornerRadius="16dp"
+            app:elevation="4dp" />
+
+        <Space android:layout_width="match_parent" android:layout_height="24dp" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
+            android:layout_gravity="center_horizontal"
             android:text="© 2026 Attendify. All rights reserved."
             android:textColor="@color/gray_500"
             android:textSize="11sp"
-            android:fontFamily="sans-serif"
-            android:alpha="0.7"
-            android:gravity="center"
-            android:layout_gravity="center_horizontal" />
+            android:alpha="0.7" />
+
+        <Space android:layout_width="match_parent" android:layout_height="16dp" />
 
     </LinearLayout>
-
-</androidx.constraintlayout.widget.ConstraintLayout>
+</ScrollView>

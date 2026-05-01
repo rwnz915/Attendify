@@ -71,10 +71,13 @@ public class SecretaryHomeFragment extends Fragment {
                 ((MainActivity) getActivity()).selectTab(1);
         });
 
-        /*view.findViewById(R.id.btn_quick_class_list).setOnClickListener(v -> {
-            if (getActivity() instanceof MainActivity)
-                ((MainActivity) getActivity()).showSecretaryDetail(new SecretaryClassListFragment());
-        });*/
+        view.findViewById(R.id.btn_quick_class_list).setOnClickListener(v -> {
+            requireActivity().getSupportFragmentManager()
+                    .beginTransaction()
+                    .replace(R.id.fragment_container, new SecretaryClassListFragment())
+                    .addToBackStack(null)
+                    .commit();
+        });
 
         loadSecretaryInfo();
         loadTodayOverview();
