@@ -1,50 +1,182 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:gravity="center"
     android:orientation="vertical"
-    android:padding="24dp">
+    android:background="#F9FAFB">
 
-    <!-- QR image -->
-    <ImageView
-        android:id="@+id/img_qr"
-        android:layout_width="250dp"
-        android:layout_height="250dp"
-        android:background="@android:color/white" />
-
-    <!-- Subject name + section + schedule -->
-    <TextView
-        android:id="@+id/tv_subject"
-        android:layout_width="wrap_content"
+    <!-- Green Header -->
+    <LinearLayout
+        android:id="@+id/qr_header"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:gravity="center"
-        android:text="Loading subject…"
-        android:textColor="@android:color/black"
-        android:textSize="16sp"
-        android:textStyle="bold" />
+        android:background="@drawable/bg_student_header"
+        android:orientation="vertical"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        android:paddingTop="56dp"
+        android:paddingBottom="34dp">
 
-    <!-- Student full name + school ID -->
-    <TextView
-        android:id="@+id/tv_student"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:gravity="center"
-        android:text=""
-        android:textColor="@android:color/darker_gray"
-        android:textSize="14sp" />
+        <!-- Title row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="4dp">
 
-    <!-- Active / error status message -->
-    <TextView
-        android:id="@+id/tv_qr_status"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:gravity="center"
-        android:text=""
-        android:textColor="@android:color/darker_gray"
-        android:textSize="13sp" />
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="My QR Code"
+                    android:textSize="22sp"
+                    android:textStyle="bold"
+                    android:textColor="#FFFFFF"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Show this to your secretary"
+                    android:textSize="12sp"
+                    android:textColor="#FFFFFF"
+                    android:alpha="0.8"
+                    android:layout_marginTop="2dp"/>
+            </LinearLayout>
+
+            <!-- QR icon circle -->
+            <LinearLayout
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="@drawable/bg_icon_circle"
+                android:gravity="center">
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/qr_code"
+                    app:tint="#FFFFFF"/>
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Body -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:scrollbars="none"
+        android:overScrollMode="never">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:paddingTop="90dp"
+            android:paddingBottom="88dp"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp">
+
+            <!-- QR image wrapper (FrameLayout allows overlay) -->
+            <FrameLayout
+                android:layout_width="250dp"
+                android:layout_height="250dp"
+                android:clipToOutline="true"
+                android:background="@drawable/bg_qr_rounded">
+
+                <!-- QR image -->
+                <ImageView
+                    android:id="@+id/img_qr"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@android:color/white" />
+
+                <!-- Dim overlay shown when no active subject -->
+                <FrameLayout
+                    android:id="@+id/qr_overlay"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="#CC000000"
+                    android:visibility="gone">
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:orientation="vertical"
+                        android:gravity="center">
+
+                        <ImageView
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:src="@drawable/qr_code"
+                            app:tint="#FFFFFF"
+                            android:alpha="0.6"/>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="10dp"
+                            android:text="No Active Class"
+                            android:textColor="#FFFFFF"
+                            android:textSize="13sp"
+                            android:textStyle="bold"
+                            android:gravity="center"/>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="QR available during class"
+                            android:textColor="#FFFFFF"
+                            android:alpha="0.7"
+                            android:textSize="11sp"
+                            android:gravity="center"/>
+                    </LinearLayout>
+                </FrameLayout>
+            </FrameLayout>
+
+            <!-- Subject name + section + schedule -->
+            <TextView
+                android:id="@+id/tv_subject"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:gravity="center"
+                android:text="Loading subject…"
+                android:textColor="@android:color/black"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <!-- Student full name + school ID -->
+            <TextView
+                android:id="@+id/tv_student"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center"
+                android:text=""
+                android:textColor="@android:color/darker_gray"
+                android:textSize="14sp" />
+
+            <!-- Active / error status message -->
+            <TextView
+                android:id="@+id/tv_qr_status"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:gravity="center"
+                android:text=""
+                android:textColor="@android:color/darker_gray"
+                android:textSize="13sp" />
+
+        </LinearLayout>
+    </ScrollView>
 
 </LinearLayout>

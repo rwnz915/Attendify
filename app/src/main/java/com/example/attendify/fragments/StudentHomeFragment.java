@@ -60,6 +60,14 @@ public class StudentHomeFragment extends Fragment {
 
         ((TextView) view.findViewById(R.id.tv_student_name)).setText(user.getFullName());
 
+        // ── Set today's date label on the combined stat card ──────────────────
+        TextView tvDateLabel = view.findViewById(R.id.tv_today_date_label);
+        if (tvDateLabel != null) {
+            String dateStr = new SimpleDateFormat("EEEE, dd MMM yyyy", Locale.ENGLISH)
+                    .format(new Date());
+            tvDateLabel.setText(dateStr);
+        }
+
         String today     = DATE_FMT.format(new Date());
         String todayAbbr = getTodayDayAbbr();
 
@@ -190,6 +198,27 @@ public class StudentHomeFragment extends Fragment {
                         .replace(R.id.fragment_container, new ExcuseLetterFragment())
                         .addToBackStack(null)
                         .commit());
+
+        // Excuse Letter
+        view.findViewById(R.id.btn_class_list).setOnClickListener(v ->
+                requireActivity().getSupportFragmentManager()
+                        .beginTransaction()
+                        .replace(R.id.fragment_container, new ExcuseLetterFragment())
+                        .addToBackStack(null)
+                        .commit());
+
+        // Subjects — switch to the Subjects tab (index 1)
+        view.findViewById(R.id.btn_student_subjects).setOnClickListener(v -> {
+            if (getActivity() instanceof com.example.attendify.MainActivity)
+                ((com.example.attendify.MainActivity) getActivity()).selectTab(1);
+        });
+
+        // Settings — placeholder until a settings screen is added
+        view.findViewById(R.id.btn_student_settings).setOnClickListener(v -> {
+            // TODO: replace with SettingsFragment when ready
+            android.widget.Toast.makeText(requireContext(),
+                    "Settings coming soon", android.widget.Toast.LENGTH_SHORT).show();
+        });
     }
 
     // ── Today's Class card ────────────────────────────────────────────────────
@@ -267,6 +296,10 @@ public class StudentHomeFragment extends Fragment {
             empty.setText("No attendance recorded today yet.");
             empty.setTextColor(0xFF9E9E9E);
             empty.setPadding(0, 16, 0, 16);
+            empty.setGravity(android.view.Gravity.CENTER);
+            empty.setLayoutParams(new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT));
             container.addView(empty);
             return;
         }

@@ -27,19 +27,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-/**
- * Teacher Home screen.
- *
- * "Today's Class" card       ->  active subject right now, or next upcoming.
- *                                Label switches to "Next Class" when showing upcoming.
- *                                Time row shows schedule time + date (e.g. "9:00 AM - 10:00 AM  •  Apr 28").
- *
- * "Today's Attendance" stat  ->  sums Present+Late / Total across ALL subjects
- *   that have STARTED today (ongoing OR already ended). Resets next day.
- *
- * "Recent Activity" list     ->  one card per subject that has ENDED today.
- *   Resets automatically next day.
- */
 public class HomeFragment extends Fragment {
 
     private static final SimpleDateFormat DATE_FMT =
@@ -65,6 +52,8 @@ public class HomeFragment extends Fragment {
             if (getActivity() instanceof MainActivity)
                 ((MainActivity) getActivity()).selectTab(1);
         });
+
+        // Pending Approvals is now in the Quick Actions row
         view.findViewById(R.id.card_pending_approvals).setOnClickListener(v ->
                 requireActivity().getSupportFragmentManager()
                         .beginTransaction()
@@ -75,6 +64,14 @@ public class HomeFragment extends Fragment {
         UserProfile me = AuthRepository.getInstance().getLoggedInUser();
         if (me != null) {
             ((TextView) view.findViewById(R.id.tv_teacher_name)).setText(me.getFullName());
+        }
+
+        // Set today's date label on the combined stat card
+        TextView tvDateLabel = view.findViewById(R.id.tv_today_date_label);
+        if (tvDateLabel != null) {
+            String dateStr = new SimpleDateFormat("EEEE, dd MMM yyyy", Locale.ENGLISH)
+                    .format(new Date());
+            tvDateLabel.setText(dateStr);
         }
 
         loadPendingApprovals(view);
@@ -93,9 +90,18 @@ public class HomeFragment extends Fragment {
                     @Override
                     public void onSuccess(List<com.example.attendify.models.ExcuseLetter> letters) {
                         if (getActivity() == null) return;
-                        getActivity().runOnUiThread(() ->
-                                ((TextView) view.findViewById(R.id.tv_pending_count))
-                                        .setText(String.valueOf(letters.size())));
+                        getActivity().runOnUiThread(() -> {
+                            int count = letters.size();
+                            TextView badge = view.findViewById(R.id.tv_pending_count_badge);
+                            if (badge != null) {
+                                if (count > 0) {
+                                    badge.setText(count > 99 ? "99+" : String.valueOf(count));
+                                    badge.setVisibility(View.VISIBLE);
+                                } else {
+                                    badge.setVisibility(View.GONE);
+                                }
+                            }
+                        });
                     }
                     @Override public void onFailure(String errorMessage) {}
                 });
@@ -115,15 +121,20 @@ public class HomeFragment extends Fragment {
                     @Override
                     public void onSuccess(List<SubjectRepository.SubjectItem> subjects) {
 
-                        // Today's Class card: active now → show as "Today's Class"
-                        //                    next upcoming → show as "Next Class"
+                        // Count total subjects scheduled for today (for "Classes" stat)
+                        int todayClassCount = 0;
+                        for (SubjectRepository.SubjectItem s : subjects) {
+                            if (s.schedule != null && runsToday(s.schedule, todayAbbr))
+                                todayClassCount++;
+                        }
+                        final int finalTodayClassCount = todayClassCount;
+
+                        // Today's Class card logic
                         SubjectRepository.SubjectItem activeSubject = getActiveSubject(subjects, todayAbbr);
                         SubjectRepository.SubjectItem nextSubject   = null;
                         boolean isNext = false;
 
-                        if (activeSubject != null) {
-                            // class is live right now
-                        } else {
+                        if (activeSubject == null) {
                             nextSubject = getNextSubject(subjects, todayAbbr);
                             isNext = true;
                         }
@@ -133,10 +144,15 @@ public class HomeFragment extends Fragment {
                         final boolean finalIsNext = isNext;
 
                         if (getActivity() != null)
-                            getActivity().runOnUiThread(() ->
-                                    updateTodayClassCard(view, finalSubject, finalIsNext));
+                            getActivity().runOnUiThread(() -> {
+                                updateTodayClassCard(view, finalSubject, finalIsNext);
+                                // Update the "Classes" column in the combined stat card
+                                TextView tvTotal = view.findViewById(R.id.tv_today_total);
+                                if (tvTotal != null)
+                                    tvTotal.setText(String.valueOf(finalTodayClassCount));
+                            });
 
-                        // Stat card + recent list
+                        // Attendance stat: sum across all subjects that have started today
                         List<SubjectRepository.SubjectItem> startedToday =
                                 filterStartedToday(subjects, todayAbbr);
 
@@ -169,11 +185,6 @@ public class HomeFragment extends Fragment {
 
     // ── Today's Class card ────────────────────────────────────────────────────
 
-    /**
-     * @param subj    the subject to display, or null if nothing today
-     * @param isNext  true  → label shows "Next Class" + date appended to time
-     *                false → label shows "Today's Class", no date suffix
-     */
     private void updateTodayClassCard(View view,
                                       SubjectRepository.SubjectItem subj,
                                       boolean isNext) {
@@ -193,7 +204,6 @@ public class HomeFragment extends Fragment {
 
         String formattedTime = formatScheduleTime(subj.schedule);
         if (isNext) {
-            // Append the date the next class falls on, e.g. "9:00 AM - 10:00 AM  •  Apr 28"
             String dateLabel = getNextClassDate(subj.schedule);
             tvTime.setText(formattedTime + "  •  " + dateLabel);
         } else {
@@ -201,10 +211,6 @@ public class HomeFragment extends Fragment {
         }
     }
 
-    /**
-     * Returns the date string (e.g. "Apr 28") for the next occurrence of this subject's
-     * scheduled days, starting from today.
-     */
     private String getNextClassDate(String schedule) {
         if (schedule == null) return "";
         String[] parts = schedule.trim().split("\\s+", 2);
@@ -214,11 +220,9 @@ public class HomeFragment extends Fragment {
         SimpleDateFormat outFmt = new SimpleDateFormat("MMM d", Locale.ENGLISH);
         Calendar cal = Calendar.getInstance();
 
-        // Check up to 7 days ahead (today inclusive)
         for (int i = 0; i < 7; i++) {
             String abbr = calToDayAbbr(cal.get(Calendar.DAY_OF_WEEK));
             if (matchesDay(daysPart, abbr)) {
-                // If it's today, only count if the class hasn't started yet
                 if (i == 0) {
                     String startStr = parts.length > 1 ? parts[1].split("-")[0].trim() : null;
                     if (startStr != null) {
@@ -228,7 +232,6 @@ public class HomeFragment extends Fragment {
                             if (start != null && Calendar.getInstance().before(toTodayCal(start))) {
                                 return outFmt.format(cal.getTime());
                             }
-                            // today's class already started/passed — look further
                         } catch (ParseException ignored) {}
                     }
                 } else {
@@ -237,7 +240,7 @@ public class HomeFragment extends Fragment {
             }
             cal.add(Calendar.DAY_OF_YEAR, 1);
         }
-        return outFmt.format(Calendar.getInstance().getTime()); // fallback
+        return outFmt.format(Calendar.getInstance().getTime());
     }
 
     private boolean matchesDay(String daysPart, String abbr) {
@@ -268,14 +271,23 @@ public class HomeFragment extends Fragment {
     private void updateUiWithSummaries(View view,
                                        List<AttendanceRepository.SubjectSummary> summaries,
                                        String today) {
-        int totalPresent = 0, totalStudents = 0;
-        for (AttendanceRepository.SubjectSummary s : summaries) {
-            totalPresent  += s.present + s.late;
-            totalStudents += s.total;
-        }
-        ((TextView) view.findViewById(R.id.tv_today_present)).setText(String.valueOf(totalPresent));
-        ((TextView) view.findViewById(R.id.tv_today_total)).setText("/ " + totalStudents);
+        int totalPresent = 0;
+        int totalStudents = 0;
 
+        for (AttendanceRepository.SubjectSummary s : summaries) {
+            // present + late count as "present"
+            totalPresent  += s.present + s.late;
+            // total enrolled = present + late + absent in that class
+            totalStudents += s.present + s.late + s.absent;
+        }
+
+        TextView tvPresent = view.findViewById(R.id.tv_today_present);
+        if (tvPresent != null) {
+            // Shows e.g. "20/100"
+            tvPresent.setText(totalPresent + "/" + totalStudents);
+        }
+
+        // Recent activity list (unchanged logic below)
         LinearLayout container = view.findViewById(R.id.recent_activity_container);
         container.removeAllViews();
 
@@ -363,10 +375,6 @@ public class HomeFragment extends Fragment {
         return null;
     }
 
-    /**
-     * Finds the next upcoming subject across the next 7 days.
-     * First checks remaining slots today, then future days in order.
-     */
     private SubjectRepository.SubjectItem getNextSubject(
             List<SubjectRepository.SubjectItem> subjects, String todayAbbr) {
         SimpleDateFormat sdf = new SimpleDateFormat("h:mma", Locale.ENGLISH);
@@ -394,11 +402,9 @@ public class HomeFragment extends Fragment {
 
                     Calendar startCal;
                     if (offset == 0) {
-                        // Today: only count if start time is still in the future
                         startCal = toTodayCal(parsed);
                         if (!startCal.after(now)) continue;
                     } else {
-                        // Future day: build a calendar on that day
                         startCal = (Calendar) dayCal.clone();
                         Calendar tmp = Calendar.getInstance();
                         tmp.setTime(parsed);

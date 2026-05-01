@@ -189,6 +189,10 @@ public class StudentQrFragment extends Fragment {
 
         if (tvStatus != null) tvStatus.setText("Class is ongoing — QR is active");
 
+        // Hide overlay
+        View overlay = getView() == null ? null : getView().findViewById(R.id.qr_overlay);
+        if (overlay != null) overlay.setVisibility(View.GONE);
+
         try {
             BitMatrix matrix = new MultiFormatWriter()
                     .encode(qrPayload, BarcodeFormat.QR_CODE, 500, 500);
@@ -205,6 +209,9 @@ public class StudentQrFragment extends Fragment {
     private void showError(String msg) {
         if (tvStatus  != null) tvStatus.setText(msg);
         if (tvSubject != null) tvSubject.setText("");
-        if (imgQr     != null) imgQr.setImageBitmap(null);
+
+        // Show overlay over the QR instead of hiding it
+        View overlay = getView() == null ? null : getView().findViewById(R.id.qr_overlay);
+        if (overlay != null) overlay.setVisibility(View.VISIBLE);
     }
 }
