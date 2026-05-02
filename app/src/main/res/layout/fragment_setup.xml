@@ -1,0 +1,304 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/gray_50">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scrollbars="none"
+        android:fillViewport="false">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- ═══════════════════════════════════════════
+                 HEADER (gradient, set programmatically)
+                 ═══════════════════════════════════════════ -->
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <!-- Gradient background — corners set in code -->
+                <View
+                    android:id="@+id/setup_header_bg"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/bg_header" />
+
+                <LinearLayout
+                    android:id="@+id/ll_header_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:paddingTop="72dp"
+                    android:paddingStart="28dp"
+                    android:paddingEnd="28dp"
+                    android:paddingBottom="52dp"
+                    android:alpha="0">
+
+                    <!-- Role icon circle -->
+                    <FrameLayout
+                        android:id="@+id/iv_logo_container"
+                        android:layout_width="88dp"
+                        android:layout_height="88dp"
+                        android:background="@drawable/bg_icon_white_transparent"
+                        android:scaleX="0.4"
+                        android:scaleY="0.4">
+
+                        <ImageView
+                            android:id="@+id/iv_role_icon"
+                            android:layout_width="46dp"
+                            android:layout_height="46dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/ic_teacher"
+                            app:tint="@color/white" />
+                    </FrameLayout>
+
+                    <!-- Badge — bg set programmatically -->
+                    <TextView
+                        android:id="@+id/tv_ready_badge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="18dp"
+                        android:paddingStart="14dp"
+                        android:paddingTop="6dp"
+                        android:paddingEnd="14dp"
+                        android:paddingBottom="6dp"
+                        android:text="✦  Teacher Account Ready"
+                        android:textColor="@color/blue_600"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:letterSpacing="0.03"
+                        android:alpha="0"
+                        android:translationY="10dp" />
+
+                    <TextView
+                        android:id="@+id/tv_headline"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:text="You're All Set!"
+                        android:textColor="@color/white"
+                        android:textSize="30sp"
+                        android:textStyle="bold"
+                        android:gravity="center"
+                        android:alpha="0"
+                        android:translationY="16dp" />
+
+                    <TextView
+                        android:id="@+id/tv_subheadline"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:text="Your dashboard is ready to use."
+                        android:textColor="#CCFFFFFF"
+                        android:textSize="14sp"
+                        android:gravity="center"
+                        android:lineSpacingMultiplier="1.4"
+                        android:alpha="0"
+                        android:translationY="16dp" />
+                </LinearLayout>
+            </FrameLayout>
+
+            <!-- ═══════════════════════════════════════════
+                 BODY
+                 ═══════════════════════════════════════════ -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingStart="20dp"
+                android:paddingEnd="20dp"
+                android:paddingTop="24dp"
+                android:paddingBottom="36dp">
+
+                <!-- Divider -->
+                <View
+                    android:id="@+id/v_divider"
+                    android:layout_width="44dp"
+                    android:layout_height="3dp"
+                    android:layout_gravity="center"
+                    android:background="@drawable/bg_setup_divider"
+                    android:layout_marginBottom="20dp"
+                    android:alpha="0"
+                    android:scaleX="0" />
+
+                <!-- Feature cards -->
+
+                <!-- Card 1 -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/card_feature_1"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="10dp"
+                    app:cardBackgroundColor="@color/white"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="1dp"
+                    android:alpha="0"
+                    android:translationX="-40dp">
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:orientation="horizontal" android:padding="16dp" android:gravity="center_vertical">
+                        <FrameLayout android:id="@+id/iv_feat1_bg" android:layout_width="48dp" android:layout_height="48dp" android:background="@drawable/bg_setup_icon_blue_light">
+                            <ImageView android:id="@+id/iv_feat1" android:layout_width="24dp" android:layout_height="24dp" android:layout_gravity="center" android:src="@drawable/ic_clock" app:tint="@color/blue_600"/>
+                        </FrameLayout>
+                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="12dp" android:orientation="vertical">
+                            <TextView android:id="@+id/tv_feat1_title" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Feature 1" android:textColor="@color/gray_800" android:textSize="14sp" android:textStyle="bold"/>
+                            <TextView android:id="@+id/tv_feat1_desc" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="Description" android:textColor="@color/gray_500" android:textSize="12sp" android:lineSpacingMultiplier="1.3"/>
+                        </LinearLayout>
+                        <ImageView android:layout_width="16dp" android:layout_height="16dp" android:src="@drawable/ic_chevron_right" app:tint="@color/gray_300"/>
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+                <!-- Card 2 -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/card_feature_2"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="10dp"
+                    app:cardBackgroundColor="@color/white"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="1dp"
+                    android:alpha="0"
+                    android:translationX="-40dp">
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:orientation="horizontal" android:padding="16dp" android:gravity="center_vertical">
+                        <FrameLayout android:id="@+id/iv_feat2_bg" android:layout_width="48dp" android:layout_height="48dp" android:background="@drawable/bg_setup_icon_green_light">
+                            <ImageView android:id="@+id/iv_feat2" android:layout_width="24dp" android:layout_height="24dp" android:layout_gravity="center" android:src="@drawable/ic_book" app:tint="@color/green_700"/>
+                        </FrameLayout>
+                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="12dp" android:orientation="vertical">
+                            <TextView android:id="@+id/tv_feat2_title" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Feature 2" android:textColor="@color/gray_800" android:textSize="14sp" android:textStyle="bold"/>
+                            <TextView android:id="@+id/tv_feat2_desc" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="Description" android:textColor="@color/gray_500" android:textSize="12sp" android:lineSpacingMultiplier="1.3"/>
+                        </LinearLayout>
+                        <ImageView android:layout_width="16dp" android:layout_height="16dp" android:src="@drawable/ic_chevron_right" app:tint="@color/gray_300"/>
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+                <!-- Card 3 -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/card_feature_3"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="10dp"
+                    app:cardBackgroundColor="@color/white"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="1dp"
+                    android:alpha="0"
+                    android:translationX="-40dp">
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:orientation="horizontal" android:padding="16dp" android:gravity="center_vertical">
+                        <FrameLayout android:id="@+id/iv_feat3_bg" android:layout_width="48dp" android:layout_height="48dp" android:background="@drawable/bg_setup_icon_purple_light">
+                            <ImageView android:id="@+id/iv_feat3" android:layout_width="24dp" android:layout_height="24dp" android:layout_gravity="center" android:src="@drawable/ic_chevron_right" app:tint="@color/purple_600"/>
+                        </FrameLayout>
+                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="12dp" android:orientation="vertical">
+                            <TextView android:id="@+id/tv_feat3_title" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Feature 3" android:textColor="@color/gray_800" android:textSize="14sp" android:textStyle="bold"/>
+                            <TextView android:id="@+id/tv_feat3_desc" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="Description" android:textColor="@color/gray_500" android:textSize="12sp" android:lineSpacingMultiplier="1.3"/>
+                        </LinearLayout>
+                        <ImageView android:layout_width="16dp" android:layout_height="16dp" android:src="@drawable/ic_chevron_right" app:tint="@color/gray_300"/>
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+                <!-- Card 4 -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/card_feature_4"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    app:cardBackgroundColor="@color/white"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="1dp"
+                    android:alpha="0"
+                    android:translationX="-40dp">
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:orientation="horizontal" android:padding="16dp" android:gravity="center_vertical">
+                        <FrameLayout android:id="@+id/iv_feat4_bg" android:layout_width="48dp" android:layout_height="48dp" android:background="@drawable/bg_setup_icon_orange_light">
+                            <ImageView android:id="@+id/iv_feat4" android:layout_width="24dp" android:layout_height="24dp" android:layout_gravity="center" android:src="@drawable/ic_document" app:tint="@color/orange_600"/>
+                        </FrameLayout>
+                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="12dp" android:orientation="vertical">
+                            <TextView android:id="@+id/tv_feat4_title" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Feature 4" android:textColor="@color/gray_800" android:textSize="14sp" android:textStyle="bold"/>
+                            <TextView android:id="@+id/tv_feat4_desc" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="Description" android:textColor="@color/gray_500" android:textSize="12sp" android:lineSpacingMultiplier="1.3"/>
+                        </LinearLayout>
+                        <ImageView android:layout_width="16dp" android:layout_height="16dp" android:src="@drawable/ic_chevron_right" app:tint="@color/gray_300"/>
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+                <!-- ══════════════════════════════════════
+                     THEME PICKER SECTION
+                     ══════════════════════════════════════ -->
+                <LinearLayout
+                    android:id="@+id/ll_theme_section"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:layout_marginTop="4dp"
+                    android:alpha="0"
+                    android:translationY="20dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Choose Your Theme"
+                        android:textColor="@color/gray_800"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="4dp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Pick a color scheme — it updates live above"
+                        android:textColor="@color/gray_500"
+                        android:textSize="13sp"
+                        android:layout_marginBottom="14dp" />
+
+                    <!-- Theme rows injected by code -->
+                    <LinearLayout
+                        android:id="@+id/ll_theme_container"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical" />
+
+                </LinearLayout>
+
+                <!-- CTA Button -->
+                <TextView
+                    android:id="@+id/btn_go_to_dashboard"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:layout_marginTop="24dp"
+                    android:background="@drawable/bg_setup_button"
+                    android:gravity="center"
+                    android:text="Go to My Dashboard"
+                    android:textColor="@color/white"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:alpha="0"
+                    android:translationY="20dp"
+                    android:stateListAnimator="@null" />
+
+                <TextView
+                    android:id="@+id/tv_skip"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:gravity="center"
+                    android:text="Skip for now"
+                    android:textColor="@color/gray_400"
+                    android:textSize="14sp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:alpha="0"
+                    android:paddingBottom="8dp" />
+
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+
+</FrameLayout>

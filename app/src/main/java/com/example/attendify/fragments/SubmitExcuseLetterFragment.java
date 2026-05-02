@@ -14,6 +14,7 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.graphics.drawable.ColorDrawable;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -23,6 +24,8 @@ import androidx.fragment.app.Fragment;
 
 import com.example.attendify.AppwriteManager;
 import com.example.attendify.R;
+import com.example.attendify.ThemeApplier;
+import com.example.attendify.ThemeManager;
 import com.example.attendify.models.UserProfile;
 import com.example.attendify.repository.AuthRepository;
 import com.example.attendify.repository.ExcuseLetterRepository;
@@ -95,6 +98,30 @@ public class SubmitExcuseLetterFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        // Apply saved theme
+        UserProfile subUser = AuthRepository.getInstance().getLoggedInUser();
+        if (subUser != null) {
+            String role = subUser.getRole();
+
+            ThemeApplier.applyHeader(requireContext(), role, view.findViewById(R.id.excuse_header_bg));
+
+            TextView tvSubtitle = view.findViewById(R.id.tv_header_subtitle);
+            if (tvSubtitle != null) {
+                tvSubtitle.setTextColor(ThemeManager.getLightTintColor(requireContext(), role));
+            }
+
+            ThemeApplier.applyButton(requireContext(), role, view.findViewById(R.id.btn_submit));
+
+            ImageView ivUpload = view.findViewById(R.id.iv_upload_icon);
+            if (ivUpload != null) {
+                ivUpload.setColorFilter(ThemeManager.getPrimaryColor(requireContext(), role));
+            }
+
+            // ← add this
+            applyUploadZoneBorder(view.findViewById(R.id.btn_attach_image),
+                    ThemeManager.getPrimaryColor(requireContext(), role));
+        }
+
         appwriteManager = new AppwriteManager(requireContext());
 
         view.findViewById(R.id.btn_back).setOnClickListener(v ->
@@ -107,6 +134,11 @@ public class SubmitExcuseLetterFragment extends Fragment {
         btnAttach          = view.findViewById(R.id.btn_attach_image);
         tvAttachLabel      = view.findViewById(R.id.tv_attach_label);
         btnSubmit          = view.findViewById(R.id.btn_submit);
+        // Apply theme to submit button
+        UserProfile subBtnUser = AuthRepository.getInstance().getLoggedInUser();
+        if (subBtnUser != null) {
+            ThemeApplier.applyButton(requireContext(), subBtnUser.getRole(), btnSubmit);
+        }
         btnRemoveImage     = view.findViewById(R.id.btn_remove_image);
         progressBar        = view.findViewById(R.id.progress_bar);
         tvSubmitting       = view.findViewById(R.id.tv_submitting);
@@ -127,6 +159,26 @@ public class SubmitExcuseLetterFragment extends Fragment {
         btnSubmit.setOnClickListener(v -> handleSubmit());
 
         loadSubjects();
+    }
+
+    private void applyUploadZoneBorder(View uploadZone, int color) {
+        android.graphics.drawable.ShapeDrawable sd = new android.graphics.drawable.ShapeDrawable(
+                new android.graphics.drawable.shapes.RoundRectShape(
+                        new float[]{24f, 24f, 24f, 24f, 24f, 24f, 24f, 24f}, null, null));
+
+        float density = getResources().getDisplayMetrics().density;
+        android.graphics.Paint paint = sd.getPaint();
+        paint.setColor(color);
+        paint.setStyle(android.graphics.Paint.Style.STROKE);
+        paint.setStrokeWidth(2f * density);
+        paint.setPathEffect(new android.graphics.DashPathEffect(
+                new float[]{8f * density, 4f * density}, 0f));
+
+        android.graphics.drawable.Drawable[] layers = {
+                new android.graphics.drawable.ColorDrawable(0xFFFAFAFA),
+                sd
+        };
+        uploadZone.setBackground(new android.graphics.drawable.LayerDrawable(layers));
     }
 
     // ── Load student's subjects from Firestore ────────────────────────────────

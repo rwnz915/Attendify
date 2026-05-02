@@ -22,14 +22,12 @@ public class RoleSelectionActivity extends AppCompatActivity {
     }
 
     /**
-     * Called by RoleSelectionFragment when a role card is tapped.
-     * Sets the mock session via AuthRepository, then navigates to MainActivity.
-     *
-     * When real auth is ready: replace loginAsRole() with an actual login call
-     * (show a credentials screen first, call your API, then navigate on success).
+     * Called by RoleSelectionFragment after successful login.
+     * ALL roles go through SetupActivity (welcome + theme picker) before MainActivity.
      */
     public void onRoleSelected(String role) {
-        Intent intent = new Intent(this, MainActivity.class);
+        // All roles → SetupActivity → MainActivity
+        Intent intent = new Intent(this, SetupActivity.class);
         intent.putExtra("userRole", role);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);

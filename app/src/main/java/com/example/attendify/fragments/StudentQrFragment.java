@@ -24,6 +24,7 @@ import com.google.zxing.common.BitMatrix;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
+import com.example.attendify.ThemeApplier;
 
 /**
  * Shown to the logged-in STUDENT.
@@ -55,6 +56,12 @@ public class StudentQrFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
+        // Apply saved theme to header
+        UserProfile qrThemeUser = AuthRepository.getInstance().getLoggedInUser();
+        if (qrThemeUser != null) {
+            ThemeApplier.applyHeader(requireContext(), qrThemeUser.getRole(), view.findViewById(R.id.qr_header));
+        }
 
         imgQr     = view.findViewById(R.id.img_qr);
         tvSubject = view.findViewById(R.id.tv_subject);

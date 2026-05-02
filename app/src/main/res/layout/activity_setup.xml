@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    activity_setup.xml
+    Single-screen setup flow — content swaps in-place via fragment transactions.
+    Dots indicator lives here (persistent), not inside each fragment.
+-->
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/gray_50">
+
+    <!-- Content area — fragments are placed here, bottom padding leaves room for dots -->
+    <FrameLayout
+        android:id="@+id/setup_content_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:paddingBottom="60dp" />
+
+    <!-- Persistent animated dot indicator anchored at bottom -->
+    <LinearLayout
+        android:id="@+id/ll_setup_dots_bar"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:layout_alignParentBottom="true"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:background="@color/gray_50">
+
+        <!-- Dot track — dots are added programmatically -->
+        <LinearLayout
+            android:id="@+id/ll_dots"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical" />
+
+    </LinearLayout>
+
+</RelativeLayout>

@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    fragment_setup_page4_done.xml
+    Setup flow – Page 4: All Set!
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/gray_50"
+    android:paddingStart="28dp"
+    android:paddingEnd="28dp"
+    android:paddingTop="48dp"
+    android:paddingBottom="24dp"
+    android:gravity="center_horizontal">
+
+    <!-- ── Checkmark circle ──────────────────────────────────────────── -->
+    <FrameLayout
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:scaleX="0.4"
+        android:scaleY="0.4"
+        android:id="@+id/iv_done_container">
+
+        <!-- Circle — color set programmatically to match theme -->
+        <View
+            android:id="@+id/iv_done_circle"
+            android:layout_width="84dp"
+            android:layout_height="84dp"
+            android:layout_gravity="center"
+            android:background="@drawable/bg_setup_done_circle" />
+
+        <!-- Check icon -->
+        <ImageView
+            android:id="@+id/iv_done_check"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_gravity="center"
+            android:src="@drawable/circle_check_big"
+            app:tint="@color/white" />
+
+        <!-- Sparkle top-right -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|end"
+            android:text="✦"
+            android:textColor="#F5C518"
+            android:textSize="18sp"
+            android:layout_marginTop="2dp"
+            android:layout_marginEnd="0dp" />
+    </FrameLayout>
+
+    <!-- ── Headline ──────────────────────────────────────────────────── -->
+    <TextView
+        android:id="@+id/tv_done_headline"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="18dp"
+        android:text="All Set!"
+        android:textColor="@color/gray_900"
+        android:textSize="30sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:alpha="0"
+        android:translationY="16dp" />
+
+    <TextView
+        android:id="@+id/tv_done_sub"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="7dp"
+        android:text="Your Attendify account is ready to use"
+        android:textColor="@color/gray_500"
+        android:textSize="13sp"
+        android:gravity="center"
+        android:lineSpacingMultiplier="1.3"
+        android:alpha="0"
+        android:translationY="16dp" />
+
+    <!-- ── Summary card ──────────────────────────────────────────────── -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/card_done_summary"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="22dp"
+        app:cardBackgroundColor="@color/white"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="1dp"
+        android:alpha="0"
+        android:translationY="20dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="18dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="You're Ready To:"
+                android:textColor="@color/gray_900"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="14dp" />
+
+            <!-- Row 1 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="12dp">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/circle_check_big"
+                    app:tint="#22C55E" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="12dp"
+                    android:text="Track attendance in real-time"
+                    android:textColor="@color/gray_700"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <!-- Row 2 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="12dp">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/circle_check_big"
+                    app:tint="#22C55E" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="12dp"
+                    android:text="Receive important notifications"
+                    android:textColor="@color/gray_700"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <!-- Row 3 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/circle_check_big"
+                    app:tint="#22C55E" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="12dp"
+                    android:text="Access your personalized dashboard"
+                    android:textColor="@color/gray_700"
+                    android:textSize="13sp" />
+            </LinearLayout>
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+
+    <!-- Push button to bottom -->
+    <View
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <!-- ── CTA ───────────────────────────────────────────────────────── -->
+    <TextView
+        android:id="@+id/btn_start"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:background="@drawable/bg_setup_button"
+        android:gravity="center"
+        android:text="Start Using Attendify"
+        android:textColor="@color/white"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        android:clickable="true"
+        android:focusable="true"
+        android:alpha="0"
+        android:translationY="20dp"
+        android:stateListAnimator="@null" />
+
+    <!-- ── Dot indicator ─────────────────────────────────────────────── -->
+    <LinearLayout
+        android:id="@+id/ll_dots"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:alpha="0" />
+
+</LinearLayout>

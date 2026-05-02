@@ -7,6 +7,7 @@
 
     <!-- Blue header -->
     <LinearLayout
+        android:id="@+id/approval_header_bg"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@drawable/bg_header"

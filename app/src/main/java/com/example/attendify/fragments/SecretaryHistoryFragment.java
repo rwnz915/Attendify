@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import com.example.attendify.ThemeApplier;
 
 /**
  * Shows attendance history (past 30 days) for all students
@@ -50,6 +51,12 @@ public class SecretaryHistoryFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
+        // Apply saved theme to header
+        UserProfile secHistUser = AuthRepository.getInstance().getLoggedInUser();
+        if (secHistUser != null) {
+            ThemeApplier.applyHeader(requireContext(), secHistUser.getRole(), view.findViewById(R.id.sec_history_header));
+        }
 
         // Expand green header over status bar
         View header = view.findViewById(R.id.sec_history_header);

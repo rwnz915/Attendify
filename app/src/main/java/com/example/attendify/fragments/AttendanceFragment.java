@@ -34,6 +34,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import com.example.attendify.ThemeApplier;
 
 public class AttendanceFragment extends Fragment {
 
@@ -67,6 +68,12 @@ public class AttendanceFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
+        // Apply saved theme to header
+        UserProfile attUser = AuthRepository.getInstance().getLoggedInUser();
+        if (attUser != null) {
+            ThemeApplier.applyHeader(requireContext(), attUser.getRole(), view.findViewById(R.id.attendance_header));
+        }
 
         // Status-bar padding for the header
         View header = view.findViewById(R.id.attendance_header);

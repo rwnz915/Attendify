@@ -22,6 +22,7 @@ import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.textfield.TextInputLayout;
 import com.example.attendify.R;
 import com.example.attendify.RoleSelectionActivity;
+import com.example.attendify.ThemeManager;
 import com.example.attendify.models.UserProfile;
 import com.example.attendify.repository.AuthRepository;
 
@@ -37,6 +38,7 @@ public class RoleSelectionFragment extends Fragment {
     private TextView  tvLoginTitle, tvError;
     private ImageView ivRoleIcon;
     private MaterialCardView iconCard;
+    private ImageView ivLogo;
     private TextInputLayout tilEmail, tilPassword;
     private EditText  etEmail, etPassword;
     private com.google.android.material.checkbox.MaterialCheckBox cbRememberMe;
@@ -62,6 +64,7 @@ public class RoleSelectionFragment extends Fragment {
         tvError       = view.findViewById(R.id.tv_error);
         //ivRoleIcon    = view.findViewById(R.id.iv_role_icon);
         iconCard      = view.findViewById(R.id.icon_card);
+        ivLogo        = view.findViewById(R.id.iv_logo);
         tilEmail      = view.findViewById(R.id.til_email);
         tilPassword   = view.findViewById(R.id.til_password);
         etEmail       = view.findViewById(R.id.et_email);
@@ -94,69 +97,65 @@ public class RoleSelectionFragment extends Fragment {
     private void selectRole(String role) {
         selectedRole = role;
 
-        int blueColor    = ContextCompat.getColor(requireContext(), R.color.blue_600);
-        int purpleColor  = ContextCompat.getColor(requireContext(), R.color.purple_600);
-        int greenColor   = ContextCompat.getColor(requireContext(), R.color.green_700);
+        // Read the actual saved theme for this role
+        int accentColor  = ThemeManager.getPrimaryColor(requireContext(), role);
+        int lightTint    = ThemeManager.getLightTintColor(requireContext(), role);
         int gray500      = ContextCompat.getColor(requireContext(), R.color.gray_500);
 
-        int accentColor, iconBgColor, iconDrawable, tabSelectedBg;
-        String loginTitle;
-
-        switch (role) {
-            case "student":
-                accentColor   = purpleColor;
-                iconBgColor   = ContextCompat.getColor(requireContext(), R.color.purple_50);
-                iconDrawable  = R.drawable.ic_user;
-                loginTitle    = "Student Login";
-                break;
-            case "secretary":
-                accentColor   = greenColor;
-                iconBgColor   = ContextCompat.getColor(requireContext(), R.color.green_50);
-                iconDrawable  = R.drawable.ic_secretary;
-                loginTitle    = "Secretary Login";
-                break;
-            default: // teacher
-                accentColor   = blueColor;
-                iconBgColor   = ContextCompat.getColor(requireContext(), R.color.blue_50);
-                iconDrawable  = R.drawable.ic_teacher;
-                loginTitle    = "Teacher Login";
-                break;
-        }
-
-        // Update icon + title
-        //.setImageResource(iconDrawable);
-        //ivRoleIcon.setColorFilter(accentColor);
-        //iconCard.setCardBackgroundColor(iconBgColor);
-        //tvLoginTitle.setText(loginTitle);
-
-        // Update tab visuals
+        // Reset all tabs
         resetTab(tabTeacher);
         resetTab(tabStudent);
         resetTab(tabSecretary);
 
-        tabTeacher.setTextColor(gray500);
-        tabStudent.setTextColor(gray500);
-        tabSecretary.setTextColor(gray500);
-
+        // Highlight active tab using theme color
         TextView activeTab = role.equals("student") ? tabStudent
                 : role.equals("secretary") ? tabSecretary
                 : tabTeacher;
-        activeTab.setBackgroundResource(getTabBgForRole(role));
-        activeTab.setTextColor(accentColor);  // ← change from white to accentColor
+        applyTabSelected(activeTab, accentColor, lightTint);
 
-        // Update field accent colors
+        // Field + button accent
         ColorStateList accentList = ColorStateList.valueOf(accentColor);
         tilEmail.setBoxStrokeColorStateList(accentList);
         tilEmail.setHintTextColor(accentList);
         tilPassword.setBoxStrokeColorStateList(accentList);
         tilPassword.setHintTextColor(accentList);
         cbRememberMe.setButtonTintList(accentList);
+
+        // MaterialButton — clear hardcoded tint first, then apply theme
         btnLogin.setBackgroundTintList(accentList);
+
+        // Logo tint
+        if (ivLogo != null) ivLogo.setColorFilter(accentColor);
 
         // Clear errors
         tvError.setVisibility(View.GONE);
         tilEmail.setError(null);
         tilPassword.setError(null);
+    }
+
+    private void applyTabSelected(TextView tab, int accentColor, int lightTint) {
+        float density = getResources().getDisplayMetrics().density;
+
+        // Stroke-only rectangle
+        android.graphics.drawable.GradientDrawable stroke =
+                new android.graphics.drawable.GradientDrawable();
+        stroke.setShape(android.graphics.drawable.GradientDrawable.RECTANGLE);
+        stroke.setColor(0x00000000); // transparent fill
+        stroke.setStroke((int)(3 * density), accentColor);
+        stroke.setCornerRadius(2 * density);
+
+        // Layer it — push top/left/right off-screen so only bottom border shows
+        android.graphics.drawable.LayerDrawable layer =
+                new android.graphics.drawable.LayerDrawable(
+                        new android.graphics.drawable.Drawable[]{stroke});
+        layer.setLayerInset(0,
+                (int)(-4 * density),  // left  = -4dp
+                (int)(-4 * density),  // top   = -4dp
+                (int)(-4 * density),  // right = -4dp
+                0);                   // bottom = 0 (visible)
+
+        tab.setBackground(layer);
+        tab.setTextColor(accentColor);
     }
 
     private void resetTab(TextView tab) {

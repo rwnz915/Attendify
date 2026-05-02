@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/gray_50"
+    android:paddingStart="28dp"
+    android:paddingEnd="28dp"
+    android:paddingTop="48dp"
+    android:paddingBottom="28dp"
+    android:gravity="center_horizontal">
+
+    <FrameLayout
+        android:id="@+id/iv_logo_container"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:background="@drawable/bg_setup_icon_blue_light"
+        android:scaleX="0.4"
+        android:scaleY="0.4">
+        <ImageView
+            android:id="@+id/iv_role_icon"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_gravity="center"
+            android:src="@drawable/ic_teacher"
+            app:tint="@color/white" />
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/tv_headline"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="18dp"
+        android:text="Welcome to Attendify"
+        android:textColor="@color/gray_900"
+        android:textSize="25sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:alpha="0"
+        android:translationY="16dp" />
+
+    <TextView
+        android:id="@+id/tv_subheadline"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="7dp"
+        android:text="Professional attendance management for academic institutions"
+        android:textColor="@color/gray_500"
+        android:textSize="13sp"
+        android:gravity="center"
+        android:lineSpacingMultiplier="1.3"
+        android:alpha="0"
+        android:translationY="16dp" />
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/card_feat_1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="18dp"
+        app:cardBackgroundColor="@color/white"
+        app:cardCornerRadius="14dp"
+        app:cardElevation="1dp"
+        android:alpha="0"
+        android:translationY="20dp">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="13dp"
+            android:gravity="center_vertical">
+            <FrameLayout
+                android:id="@+id/iv_feat1_bg"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:background="@drawable/bg_setup_icon_blue_light">
+                <ImageView
+                    android:id="@+id/iv_feat1_icon"
+                    android:layout_width="19dp"
+                    android:layout_height="19dp"
+                    android:layout_gravity="center"
+                    android:src="@drawable/ic_clock"
+                    app:tint="@color/blue_600" />
+            </FrameLayout>
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="12dp"
+                android:orientation="vertical">
+                <TextView
+                    android:id="@+id/tv_feat1_title"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Accurate Tracking"
+                    android:textColor="@color/gray_800"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+                <TextView
+                    android:id="@+id/tv_feat1_desc"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="Real-time attendance monitoring with geofencing"
+                    android:textColor="@color/gray_500"
+                    android:textSize="11sp" />
+            </LinearLayout>
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/card_feat_2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        app:cardBackgroundColor="@color/white"
+        app:cardCornerRadius="14dp"
+        app:cardElevation="1dp"
+        android:alpha="0"
+        android:translationY="20dp">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="13dp"
+            android:gravity="center_vertical">
+            <FrameLayout
+                android:id="@+id/iv_feat2_bg"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:background="@drawable/bg_setup_icon_blue_light">
+                <ImageView
+                    android:id="@+id/iv_feat2_icon"
+                    android:layout_width="19dp"
+                    android:layout_height="19dp"
+                    android:layout_gravity="center"
+                    android:src="@drawable/ic_book"
+                    app:tint="@color/blue_600" />
+            </FrameLayout>
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="12dp"
+                android:orientation="vertical">
+                <TextView
+                    android:id="@+id/tv_feat2_title"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Secure &amp; Reliable"
+                    android:textColor="@color/gray_800"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+                <TextView
+                    android:id="@+id/tv_feat2_desc"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="Enterprise-grade security for academic records"
+                    android:textColor="@color/gray_500"
+                    android:textSize="11sp" />
+            </LinearLayout>
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/card_feat_3"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        app:cardBackgroundColor="@color/white"
+        app:cardCornerRadius="14dp"
+        app:cardElevation="1dp"
+        android:alpha="0"
+        android:translationY="20dp">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="13dp"
+            android:gravity="center_vertical">
+            <FrameLayout
+                android:id="@+id/iv_feat3_bg"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:background="@drawable/bg_setup_icon_blue_light">
+                <ImageView
+                    android:id="@+id/iv_feat3_icon"
+                    android:layout_width="19dp"
+                    android:layout_height="19dp"
+                    android:layout_gravity="center"
+                    android:src="@drawable/ic_document"
+                    app:tint="@color/blue_600" />
+            </FrameLayout>
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="12dp"
+                android:orientation="vertical">
+                <TextView
+                    android:id="@+id/tv_feat3_title"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Performance Insights"
+                    android:textColor="@color/gray_800"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+                <TextView
+                    android:id="@+id/tv_feat3_desc"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="Track and analyze attendance patterns over time"
+                    android:textColor="@color/gray_500"
+                    android:textSize="11sp" />
+            </LinearLayout>
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+
+    <View android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1" />
+
+    <TextView
+        android:id="@+id/btn_get_started"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:background="@drawable/bg_setup_button"
+        android:gravity="center"
+        android:text="Get Started"
+        android:textColor="@color/white"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        android:clickable="true"
+        android:focusable="true"
+        android:alpha="0"
+        android:translationY="20dp"
+        android:stateListAnimator="@null" />
+
+    <LinearLayout
+        android:id="@+id/ll_dots"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:alpha="0" />
+
+</LinearLayout>

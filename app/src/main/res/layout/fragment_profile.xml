@@ -48,6 +48,7 @@
                 <ImageView
                     android:layout_width="88dp"
                     android:layout_height="88dp"
+                    android:id="@+id/iv_profile_avatar"
                     android:layout_gravity="center"
                     android:background="@drawable/bg_circle_blue"
                     android:padding="20dp"
@@ -86,7 +87,7 @@
                 <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
                     android:background="@color/white" android:gravity="center_vertical"
                     android:orientation="horizontal" android:padding="16dp">
-                    <ImageView android:layout_width="40dp" android:layout_height="40dp"
+                    <ImageView android:id="@+id/iv_profile_icon_1" android:layout_width="40dp" android:layout_height="40dp"
                         android:background="@drawable/bg_circle_blue50" android:padding="9dp"
                         android:src="@android:drawable/ic_menu_myplaces" android:tint="@color/blue_600" />
                     <TextView android:layout_width="0dp" android:layout_height="wrap_content"
@@ -104,7 +105,7 @@
                 <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
                     android:background="@color/white" android:gravity="center_vertical"
                     android:orientation="horizontal" android:padding="16dp">
-                    <ImageView android:layout_width="40dp" android:layout_height="40dp"
+                    <ImageView android:id="@+id/iv_profile_icon_2" android:layout_width="40dp" android:layout_height="40dp"
                         android:background="@drawable/bg_circle_blue50" android:padding="9dp"
                         android:src="@android:drawable/ic_menu_agenda" android:tint="@color/blue_600" />
                     <TextView android:layout_width="0dp" android:layout_height="wrap_content"
@@ -122,7 +123,7 @@
                 <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
                     android:background="@color/white" android:gravity="center_vertical"
                     android:orientation="horizontal" android:padding="16dp">
-                    <ImageView android:layout_width="40dp" android:layout_height="40dp"
+                    <ImageView android:id="@+id/iv_profile_icon_3" android:layout_width="40dp" android:layout_height="40dp"
                         android:background="@drawable/bg_circle_blue50" android:padding="9dp"
                         android:src="@android:drawable/ic_lock_idle_lock" android:tint="@color/blue_600" />
                     <TextView android:layout_width="0dp" android:layout_height="wrap_content"
@@ -140,7 +141,7 @@
                 <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
                     android:background="@color/white" android:gravity="center_vertical"
                     android:orientation="horizontal" android:padding="16dp">
-                    <ImageView android:layout_width="40dp" android:layout_height="40dp"
+                    <ImageView android:id="@+id/iv_profile_icon_4" android:layout_width="40dp" android:layout_height="40dp"
                         android:background="@drawable/bg_circle_blue50" android:padding="9dp"
                         android:src="@android:drawable/ic_menu_manage" android:tint="@color/blue_600" />
                     <TextView android:layout_width="0dp" android:layout_height="wrap_content"
@@ -158,7 +159,7 @@
                 <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
                     android:background="@color/white" android:gravity="center_vertical"
                     android:orientation="horizontal" android:padding="16dp">
-                    <ImageView android:layout_width="40dp" android:layout_height="40dp"
+                    <ImageView android:id="@+id/iv_profile_icon_5" android:layout_width="40dp" android:layout_height="40dp"
                         android:background="@drawable/bg_circle_blue50" android:padding="9dp"
                         android:src="@android:drawable/ic_dialog_info" android:tint="@color/blue_600" />
                     <TextView android:layout_width="0dp" android:layout_height="wrap_content"

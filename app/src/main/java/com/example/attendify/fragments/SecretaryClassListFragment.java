@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.attendify.R;
+import com.example.attendify.ThemeApplier;
 import com.example.attendify.models.Student;
 import com.example.attendify.models.UserProfile;
 import com.example.attendify.repository.AuthRepository;
@@ -61,6 +62,12 @@ public class SecretaryClassListFragment extends Fragment {
             if (getActivity() != null)
                 getActivity().getSupportFragmentManager().popBackStack();
         });
+
+        // ── Apply saved theme to header ───────────────────────────────────────
+        UserProfile clThemeUser = AuthRepository.getInstance().getLoggedInUser();
+        if (clThemeUser != null) {
+            ThemeApplier.applyHeader(requireContext(), clThemeUser.getRole(), view.findViewById(R.id.sec_classlist_header));
+        }
 
         // ── RecyclerView setup ────────────────────────────────────────────────
         rvClasslist.setLayoutManager(new LinearLayoutManager(requireContext()));

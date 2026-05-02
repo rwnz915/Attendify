@@ -27,13 +27,11 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import com.example.attendify.ThemeApplier;
 
 public class SubjectFragment extends Fragment {
 
-    private static final String[] PRESET_COLORS = {
-            "#3B82F6", "#8B5CF6", "#10B981", "#F59E0B",
-            "#EF4444", "#06B6D4", "#EC4899", "#F97316"
-    };
+    // Dynamic preset colors — generated from the saved theme in getPresetColors()
 
     private UserProfile       currentUser;
     private List<SubjectItem> subjectList   = new ArrayList<>();
@@ -65,6 +63,9 @@ public class SubjectFragment extends Fragment {
 
         currentUser = AuthRepository.getInstance().getLoggedInUser();
         if (currentUser == null) return;
+
+        // Apply saved theme to header
+        ThemeApplier.applyHeader(requireContext(), currentUser.getRole(), view.findViewById(R.id.subject_header_bg));
 
         loadSubjects();
     }
@@ -131,7 +132,8 @@ public class SubjectFragment extends Fragment {
         int idx = 0;
         for (SubjectItem subject : subjectList) {
             if (activeSection.equals("All") || activeSection.equals(subject.section)) {
-                String color = PRESET_COLORS[idx % PRESET_COLORS.length];
+                String[] presetColors = ThemeApplier.getSubjectPresetColors(requireContext(), currentUser.getRole());
+                String color = presetColors[idx % presetColors.length];
                 subjectContainer.addView(buildSubjectCard(subject, color));
             }
             idx++;
@@ -484,7 +486,7 @@ public class SubjectFragment extends Fragment {
         bg.setShape(GradientDrawable.RECTANGLE);
         bg.setCornerRadius(dp(20));
         if (active) {
-            bg.setColor(Color.parseColor("#FF2563EB"));
+            bg.setColor(ThemeApplier.primary(requireContext(), currentUser != null ? currentUser.getRole() : "teacher"));
             chip.setTextColor(Color.WHITE);
         } else {
             bg.setColor(Color.WHITE);

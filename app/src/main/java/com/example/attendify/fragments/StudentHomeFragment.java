@@ -12,6 +12,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.example.attendify.R;
+import com.example.attendify.ThemeManager;
 import com.example.attendify.models.AttendanceRecord;
 import com.example.attendify.models.UserProfile;
 import com.example.attendify.repository.AttendanceRepository;
@@ -26,6 +27,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import com.example.attendify.ThemeApplier;
 
 /**
  * Student Home screen.
@@ -54,6 +56,31 @@ public class StudentHomeFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
+        // Apply saved theme to header
+        UserProfile userForTheme = AuthRepository.getInstance().getLoggedInUser();
+        if (userForTheme != null) {
+            String role = userForTheme.getRole();
+
+            ThemeApplier.applyHeader(requireContext(), role,
+                    view.findViewById(R.id.student_header_bg));
+            ThemeApplier.applyOval(requireContext(), role,
+                    view.findViewById(R.id.iv_profile_circle));
+
+            // Excuse Letter quick action — light tint bg + primary icon tint
+            android.widget.ImageView btnClassList = view.findViewById(R.id.btn_class_list);
+            if (btnClassList != null) {
+                ThemeApplier.applyLightTint(requireContext(), role, btnClassList, 12);
+                btnClassList.setColorFilter(ThemeManager.getPrimaryColor(requireContext(), role));
+            }
+
+            // Settings quick action — same treatment
+            android.widget.ImageView btnSettings = view.findViewById(R.id.btn_student_settings);
+            if (btnSettings != null) {
+                ThemeApplier.applyLightTint(requireContext(), role, btnSettings, 12);
+                btnSettings.setColorFilter(ThemeManager.getPrimaryColor(requireContext(), role));
+            }
+        }
 
         UserProfile user = AuthRepository.getInstance().getLoggedInUser();
         if (user == null) return;

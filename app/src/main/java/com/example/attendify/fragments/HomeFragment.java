@@ -26,6 +26,8 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import com.example.attendify.ThemeApplier;
+import com.example.attendify.ThemeManager;
 
 public class HomeFragment extends Fragment {
 
@@ -43,6 +45,32 @@ public class HomeFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
+        // Apply saved theme to header
+        UserProfile meTheme = AuthRepository.getInstance().getLoggedInUser();
+        String roleTheme = meTheme != null ? meTheme.getRole() : "teacher";
+        ThemeApplier.applyHeader(requireContext(), roleTheme, view.findViewById(R.id.home_header_bg));
+
+        // Apply theme to profile circle avatar
+        ThemeApplier.applyOval(requireContext(), roleTheme, view.findViewById(R.id.iv_profile_circle));
+
+        // Apply theme to btn_start: white bg with themed text color
+        android.widget.TextView btnStart = view.findViewById(R.id.btn_start);
+        if (btnStart != null) {
+            android.graphics.drawable.GradientDrawable btnBg = new android.graphics.drawable.GradientDrawable();
+            btnBg.setColor(0xFFFFFFFF);
+            btnBg.setCornerRadius(com.example.attendify.ThemeApplier.primary(requireContext(), roleTheme)); // reuse dp helper
+            btnBg.setCornerRadius(50f * requireContext().getResources().getDisplayMetrics().density);
+            btnStart.setBackground(btnBg);
+            btnStart.setTextColor(com.example.attendify.ThemeManager.getPrimaryColor(requireContext(), roleTheme));
+        }
+
+        // Apply theme to quick-action Class List icon (btn_class_list)
+        android.widget.ImageView btnClassList = view.findViewById(R.id.btn_class_list);
+        if (btnClassList != null) {
+            ThemeApplier.applyLightTint(requireContext(), roleTheme, btnClassList, 14);
+            btnClassList.setColorFilter(com.example.attendify.ThemeManager.getPrimaryColor(requireContext(), roleTheme));
+        }
 
         view.findViewById(R.id.btn_start).setOnClickListener(v -> {
             if (getActivity() instanceof MainActivity)

@@ -328,7 +328,7 @@ public class MainActivity extends AppCompatActivity {
             if (icon == null || label == null) continue;
 
             if (i == activeIndex) {
-                icon.setColorFilter(getColor(R.color.blue_600));
+                icon.setColorFilter(com.example.attendify.ThemeManager.getAccentColor(this, userRole));
                 label.setVisibility(View.VISIBLE);
             } else {
                 icon.setColorFilter(getColor(R.color.gray_400));

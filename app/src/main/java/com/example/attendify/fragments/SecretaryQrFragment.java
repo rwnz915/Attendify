@@ -9,6 +9,10 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.content.res.ColorStateList;
+
+import com.example.attendify.ThemeManager;
+import com.google.android.material.button.MaterialButton;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -32,6 +36,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import com.example.attendify.ThemeApplier;
 
 /**
  * Secretary QR scanner tab.
@@ -47,6 +52,7 @@ public class SecretaryQrFragment extends Fragment {
     private TextView tvActiveClass, tvMessage;
     private TextView tvResultStatus, tvResultName, tvResultSubject, tvResultTime;
     private CardView cardResult;
+    private MaterialButton btnScan;
 
     private SubjectRepository.SubjectItem activeSubject = null;
 
@@ -62,7 +68,15 @@ public class SecretaryQrFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // Expand green header over status bar
+        UserProfile secQrUser = AuthRepository.getInstance().getLoggedInUser();
+
+        // Apply saved theme to header
+        if (secQrUser != null) {
+            ThemeApplier.applyHeader(requireContext(), secQrUser.getRole(),
+                    view.findViewById(R.id.sec_qr_header));
+        }
+
+        // Expand header over status bar
         View header = view.findViewById(R.id.sec_qr_header);
         if (header != null) {
             header.setPadding(
@@ -72,21 +86,27 @@ public class SecretaryQrFragment extends Fragment {
                     header.getPaddingBottom());
         }
 
-        tvActiveClass    = view.findViewById(R.id.tv_qr_active_class);
-        tvMessage        = view.findViewById(R.id.tv_qr_message);
-        cardResult       = view.findViewById(R.id.card_scan_result);
-        tvResultStatus   = view.findViewById(R.id.tv_result_status_label);
-        tvResultName     = view.findViewById(R.id.tv_result_student_name);
-        tvResultSubject  = view.findViewById(R.id.tv_result_subject);
-        tvResultTime     = view.findViewById(R.id.tv_result_time);
+        tvActiveClass   = view.findViewById(R.id.tv_qr_active_class);
+        tvMessage       = view.findViewById(R.id.tv_qr_message);
+        cardResult      = view.findViewById(R.id.card_scan_result);
+        tvResultStatus  = view.findViewById(R.id.tv_result_status_label);
+        tvResultName    = view.findViewById(R.id.tv_result_student_name);
+        tvResultSubject = view.findViewById(R.id.tv_result_subject);
+        tvResultTime    = view.findViewById(R.id.tv_result_time);
 
-        view.findViewById(R.id.btn_open_scanner).setOnClickListener(v -> {
+        btnScan = view.findViewById(R.id.btn_open_scanner);
+        btnScan.setOnClickListener(v -> {
             if (activeSubject == null) {
                 showMessage("❌ No class is ongoing right now. Scanning is disabled.");
                 return;
             }
             startQRScanner();
         });
+
+        // Apply theme accent to QR corners + button
+        if (secQrUser != null) {
+            applyThemeAccent(view, secQrUser.getRole());
+        }
 
         resolveActiveSubject();
     }
@@ -365,6 +385,29 @@ public class SecretaryQrFragment extends Fragment {
     private void hideResult() {
         if (cardResult != null) cardResult.setVisibility(View.GONE);
         if (tvMessage  != null) tvMessage.setVisibility(View.GONE);
+    }
+
+    // ── Theme accent ──────────────────────────────────────────────────────────
+
+    // ── Theme accent ──────────────────────────────────────────────────────────
+
+    private void applyThemeAccent(View root, String role) {
+        int color = ThemeManager.getPrimaryColor(requireContext(), role);
+
+        int[] cornerIds = {
+                R.id.qr_corner_tl_h, R.id.qr_corner_tl_v,
+                R.id.qr_corner_tr_h, R.id.qr_corner_tr_v,
+                R.id.qr_corner_bl_h, R.id.qr_corner_bl_v,
+                R.id.qr_corner_br_h, R.id.qr_corner_br_v
+        };
+        for (int id : cornerIds) {
+            View corner = root.findViewById(id);
+            if (corner != null) corner.setBackgroundColor(color);
+        }
+
+        // Clear MaterialButton's built-in tint FIRST, then apply gradient
+        btnScan.setBackgroundTintList(null);
+        ThemeApplier.applyButton(requireContext(), role, btnScan);
     }
 
     // ── Permission ────────────────────────────────────────────────────────────

@@ -31,15 +31,11 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import com.example.attendify.ThemeApplier;
 
 public class StudentSubjectFragment extends Fragment {
 
-    // Purple-anchored palette that complements the student theme (#6D28D9 → #8B5CF6).
-    // Used as fallback when subject.color is null in Firestore.
-    private static final String[] PRESET_COLORS = {
-            "#7C3AED", "#0D9488", "#6D28D9", "#1D4ED8",
-            "#9333EA", "#0891B2", "#A855F7", "#4F46E5"
-    };
+    // Dynamic preset colors — generated from saved theme via ThemeApplier.getSubjectPresetColors()
 
     private UserProfile currentUser;
     private List<SubjectItem> subjectList = new ArrayList<>();
@@ -71,6 +67,9 @@ public class StudentSubjectFragment extends Fragment {
 
         currentUser = AuthRepository.getInstance().getLoggedInUser();
         if (currentUser == null) return;
+
+        // Apply saved theme to header
+        ThemeApplier.applyHeader(requireContext(), currentUser.getRole(), view.findViewById(R.id.subject_header_bg));
 
         loadSubjectsFromFirestore();
 
@@ -215,7 +214,7 @@ public class StudentSubjectFragment extends Fragment {
         bg.setShape(GradientDrawable.RECTANGLE);
         bg.setCornerRadius(dp(20));
         if (active) {
-            bg.setColor(Color.parseColor("#6D28D9"));
+            bg.setColor(ThemeApplier.primary(requireContext(), currentUser != null ? currentUser.getRole() : "student"));
             chip.setTextColor(Color.WHITE);
         } else {
             bg.setColor(Color.WHITE);
@@ -240,7 +239,8 @@ public class StudentSubjectFragment extends Fragment {
         bg.setCornerRadius(dp(20));
         // Use subject.color from Firestore; fall back to the purple-themed preset palette
         int cardIndex = subjectList.indexOf(subject);
-        String fallback = PRESET_COLORS[cardIndex >= 0 ? cardIndex % PRESET_COLORS.length : 0];
+        String[] dynColors = ThemeApplier.getSubjectPresetColors(requireContext(), currentUser.getRole());
+        String fallback = dynColors[cardIndex >= 0 ? cardIndex % dynColors.length : 0];
         try {
             bg.setColor(Color.parseColor(subject.color != null ? subject.color : fallback));
         } catch (Exception e) {
@@ -381,7 +381,8 @@ public class StudentSubjectFragment extends Fragment {
         header.setPadding(dp(20), dp(28), dp(60), dp(20));
         GradientDrawable headerBg = new GradientDrawable();
         int sheetIdx = subjectList.indexOf(subject);
-        String sheetFallback = PRESET_COLORS[sheetIdx >= 0 ? sheetIdx % PRESET_COLORS.length : 0];
+        String[] dynSheetColors = ThemeApplier.getSubjectPresetColors(requireContext(), currentUser.getRole());
+        String sheetFallback = dynSheetColors[sheetIdx >= 0 ? sheetIdx % dynSheetColors.length : 0];
         try { headerBg.setColor(Color.parseColor(subject.color != null ? subject.color : sheetFallback)); }
         catch (Exception e) { headerBg.setColor(Color.parseColor(sheetFallback)); }
         headerBg.setCornerRadii(new float[]{ dp(28),dp(28), dp(28),dp(28), 0,0, 0,0 });

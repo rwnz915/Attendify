@@ -14,6 +14,7 @@ import com.example.attendify.MainActivity;
 import com.example.attendify.R;
 import com.example.attendify.models.UserProfile;
 import com.example.attendify.repository.AuthRepository;
+import com.example.attendify.ThemeApplier;
 
 public class SecretaryProfileFragment extends Fragment {
 
@@ -28,6 +29,32 @@ public class SecretaryProfileFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
+        // Apply saved theme to header
+        UserProfile secProfUser = AuthRepository.getInstance().getLoggedInUser();
+        if (secProfUser != null) {
+            ThemeApplier.applyHeader(requireContext(), secProfUser.getRole(), view.findViewById(R.id.sec_profile_header_bg));
+
+            // Apply theme to avatar circle
+            ThemeApplier.applyOval(requireContext(), secProfUser.getRole(), view.findViewById(R.id.iv_profile_avatar));
+
+            // Apply theme tint to profile card icons
+            int primary = com.example.attendify.ThemeManager.getPrimaryColor(requireContext(), secProfUser.getRole());
+            int lightTint = com.example.attendify.ThemeManager.getLightTintColor(requireContext(), secProfUser.getRole());
+            int[] iconIds = {R.id.iv_profile_icon_1, R.id.iv_profile_icon_2, R.id.iv_profile_icon_3,
+                             R.id.iv_profile_icon_4, R.id.iv_profile_icon_5};
+            for (int id : iconIds) {
+                android.widget.ImageView iv = view.findViewById(id);
+                if (iv != null) {
+                    android.graphics.drawable.GradientDrawable gd = new android.graphics.drawable.GradientDrawable();
+                    gd.setShape(android.graphics.drawable.GradientDrawable.RECTANGLE);
+                    gd.setCornerRadius(50f * requireContext().getResources().getDisplayMetrics().density);
+                    gd.setColor(lightTint);
+                    iv.setBackground(gd);
+                    iv.setColorFilter(primary);
+                }
+            }
+        }
 
         // Expand green header to cover status bar
         View headerBg = view.findViewById(R.id.sec_profile_header_bg);

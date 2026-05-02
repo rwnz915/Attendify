@@ -18,7 +18,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.attendify.R;
-import com.example.attendify.models.ExcuseLetter;
+import com.example.attendify.ThemeApplier;import com.example.attendify.models.ExcuseLetter;
 import com.example.attendify.models.UserProfile;
 import com.example.attendify.repository.AuthRepository;
 import com.example.attendify.repository.ExcuseLetterRepository;
@@ -47,10 +47,14 @@ public class ExcuseLetterStatusFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        // Apply saved theme to header
+        UserProfile elsUser = AuthRepository.getInstance().getLoggedInUser();
+        if (elsUser != null) {
+            ThemeApplier.applyHeader(requireContext(), elsUser.getRole(), view.findViewById(R.id.excuse_header_bg));
+        }
+
         view.findViewById(R.id.btn_back).setOnClickListener(v ->
                 requireActivity().getSupportFragmentManager().popBackStack());
-
-        rv           = view.findViewById(R.id.rv_excuse_letters);
         emptyState   = view.findViewById(R.id.layout_empty);
         progressBar  = view.findViewById(R.id.progress_bar);
 

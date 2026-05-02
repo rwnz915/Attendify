@@ -8,6 +8,7 @@
 
     <!-- Purple header -->
     <LinearLayout
+        android:id="@+id/excuse_header_bg"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@drawable/bg_student_header"
@@ -47,6 +48,7 @@
                     android:textStyle="bold" />
 
                 <TextView
+                    android:id="@+id/tv_header_subtitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
@@ -225,6 +227,7 @@
                         android:paddingBottom="28dp">
 
                         <ImageView
+                            android:id="@+id/iv_upload_icon"
                             android:layout_width="44dp"
                             android:layout_height="44dp"
                             android:src="@drawable/ic_image"

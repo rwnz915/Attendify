@@ -18,6 +18,8 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.attendify.R;
+import com.example.attendify.ThemeApplier;
+import com.example.attendify.ThemeManager;
 import com.example.attendify.models.ExcuseLetter;
 import com.example.attendify.models.UserProfile;
 import com.example.attendify.repository.AuthRepository;
@@ -25,25 +27,12 @@ import com.example.attendify.repository.ExcuseLetterRepository;
 
 import java.util.List;
 
-/**
- * Student Excuse Letter hub.
- *
- * Layout:
- *   ┌─ Header ──────────────────────────────────────────┐
- *   │  ← back     Excuse Letter                         │
- *   └────────────────────────────────────────────────────┘
- *   ┌─ Status list (RecyclerView) ───────────────────────┐
- *   │  Shows all past letters with status badges         │
- *   └────────────────────────────────────────────────────┘
- *   ┌─ Sticky bottom ────────────────────────────────────┐
- *   │  [ Submit New Excuse Letter ]                      │
- *   └────────────────────────────────────────────────────┘
- */
 public class ExcuseLetterFragment extends Fragment {
 
     private RecyclerView rv;
     private LinearLayout emptyState;
     private ProgressBar  progressBar;
+    private int          themeAccentColor;
 
     @Nullable
     @Override
@@ -57,6 +46,15 @@ public class ExcuseLetterFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        UserProfile elUser = AuthRepository.getInstance().getLoggedInUser();
+        if (elUser != null) {
+            ThemeApplier.applyHeader(requireContext(), elUser.getRole(),
+                    view.findViewById(R.id.excuse_header_bg));
+            ThemeApplier.applyButton(requireContext(), elUser.getRole(),
+                    view.findViewById(R.id.btn_submit_new));
+            themeAccentColor = ThemeManager.getPrimaryColor(requireContext(), elUser.getRole());
+        }
+
         view.findViewById(R.id.btn_back).setOnClickListener(v ->
                 requireActivity().getSupportFragmentManager().popBackStack());
 
@@ -64,7 +62,6 @@ public class ExcuseLetterFragment extends Fragment {
         emptyState  = view.findViewById(R.id.layout_empty);
         progressBar = view.findViewById(R.id.progress_bar);
 
-        // Submit button navigates to the form
         view.findViewById(R.id.btn_submit_new).setOnClickListener(v ->
                 navigateTo(new SubmitExcuseLetterFragment()));
 
@@ -74,7 +71,6 @@ public class ExcuseLetterFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        // Refresh list when returning from submit screen
         loadLetters();
     }
 
@@ -101,7 +97,7 @@ public class ExcuseLetterFragment extends Fragment {
                                 rv.setVisibility(View.VISIBLE);
                                 emptyState.setVisibility(View.GONE);
                                 rv.setLayoutManager(new LinearLayoutManager(requireContext()));
-                                rv.setAdapter(new StatusAdapter(letters));
+                                rv.setAdapter(new StatusAdapter(letters, themeAccentColor));
                             }
                         });
                     }
@@ -124,8 +120,12 @@ public class ExcuseLetterFragment extends Fragment {
     private class StatusAdapter extends RecyclerView.Adapter<StatusAdapter.VH> {
 
         private final List<ExcuseLetter> items;
+        private final int accentColor;
 
-        StatusAdapter(List<ExcuseLetter> items) { this.items = items; }
+        StatusAdapter(List<ExcuseLetter> items, int accentColor) {
+            this.items = items;
+            this.accentColor = accentColor;
+        }
 
         @NonNull
         @Override
@@ -142,7 +142,6 @@ public class ExcuseLetterFragment extends Fragment {
             h.tvMessage.setText(letter.getMessage());
             h.tvDate.setText(formatTimestamp(letter.getSubmittedAt()));
 
-            // Subject name label
             if (h.tvSubject != null) {
                 String subj = letter.getSubjectName();
                 h.tvSubject.setText(subj != null && !subj.isEmpty() ? subj : "—");
@@ -169,6 +168,9 @@ public class ExcuseLetterFragment extends Fragment {
             // Attachment button
             if (letter.hasImage()) {
                 h.btnViewAttachment.setVisibility(View.VISIBLE);
+                h.btnViewAttachment.setTextColor(accentColor);
+                h.btnViewAttachment.setBackground(
+                        ExcuseLetterFragment.this.buildOutlineDrawable(accentColor));
                 h.btnViewAttachment.setOnClickListener(v -> {
                     Intent intent = new Intent(Intent.ACTION_VIEW,
                             Uri.parse(letter.getImageUrl()));
@@ -227,5 +229,14 @@ public class ExcuseLetterFragment extends Fragment {
         } catch (Exception e) {
             return ts.toString();
         }
+    }
+
+    private android.graphics.drawable.GradientDrawable buildOutlineDrawable(int color) {
+        android.graphics.drawable.GradientDrawable gd = new android.graphics.drawable.GradientDrawable();
+        gd.setShape(android.graphics.drawable.GradientDrawable.RECTANGLE);
+        gd.setColor(0x00000000); // transparent fill
+        gd.setStroke((int)(1.5f * getResources().getDisplayMetrics().density), color);
+        gd.setCornerRadius(50 * getResources().getDisplayMetrics().density); // pill shape
+        return gd;
     }
 }

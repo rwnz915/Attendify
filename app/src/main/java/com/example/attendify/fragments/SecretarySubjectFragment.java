@@ -26,6 +26,7 @@ import com.example.attendify.repository.SubjectRepository.SubjectItem;
 
 import java.util.ArrayList;
 import java.util.List;
+import com.example.attendify.ThemeApplier;
 
 /**
  * SecretarySubjectFragment
@@ -38,12 +39,7 @@ import java.util.List;
  */
 public class SecretarySubjectFragment extends Fragment {
 
-    // Colors that complement the green secretary theme without being monotone.
-    // Anchored by the theme green, then teal, emerald, slate-blue, amber, cyan, sage, and deep teal.
-    private static final String[] PRESET_COLORS = {
-            "#16A34A", "#0D9488", "#059669", "#1D4ED8",
-            "#D97706", "#0891B2", "#4D7C6F", "#0F766E"
-    };
+    // Dynamic preset colors — generated from saved theme via ThemeApplier.getSubjectPresetColors()
 
     private UserProfile       currentUser;
     private List<SubjectItem> subjectList = new ArrayList<>();
@@ -72,6 +68,9 @@ public class SecretarySubjectFragment extends Fragment {
 
         currentUser = AuthRepository.getInstance().getLoggedInUser();
         if (currentUser == null) return;
+
+        // Apply saved theme to header
+        ThemeApplier.applyHeader(requireContext(), currentUser.getRole(), view.findViewById(R.id.subject_header_bg));
 
         String section = currentUser.getSection();
         if (tvSectionLabel != null)
@@ -135,7 +134,8 @@ public class SecretarySubjectFragment extends Fragment {
         subjectContainer.removeAllViews();
         int idx = 0;
         for (SubjectItem subject : subjectList) {
-            String color = PRESET_COLORS[idx % PRESET_COLORS.length];
+            String[] secColors = ThemeApplier.getSubjectPresetColors(requireContext(), currentUser.getRole());
+            String color = secColors[idx % secColors.length];
             subjectContainer.addView(buildSubjectCard(subject, color));
             idx++;
         }

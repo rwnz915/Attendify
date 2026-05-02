@@ -22,6 +22,7 @@ import com.example.attendify.repository.AttendanceRepository;
 import com.example.attendify.repository.AuthRepository;
 
 import java.util.List;
+import com.example.attendify.ThemeApplier;
 
 public class HistoryFragment extends Fragment {
 
@@ -35,6 +36,12 @@ public class HistoryFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
+        // Apply saved theme to header
+        UserProfile histUser = AuthRepository.getInstance().getLoggedInUser();
+        if (histUser != null) {
+            ThemeApplier.applyHeader(requireContext(), histUser.getRole(), view.findViewById(R.id.history_header));
+        }
 
         View header = view.findViewById(R.id.history_header);
         header.setPadding(

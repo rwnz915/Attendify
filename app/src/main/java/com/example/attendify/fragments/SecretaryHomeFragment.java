@@ -23,6 +23,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import com.example.attendify.ThemeApplier;
 
 public class SecretaryHomeFragment extends Fragment {
 
@@ -44,6 +45,36 @@ public class SecretaryHomeFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
+        // Apply saved theme to header
+        UserProfile secThemeUser = AuthRepository.getInstance().getLoggedInUser();
+        if (secThemeUser != null) {
+            ThemeApplier.applyHeader(requireContext(), secThemeUser.getRole(), view.findViewById(R.id.sec_header_bg));
+
+            // Apply theme to the Class List quick action card
+            android.view.View btnClassList = view.findViewById(R.id.btn_quick_class_list);
+            if (btnClassList != null) {
+                ThemeApplier.applyLightTint(requireContext(), secThemeUser.getRole(), btnClassList, 20);
+                // Tint the icon inside it
+                android.widget.ImageView clIcon = btnClassList.findViewWithTag("class_list_icon");
+                if (clIcon == null) {
+                    // find first ImageView child
+                    if (btnClassList instanceof android.view.ViewGroup) {
+                        android.view.ViewGroup vg = (android.view.ViewGroup) btnClassList;
+                        for (int ci = 0; ci < vg.getChildCount(); ci++) {
+                            android.view.View child = vg.getChildAt(ci);
+                            if (child instanceof android.widget.ImageView) {
+                                ((android.widget.ImageView) child).setColorFilter(
+                                        com.example.attendify.ThemeManager.getPrimaryColor(requireContext(), secThemeUser.getRole()));
+                            } else if (child instanceof android.widget.TextView) {
+                                ((android.widget.TextView) child).setTextColor(
+                                        com.example.attendify.ThemeManager.getPrimaryColor(requireContext(), secThemeUser.getRole()));
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         // FIX: set paddingTop absolutely (base dp + statusBarHeight) instead of
         // reading getPaddingTop() which causes accumulation on every tab switch.

@@ -1,0 +1,281 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    fragment_setup_page2_location.xml
+    Setup flow – Page 2: Enable Location
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/gray_50"
+    android:paddingStart="28dp"
+    android:paddingEnd="28dp"
+    android:paddingTop="48dp"
+    android:paddingBottom="24dp"
+    android:gravity="center_horizontal">
+
+    <!-- ── Icon ──────────────────────────────────────────────────── -->
+    <FrameLayout
+        android:id="@+id/iv_page_icon_container"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:background="@drawable/bg_setup_icon_blue_light"
+        android:scaleX="0.4"
+        android:scaleY="0.4">
+
+        <ImageView
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_gravity="center"
+            android:src="@drawable/ic_location_pin"
+            app:tint="@color/blue_600" />
+    </FrameLayout>
+
+    <!-- ── Headline ──────────────────────────────────────────────── -->
+    <TextView
+        android:id="@+id/tv_page_headline"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Enable Location"
+        android:textColor="@color/gray_900"
+        android:textSize="25sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:alpha="0"
+        android:translationY="16dp" />
+
+    <TextView
+        android:id="@+id/tv_page_sub"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="7dp"
+        android:text="Allow Attendify to access your location for geofencing-based attendance tracking"
+        android:textColor="@color/gray_500"
+        android:textSize="13sp"
+        android:gravity="center"
+        android:lineSpacingMultiplier="1.3"
+        android:alpha="0"
+        android:translationY="16dp" />
+
+    <!-- ── Feature cards ─────────────────────────────────────────── -->
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/card_loc_1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="18dp"
+        app:cardBackgroundColor="@color/white"
+        app:cardCornerRadius="14dp"
+        app:cardElevation="1dp"
+        android:alpha="0"
+        android:translationY="20dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="13dp"
+            android:gravity="center_vertical">
+
+            <FrameLayout
+                android:id="@+id/iv_loc1_bg"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:background="@drawable/bg_setup_icon_blue_light">
+                <ImageView
+                    android:id="@+id/iv_loc1_icon"
+                    android:layout_width="19dp"
+                    android:layout_height="19dp"
+                    android:layout_gravity="center"
+                    android:src="@drawable/ic_book"
+                    app:tint="@color/blue_600" />
+            </FrameLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="12dp"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Privacy Protected"
+                    android:textColor="@color/gray_800"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="Your location is only used during class hours and never shared with third parties"
+                    android:textColor="@color/gray_500"
+                    android:textSize="11sp" />
+            </LinearLayout>
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/card_loc_2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        app:cardBackgroundColor="@color/white"
+        app:cardCornerRadius="14dp"
+        app:cardElevation="1dp"
+        android:alpha="0"
+        android:translationY="20dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="13dp"
+            android:gravity="center_vertical">
+
+            <FrameLayout
+                android:id="@+id/iv_loc2_bg"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:background="@drawable/bg_setup_icon_blue_light">
+                <ImageView
+                    android:id="@+id/iv_loc2_icon"
+                    android:layout_width="19dp"
+                    android:layout_height="19dp"
+                    android:layout_gravity="center"
+                    android:src="@drawable/ic_book"
+                    app:tint="@color/blue_600" />
+            </FrameLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="12dp"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Automated Check-In"
+                    android:textColor="@color/gray_800"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="Automatically mark attendance when you enter the classroom"
+                    android:textColor="@color/gray_500"
+                    android:textSize="11sp" />
+            </LinearLayout>
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/card_loc_3"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        app:cardBackgroundColor="@color/white"
+        app:cardCornerRadius="14dp"
+        app:cardElevation="1dp"
+        android:alpha="0"
+        android:translationY="20dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="13dp"
+            android:gravity="center_vertical">
+
+            <FrameLayout
+                android:id="@+id/iv_loc3_bg"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:background="@drawable/bg_setup_icon_blue_light">
+                <ImageView
+                    android:id="@+id/iv_loc3_icon"
+                    android:layout_width="19dp"
+                    android:layout_height="19dp"
+                    android:layout_gravity="center"
+                    android:src="@drawable/ic_clock"
+                    app:tint="@color/blue_600" />
+            </FrameLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="12dp"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Punctuality Tracking"
+                    android:textColor="@color/gray_800"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="Accurate arrival time logging for better attendance records"
+                    android:textColor="@color/gray_500"
+                    android:textSize="11sp" />
+            </LinearLayout>
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+
+    <View android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1" />
+
+    <!-- ── CTA ───────────────────────────────────────────────────── -->
+    <TextView
+        android:id="@+id/btn_enable_location"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:background="@drawable/bg_setup_button"
+        android:gravity="center"
+        android:text="Enable Location Access"
+        android:textColor="@color/white"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        android:clickable="true"
+        android:focusable="true"
+        android:alpha="0"
+        android:translationY="20dp"
+        android:stateListAnimator="@null" />
+
+    <TextView
+        android:id="@+id/tv_skip_location"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:gravity="center"
+        android:text="Skip for Now"
+        android:textColor="@color/gray_400"
+        android:textSize="13sp"
+        android:clickable="true"
+        android:focusable="true"
+        android:alpha="0"
+        android:paddingBottom="4dp" />
+
+    <!-- ── Dot indicator ──────────────────────────────────────────── -->
+    <LinearLayout
+        android:id="@+id/ll_dots"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:alpha="0" />
+
+</LinearLayout>

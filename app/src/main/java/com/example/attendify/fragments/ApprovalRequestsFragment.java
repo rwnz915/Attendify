@@ -20,6 +20,8 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.attendify.R;
+import com.example.attendify.ThemeApplier;
+import com.example.attendify.ThemeManager;
 import com.example.attendify.models.ExcuseLetter;
 import com.example.attendify.models.UserProfile;
 import com.example.attendify.repository.AuthRepository;
@@ -27,34 +29,19 @@ import com.example.attendify.repository.ExcuseLetterRepository;
 
 import java.util.List;
 
-/**
- * Teacher view: tabbed Pending / History screen for excuse letters.
- *
- * Pending tab  — letters awaiting teacher action (approve / reject).
- * History tab  — letters already decided (approved / rejected), with
- *                a "Change Decision" button so the teacher can correct
- *                an accidental mis-click.
- *
- * Filtering is scoped to THIS teacher's subjects only via teacherId.
- */
 public class ApprovalRequestsFragment extends Fragment {
-
-    // ── Tab state ─────────────────────────────────────────────────────────────
 
     private static final int TAB_PENDING = 0;
     private static final int TAB_HISTORY = 1;
 
     private int currentTab = TAB_PENDING;
-
-    // ── Views ─────────────────────────────────────────────────────────────────
+    private int themeAccentColor = 0xFF1D4ED8; // fallback
 
     private RecyclerView rv;
     private LinearLayout emptyState;
     private TextView     tvEmptyTitle, tvEmptySubtitle;
     private ProgressBar  progressBar;
     private TextView     tabPending, tabHistory;
-
-    // ── Lifecycle ─────────────────────────────────────────────────────────────
 
     @Nullable
     @Override
@@ -71,6 +58,13 @@ public class ApprovalRequestsFragment extends Fragment {
         view.findViewById(R.id.btn_back).setOnClickListener(v ->
                 requireActivity().getSupportFragmentManager().popBackStack());
 
+        UserProfile approvalUser = AuthRepository.getInstance().getLoggedInUser();
+        if (approvalUser != null) {
+            ThemeApplier.applyHeader(requireContext(), approvalUser.getRole(),
+                    view.findViewById(R.id.approval_header_bg));
+            themeAccentColor = ThemeManager.getPrimaryColor(requireContext(), approvalUser.getRole());
+        }
+
         rv              = view.findViewById(R.id.rv_approvals);
         emptyState      = view.findViewById(R.id.tv_empty);
         tvEmptyTitle    = view.findViewById(R.id.tv_empty_title);
@@ -78,6 +72,9 @@ public class ApprovalRequestsFragment extends Fragment {
         progressBar     = view.findViewById(R.id.progress_bar);
         tabPending      = view.findViewById(R.id.tab_pending);
         tabHistory      = view.findViewById(R.id.tab_history);
+
+        // Fix initial tab selected text color — XML has it hardcoded blue
+        tabPending.setTextColor(themeAccentColor);
 
         tabPending.setOnClickListener(v -> switchTab(TAB_PENDING));
         tabHistory.setOnClickListener(v -> switchTab(TAB_HISTORY));
@@ -97,7 +94,7 @@ public class ApprovalRequestsFragment extends Fragment {
     private void updateTabUI() {
         if (currentTab == TAB_PENDING) {
             tabPending.setBackgroundResource(R.drawable.bg_tab_selected);
-            tabPending.setTextColor(0xFF1D4ED8); // blue text on white pill
+            tabPending.setTextColor(themeAccentColor);
             tabPending.setTypeface(null, Typeface.BOLD);
 
             tabHistory.setBackgroundColor(0x00000000);
@@ -105,7 +102,7 @@ public class ApprovalRequestsFragment extends Fragment {
             tabHistory.setTypeface(null, Typeface.BOLD);
         } else {
             tabHistory.setBackgroundResource(R.drawable.bg_tab_selected);
-            tabHistory.setTextColor(0xFF1D4ED8); // blue text on white pill
+            tabHistory.setTextColor(themeAccentColor);
             tabHistory.setTypeface(null, Typeface.BOLD);
 
             tabPending.setBackgroundColor(0x00000000);
@@ -164,12 +161,9 @@ public class ApprovalRequestsFragment extends Fragment {
                     public void onSuccess(List<ExcuseLetter> allLetters) {
                         if (getActivity() == null) return;
 
-                        // Filter out "pending" — history shows only decided letters
                         java.util.List<ExcuseLetter> decided = new java.util.ArrayList<>();
                         for (ExcuseLetter l : allLetters) {
-                            if (!"pending".equals(l.getStatus())) {
-                                decided.add(l);
-                            }
+                            if (!"pending".equals(l.getStatus())) decided.add(l);
                         }
 
                         getActivity().runOnUiThread(() -> {
@@ -223,6 +217,18 @@ public class ApprovalRequestsFragment extends Fragment {
         });
     }
 
+    // ── Outline drawable helper (shared by both adapters) ────────────────────
+
+    private android.graphics.drawable.GradientDrawable buildOutlineDrawable(int color) {
+        android.graphics.drawable.GradientDrawable gd =
+                new android.graphics.drawable.GradientDrawable();
+        gd.setShape(android.graphics.drawable.GradientDrawable.RECTANGLE);
+        gd.setColor(0x00000000);
+        gd.setStroke((int)(1.5f * getResources().getDisplayMetrics().density), color);
+        gd.setCornerRadius(50 * getResources().getDisplayMetrics().density);
+        return gd;
+    }
+
     // ── Pending Adapter ───────────────────────────────────────────────────────
 
     private class PendingAdapter extends RecyclerView.Adapter<PendingAdapter.VH> {
@@ -242,7 +248,6 @@ public class ApprovalRequestsFragment extends Fragment {
         public void onBindViewHolder(@NonNull VH h, int position) {
             ExcuseLetter letter = items.get(position);
 
-            //h.tvAvatar.setText(letter.getInitial());
             h.tvStudentName.setText(letter.getStudentName());
             h.tvStudentNumber.setText(letter.getStudentNumber() != null
                     ? letter.getStudentNumber() : "");
@@ -259,13 +264,26 @@ public class ApprovalRequestsFragment extends Fragment {
                 }
             }
 
+            // View Attachment — themed outline + text
             if (letter.hasImage()) {
                 h.btnViewAttachment.setVisibility(View.VISIBLE);
+                h.btnViewAttachment.setTextColor(themeAccentColor);
+                h.btnViewAttachment.setBackground(buildOutlineDrawable(themeAccentColor));
                 h.btnViewAttachment.setOnClickListener(v -> openImage(letter.getImageUrl()));
             } else {
                 h.btnViewAttachment.setVisibility(View.GONE);
             }
 
+            // Approve — kept green (status color, not theme)
+            // Decline — kept red (status color, not theme)
+            // Approve — themed gradient button
+            ThemeApplier.applyButton(requireContext(),
+                    AuthRepository.getInstance().getLoggedInUser() != null
+                            ? AuthRepository.getInstance().getLoggedInUser().getRole()
+                            : "teacher",
+                    h.btnApprove);
+
+            // Decline — kept red (semantic status color, not theme)
             h.btnApprove.setOnClickListener(v ->
                     confirmPendingAction(letter, "approved", h.getAdapterPosition()));
             h.btnDecline.setOnClickListener(v ->
@@ -287,12 +305,11 @@ public class ApprovalRequestsFragment extends Fragment {
         }
 
         class VH extends RecyclerView.ViewHolder {
-            TextView tvAvatar, tvStudentName, tvStudentNumber, tvDate,
+            TextView tvStudentName, tvStudentNumber, tvDate,
                     tvMessage, tvSubjectBadge, btnViewAttachment, btnApprove, btnDecline;
 
             VH(@NonNull View itemView) {
                 super(itemView);
-                //tvAvatar          = itemView.findViewById(R.id.tv_avatar);
                 tvStudentName     = itemView.findViewById(R.id.tv_student_name);
                 tvStudentNumber   = itemView.findViewById(R.id.tv_student_number);
                 tvDate            = itemView.findViewById(R.id.tv_date);
@@ -332,15 +349,15 @@ public class ApprovalRequestsFragment extends Fragment {
             h.tvDate.setText(formatTimestamp(letter.getSubmittedAt()));
             h.tvMessage.setText(letter.getMessage());
 
-            // Status badge appearance
+            // Status badge — kept as semantic colors (green/red), not theme
             if (isApproved) {
                 h.tvStatusBadge.setText("✓  Approved");
                 h.tvStatusBadge.setBackgroundResource(R.drawable.bg_badge_green_pill);
-                h.tvStatusBadge.setTextColor(0xFF15803D); // green_700
+                h.tvStatusBadge.setTextColor(0xFF15803D);
             } else {
                 h.tvStatusBadge.setText("✕  Rejected");
                 h.tvStatusBadge.setBackgroundResource(R.drawable.bg_badge_absent);
-                h.tvStatusBadge.setTextColor(0xFFB91C1C); // red_700
+                h.tvStatusBadge.setTextColor(0xFFB91C1C);
             }
 
             // Subject badge
@@ -352,15 +369,23 @@ public class ApprovalRequestsFragment extends Fragment {
                 h.tvSubjectBadge.setVisibility(View.GONE);
             }
 
-            // Attachment
+            // View Attachment — themed outline + text
             if (letter.hasImage()) {
                 h.btnViewAttachment.setVisibility(View.VISIBLE);
+                h.btnViewAttachment.setTextColor(themeAccentColor);
+                h.btnViewAttachment.setBackground(buildOutlineDrawable(themeAccentColor));
                 h.btnViewAttachment.setOnClickListener(v -> openImage(letter.getImageUrl()));
             } else {
                 h.btnViewAttachment.setVisibility(View.GONE);
             }
 
-            // Change decision — flips to the opposite status
+            // Change Decision — themed gradient button
+            ThemeApplier.applyButton(requireContext(),
+                    AuthRepository.getInstance().getLoggedInUser() != null
+                            ? AuthRepository.getInstance().getLoggedInUser().getRole()
+                            : "teacher",
+                    h.btnChangeDecision);
+
             String targetStatus = isApproved ? "rejected" : "approved";
             String targetLabel  = isApproved ? "Reject"   : "Approve";
             h.btnChangeDecision.setOnClickListener(v ->
@@ -407,10 +432,6 @@ public class ApprovalRequestsFragment extends Fragment {
 
     // ── Shared status update ──────────────────────────────────────────────────
 
-    /**
-     * Applies a new status to a letter and removes it from the list (because
-     * after a change it belongs in the other tab).
-     */
     private <VH extends RecyclerView.ViewHolder> void applyStatus(
             ExcuseLetter letter,
             String newStatus,
@@ -440,13 +461,11 @@ public class ApprovalRequestsFragment extends Fragment {
                                 }
                             }
 
-                            String msg;
-                            if (newStatus.equals("approved")) {
-                                msg = "Excuse letter approved ✓";
-                            } else {
-                                msg = "Excuse letter rejected";
-                            }
-                            Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show();
+                            Toast.makeText(requireContext(),
+                                    newStatus.equals("approved")
+                                            ? "Excuse letter approved ✓"
+                                            : "Excuse letter rejected",
+                                    Toast.LENGTH_SHORT).show();
                         });
                     }
 
