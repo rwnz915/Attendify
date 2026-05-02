@@ -101,6 +101,30 @@ public class AuthRepository {
         return user;
     }
 
+    public void fetchUserProfile(String uid, String savedRole, LoginCallback callback) {
+        db.collection("users").document(uid).get()
+                .addOnSuccessListener(doc -> {
+                    if (!doc.exists()) {
+                        callback.onFailure("Profile not found.");
+                        return;
+                    }
+
+                    String role = doc.getString("role");
+
+                    // Make sure the saved role still matches what's in Firestore
+                    if (!savedRole.equals(role)) {
+                        auth.signOut();
+                        callback.onFailure("Role mismatch. Please log in again.");
+                        return;
+                    }
+
+                    UserProfile user = buildUserProfile(uid, doc);
+                    loggedInUser = user;
+                    callback.onSuccess(user);
+                })
+                .addOnFailureListener(e -> callback.onFailure("Failed to load profile: " + e.getMessage()));
+    }
+
     // ── Session ───────────────────────────────────────────────────────────────
 
     /** Returns the currently logged-in user. Available to all fragments. */

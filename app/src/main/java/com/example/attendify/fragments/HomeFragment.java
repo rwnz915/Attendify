@@ -89,6 +89,15 @@ public class HomeFragment extends Fragment {
                         .addToBackStack(null)
                         .commit());
 
+        // Contact Parent quick action
+        view.findViewById(R.id.btn_contact_parent).setOnClickListener(v ->
+                requireActivity().getSupportFragmentManager()
+                        .beginTransaction()
+                        .setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out)
+                        .replace(R.id.fragment_container, new TeacherContactParentFragment())
+                        .addToBackStack(null)
+                        .commit());
+
         UserProfile me = AuthRepository.getInstance().getLoggedInUser();
         if (me != null) {
             ((TextView) view.findViewById(R.id.tv_teacher_name)).setText(me.getFullName());

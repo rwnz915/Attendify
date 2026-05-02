@@ -54,6 +54,7 @@ public class SetupPage4DoneFragment extends Fragment {
 
         view.findViewById(R.id.btn_start).setOnClickListener(v -> {
             if (getActivity() instanceof SetupActivity) {
+                ThemeManager.markSetupDone(requireContext());
                 ((SetupActivity) getActivity()).finishSetup();
             }
         });
