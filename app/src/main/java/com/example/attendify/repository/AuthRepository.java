@@ -189,6 +189,9 @@ public class AuthRepository {
         user.setRole(doc.getString("role"));
         user.setSection(doc.getString("section"));
         user.setStudentID(doc.getString("studentID"));
+        user.setContactNumber(doc.getString("contactNumber"));
+        user.setParentName(doc.getString("parentName"));
+        user.setParentContact(doc.getString("parentContact"));
 
         List<String> sections = (List<String>) doc.get("sections");
         user.setSections(sections);

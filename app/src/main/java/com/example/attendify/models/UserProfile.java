@@ -16,6 +16,9 @@ public class UserProfile {
     private String role;
     private String section;      // students only
     private String studentID;    // students only (capital ID — matches Firestore)
+    private String contactNumber;
+    private String parentName;
+    private String parentContact;
     private List<String> sections; // teachers only
 
     // Required by Firestore deserialization
@@ -30,6 +33,9 @@ public class UserProfile {
     public String getRole()           { return role; }
     public String getSection()        { return section; }
     public String getStudentID()      { return studentID; }
+    public String getContactNumber()  { return contactNumber; }
+    public String getParentName()     { return parentName; }
+    public String getParentContact()  { return parentContact; }
     public List<String> getSections() { return sections; }
 
     /** Returns "Lastname, Firstname" — used wherever a full name is displayed */
@@ -51,6 +57,9 @@ public class UserProfile {
     public void setRole(String role)               { this.role = role; }
     public void setSection(String section)         { this.section = section; }
     public void setStudentID(String studentID)     { this.studentID = studentID; }
+    public void setContactNumber(String contact)   { this.contactNumber = contact; }
+    public void setParentName(String parentName)   { this.parentName = parentName; }
+    public void setParentContact(String parentContact) { this.parentContact = parentContact; }
     public void setSections(List<String> sections) { this.sections = sections; }
 
     // ── Role helpers ──────────────────────────────────────────────────────────

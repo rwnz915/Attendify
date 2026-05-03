@@ -120,6 +120,29 @@ public class AttendanceRepository {
                 });
     }
 
+    public void getHistoryForSubjects(List<String> subjectIds, AttendanceCallback callback) {
+        if (subjectIds == null || subjectIds.isEmpty()) {
+            callback.onSuccess(new ArrayList<>());
+            return;
+        }
+
+        // Firestore whereIn limit is 10 (or 30 in newer versions). 
+        // For simplicity, we fetch all if more than 10, or split. 
+        // But usually a teacher has few subjects.
+        db.collection("attendance")
+                .whereIn("subjectId", subjectIds)
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    List<AttendanceRecord> list = new ArrayList<>();
+                    for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                        list.add(docToRecord(doc));
+                    }
+                    sortByDateDescending(list);
+                    callback.onSuccess(list);
+                })
+                .addOnFailureListener(e -> callback.onFailure(e.getMessage()));
+    }
+
     // ── Today's summary for a subject ─────────────────────────────────────────
 
     public void getTodayAttendance(String subjectId, String date,
@@ -379,16 +402,22 @@ public class AttendanceRepository {
         return new AttendanceRecord(
                 doc.getString("date"),
                 doc.getString("subjectName"),
+                doc.getString("subjectId"),
                 doc.getString("time"),
-                doc.getString("status"));
+                doc.getString("status"),
+                doc.getString("studentId"),
+                doc.getString("studentName"));
     }
 
     private Map<String, Object> recordToMap(DocumentSnapshot doc) {
         Map<String, Object> m = new HashMap<>();
         m.put("date",        doc.getString("date"));
         m.put("subjectName", doc.getString("subjectName"));
+        m.put("subjectId",   doc.getString("subjectId"));
         m.put("time",        doc.getString("time"));
         m.put("status",      doc.getString("status"));
+        m.put("studentId",   doc.getString("studentId"));
+        m.put("studentName", doc.getString("studentName"));
         return m;
     }
 
@@ -396,8 +425,9 @@ public class AttendanceRepository {
         List<AttendanceRecord> list = new ArrayList<>();
         for (Map<String, Object> m : raw) {
             list.add(new AttendanceRecord(
-                    str(m, "date"), str(m, "subjectName"),
-                    str(m, "time"), str(m, "status")));
+                    str(m, "date"), str(m, "subjectName"), str(m, "subjectId"),
+                    str(m, "time"), str(m, "status"),
+                    str(m, "studentId"), str(m, "studentName")));
         }
         return list;
     }

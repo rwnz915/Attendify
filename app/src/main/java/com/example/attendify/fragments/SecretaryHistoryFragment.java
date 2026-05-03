@@ -1,11 +1,17 @@
 package com.example.attendify.fragments;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.ProgressBar;
+import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -15,10 +21,13 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.attendify.MainActivity;
 import com.example.attendify.R;
-import com.example.attendify.adapters.HistoryAdapter;
+import com.example.attendify.activities.SecretaryMonthDetailActivity;
+import com.example.attendify.adapters.MonthHistoryAdapter;
 import com.example.attendify.models.AttendanceRecord;
 import com.example.attendify.models.UserProfile;
 import com.example.attendify.repository.AuthRepository;
+import com.example.attendify.utils.ExportUtils;
+import com.example.attendify.ThemeApplier;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
@@ -27,23 +36,29 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import com.example.attendify.ThemeApplier;
+import java.util.Set;
 
-/**
- * Shows attendance history (past 30 days) for all students
- * in the secretary's section. Groups records by date with
- * present / late / absent counts shown via the HistoryAdapter.
- */
 public class SecretaryHistoryFragment extends Fragment {
+
+    private List<AttendanceRecord> allRecords = new ArrayList<>();
+    
+    private TextView tvTotalPresent, tvTotalLate, tvTotalAbsent, tvEmpty;
+    private Spinner spinnerSubject;
+    private RecyclerView rvMonths;
+    private ProgressBar progressBar;
+    private Button btnExport;
+
+    private String selectedSubject = "All Subjects";
+    private String userSection = "";
 
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater,
-                             @Nullable ViewGroup container,
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_secretary_history, container, false);
     }
@@ -53,12 +68,12 @@ public class SecretaryHistoryFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         // Apply saved theme to header
-        UserProfile secHistUser = AuthRepository.getInstance().getLoggedInUser();
-        if (secHistUser != null) {
-            ThemeApplier.applyHeader(requireContext(), secHistUser.getRole(), view.findViewById(R.id.sec_history_header));
+        UserProfile secUser = AuthRepository.getInstance().getLoggedInUser();
+        if (secUser != null) {
+            ThemeApplier.applyHeader(requireContext(), secUser.getRole(), view.findViewById(R.id.sec_history_header));
+            userSection = secUser.getSection() != null ? secUser.getSection() : "";
         }
 
-        // Expand green header over status bar
         View header = view.findViewById(R.id.sec_history_header);
         if (header != null) {
             header.setPadding(
@@ -68,38 +83,42 @@ public class SecretaryHistoryFragment extends Fragment {
                     header.getPaddingBottom());
         }
 
-        RecyclerView rv        = view.findViewById(R.id.rv_sec_history);
-        ProgressBar  progress  = view.findViewById(R.id.progress_sec_history);
-        TextView     tvEmpty   = view.findViewById(R.id.tv_sec_history_empty);
-        TextView     tvSubtitle = view.findViewById(R.id.tv_sec_history_subtitle);
+        tvTotalPresent = view.findViewById(R.id.tv_total_present);
+        tvTotalLate    = view.findViewById(R.id.tv_total_late);
+        tvTotalAbsent   = view.findViewById(R.id.tv_total_absent);
+        tvEmpty         = view.findViewById(R.id.tv_sec_history_empty);
+        
+        spinnerSubject = view.findViewById(R.id.spinner_subject);
+        rvMonths      = view.findViewById(R.id.rv_sec_history);
+        progressBar   = view.findViewById(R.id.progress_sec_history);
+        btnExport     = view.findViewById(R.id.btn_export);
 
-        rv.setLayoutManager(new LinearLayoutManager(requireContext()));
-        if (progress != null) progress.setVisibility(View.VISIBLE);
+        rvMonths.setLayoutManager(new LinearLayoutManager(requireContext()));
+        
+        btnExport.setOnClickListener(v -> exportCurrentData());
 
-        UserProfile user = AuthRepository.getInstance().getLoggedInUser();
-        if (user == null || user.getSection() == null) {
-            if (progress != null) progress.setVisibility(View.GONE);
-            if (tvEmpty  != null) tvEmpty.setVisibility(View.VISIBLE);
-            return;
-        }
+        loadHistory();
+    }
 
-        String section = user.getSection();
-        if (tvSubtitle != null) tvSubtitle.setText("Past 30 Days  \u2022  " + section);
+    private void loadHistory() {
+        if (userSection.isEmpty()) return;
+
+        if (progressBar != null) progressBar.setVisibility(View.VISIBLE);
 
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
         // Step 1: get all student UIDs in this section
         db.collection("users")
                 .whereEqualTo("role", "student")
-                .whereEqualTo("section", section)
+                .whereEqualTo("section", userSection)
                 .get()
                 .addOnSuccessListener(userSnap -> {
                     if (getActivity() == null) return;
                     List<DocumentSnapshot> studentDocs = userSnap.getDocuments();
                     if (studentDocs.isEmpty()) {
                         getActivity().runOnUiThread(() -> {
-                            if (progress != null) progress.setVisibility(View.GONE);
-                            if (tvEmpty  != null) tvEmpty.setVisibility(View.VISIBLE);
+                            if (progressBar != null) progressBar.setVisibility(View.GONE);
+                            if (tvEmpty != null) tvEmpty.setVisibility(View.VISIBLE);
                         });
                         return;
                     }
@@ -114,61 +133,143 @@ public class SecretaryHistoryFragment extends Fragment {
                             .addOnSuccessListener(attSnap -> {
                                 if (getActivity() == null) return;
 
-                                // Group by date → aggregate present/late/absent
-                                Map<String, int[]> dateMap = new HashMap<>();
-                                for (DocumentSnapshot doc : attSnap.getDocuments()) {
-                                    String date   = doc.getString("date");
-                                    String status = doc.getString("status");
-                                    if (date == null || status == null) continue;
-
-                                    int[] counts = dateMap.getOrDefault(date, new int[3]);
-                                    if ("Present".equals(status)) counts[0]++;
-                                    else if ("Late".equals(status))    counts[1]++;
-                                    else if ("Absent".equals(status))  counts[2]++;
-                                    dateMap.put(date, counts);
-                                }
-
-                                // Build AttendanceRecord list sorted newest first
                                 List<AttendanceRecord> records = new ArrayList<>();
-                                for (Map.Entry<String, int[]> entry : dateMap.entrySet()) {
-                                    int[] c = entry.getValue();
-                                    records.add(new AttendanceRecord(entry.getKey(), c[0], c[2], c[1]));
+                                for (DocumentSnapshot doc : attSnap.getDocuments()) {
+                                    records.add(new AttendanceRecord(
+                                            doc.getString("date"),
+                                            doc.getString("subjectName"),
+                                            doc.getString("subjectId"),
+                                            doc.getString("time"),
+                                            doc.getString("status"),
+                                            doc.getString("studentId"),
+                                            doc.getString("studentName")));
                                 }
-                                sortByDateDesc(records);
 
                                 getActivity().runOnUiThread(() -> {
-                                    if (progress != null) progress.setVisibility(View.GONE);
-                                    if (records.isEmpty()) {
-                                        if (tvEmpty != null) tvEmpty.setVisibility(View.VISIBLE);
-                                    } else {
-                                        rv.setAdapter(new HistoryAdapter(requireContext(), records));
-                                    }
+                                    if (progressBar != null) progressBar.setVisibility(View.GONE);
+                                    allRecords = records;
+                                    setupSubjectSpinner();
+                                    applyFilters();
                                 });
                             })
                             .addOnFailureListener(e -> {
                                 if (getActivity() != null) getActivity().runOnUiThread(() -> {
-                                    if (progress != null) progress.setVisibility(View.GONE);
-                                    if (tvEmpty  != null) tvEmpty.setVisibility(View.VISIBLE);
+                                    if (progressBar != null) progressBar.setVisibility(View.GONE);
+                                    Toast.makeText(getContext(), "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                                 });
                             });
                 })
                 .addOnFailureListener(e -> {
                     if (getActivity() != null) getActivity().runOnUiThread(() -> {
-                        if (progress != null) progress.setVisibility(View.GONE);
-                        if (tvEmpty  != null) tvEmpty.setVisibility(View.VISIBLE);
+                        if (progressBar != null) progressBar.setVisibility(View.GONE);
+                        Toast.makeText(getContext(), "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                     });
                 });
     }
 
-    private void sortByDateDesc(List<AttendanceRecord> list) {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH);
-        Collections.sort(list, (a, b) -> {
+    private void setupSubjectSpinner() {
+        Set<String> subjects = new HashSet<>();
+        subjects.add("All Subjects");
+        for (AttendanceRecord rec : allRecords) {
+            if (rec.getSubject() != null && !rec.getSubject().isEmpty()) {
+                subjects.add(rec.getSubject());
+            }
+        }
+        
+        List<String> subjectList = new ArrayList<>(subjects);
+        Collections.sort(subjectList);
+        
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, subjectList);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerSubject.setAdapter(adapter);
+        
+        spinnerSubject.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                selectedSubject = subjectList.get(position);
+                applyFilters();
+            }
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {}
+        });
+    }
+
+    private void applyFilters() {
+        List<AttendanceRecord> filtered = new ArrayList<>();
+        int p = 0, l = 0, a = 0;
+        
+        for (AttendanceRecord rec : allRecords) {
+            if (selectedSubject.equals("All Subjects") || selectedSubject.equals(rec.getSubject())) {
+                filtered.add(rec);
+                p += rec.getPresent();
+                l += rec.getLate();
+                a += rec.getAbsent();
+            }
+        }
+
+        tvTotalPresent.setText(String.valueOf(p));
+        tvTotalLate.setText(String.valueOf(l));
+        tvTotalAbsent.setText(String.valueOf(a));
+        
+        updateMonthList(filtered);
+    }
+
+    private void updateMonthList(List<AttendanceRecord> filteredRecords) {
+        SimpleDateFormat sdfInput = new SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH);
+        SimpleDateFormat sdfOutput = new SimpleDateFormat("MMMM yyyy", Locale.ENGLISH);
+        
+        Map<String, MonthHistoryAdapter.MonthSummary> groups = new LinkedHashMap<>();
+        
+        // Sorting records by date descending for correct grouping order
+        Collections.sort(filteredRecords, (r1, r2) -> {
             try {
-                Date da = sdf.parse(a.getDate() != null ? a.getDate() : "");
-                Date db = sdf.parse(b.getDate() != null ? b.getDate() : "");
-                if (da == null || db == null) return 0;
-                return db.compareTo(da);
+                Date d1 = sdfInput.parse(r1.getDate());
+                Date d2 = sdfInput.parse(r2.getDate());
+                if (d1 == null || d2 == null) return 0;
+                return d2.compareTo(d1);
             } catch (ParseException e) { return 0; }
         });
+
+        for (AttendanceRecord rec : filteredRecords) {
+            try {
+                Date date = sdfInput.parse(rec.getDate());
+                String key = sdfOutput.format(date);
+                
+                MonthHistoryAdapter.MonthSummary s = groups.get(key);
+                if (s == null) {
+                    s = new MonthHistoryAdapter.MonthSummary();
+                    s.monthYear = key;
+                    groups.put(key, s);
+                }
+                s.present += rec.getPresent();
+                s.late    += rec.getLate();
+                s.absent  += rec.getAbsent();
+            } catch (ParseException e) {}
+        }
+
+        List<MonthHistoryAdapter.MonthSummary> summaries = new ArrayList<>(groups.values());
+        MonthHistoryAdapter adapter = new MonthHistoryAdapter(requireContext(), summaries);
+        adapter.setOnMonthClickListener(summary -> {
+            Intent intent = new Intent(requireContext(), SecretaryMonthDetailActivity.class);
+            intent.putExtra("MONTH_YEAR", summary.monthYear);
+            intent.putExtra("SUBJECT", selectedSubject);
+            intent.putExtra("SECTION", userSection);
+            startActivity(intent);
+        });
+        rvMonths.setAdapter(adapter);
+        
+        tvEmpty.setVisibility(summaries.isEmpty() ? View.VISIBLE : View.GONE);
+    }
+
+    private void exportCurrentData() {
+        List<AttendanceRecord> filtered = new ArrayList<>();
+        for (AttendanceRecord rec : allRecords) {
+            if (selectedSubject.equals("All Subjects") || selectedSubject.equals(rec.getSubject())) {
+                filtered.add(rec);
+            }
+        }
+        
+        String fileName = "Section_Attendance_Report_" + userSection.replace(" ", "_") + "_" + selectedSubject.replace(" ", "_");
+        ExportUtils.exportToCsv(requireContext(), fileName, filtered);
     }
 }

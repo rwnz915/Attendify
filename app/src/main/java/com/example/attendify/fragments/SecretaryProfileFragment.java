@@ -4,6 +4,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -44,7 +45,7 @@ public class SecretaryProfileFragment extends Fragment {
             int[] iconIds = {R.id.iv_profile_icon_1, R.id.iv_profile_icon_2, R.id.iv_profile_icon_3,
                              R.id.iv_profile_icon_4, R.id.iv_profile_icon_5};
             for (int id : iconIds) {
-                android.widget.ImageView iv = view.findViewById(id);
+                ImageView iv = view.findViewById(id);
                 if (iv != null) {
                     android.graphics.drawable.GradientDrawable gd = new android.graphics.drawable.GradientDrawable();
                     gd.setShape(android.graphics.drawable.GradientDrawable.RECTANGLE);
@@ -74,9 +75,28 @@ public class SecretaryProfileFragment extends Fragment {
         String roleLabel = "Secretary" + (section != null ? "  \u2022  " + section : "");
         ((TextView) view.findViewById(R.id.tv_sec_profile_role)).setText(roleLabel);
 
+        // Set labels for menu items
+        ((TextView) view.findViewById(R.id.tv_label_5)).setText("About");
+        ((ImageView) view.findViewById(R.id.iv_profile_icon_5)).setImageResource(android.R.drawable.ic_dialog_info);
+
+        // Click listeners for menu items
+        view.findViewById(R.id.card_personal_info).setOnClickListener(v -> navigateTo(new PersonalInfoFragment()));
+        view.findViewById(R.id.card_notifications).setOnClickListener(v -> navigateTo(new NotificationSettingsFragment()));
+        view.findViewById(R.id.card_privacy_security).setOnClickListener(v -> navigateTo(new SecuritySettingsFragment()));
+        view.findViewById(R.id.card_app_settings).setOnClickListener(v -> navigateTo(new AppSettingsFragment()));
+        view.findViewById(R.id.card_about).setOnClickListener(v -> navigateTo(new AboutFragment()));
+
         view.findViewById(R.id.btn_sec_logout).setOnClickListener(v -> {
             if (getActivity() instanceof MainActivity)
                 ((MainActivity) getActivity()).logout();
         });
+    }
+
+    private void navigateTo(Fragment fragment) {
+        getParentFragmentManager().beginTransaction()
+                .setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out, android.R.anim.fade_in, android.R.anim.fade_out)
+                .replace(R.id.fragment_container, fragment)
+                .addToBackStack(null)
+                .commit();
     }
 }

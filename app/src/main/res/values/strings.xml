@@ -39,6 +39,10 @@
     <string name="history_title">History</string>
     <string name="past_30">Past 30 Days</string>
     <string name="completed">Completed</string>
+    <string name="total_summary">Total Summary</string>
+    <string name="export_report">Export Report</string>
+    <string name="select_section">All Sections</string>
+    <string name="select_subject">All Subjects</string>
 
     <!-- Profile -->
     <string name="teacher_role">Teacher • IT - 203</string>

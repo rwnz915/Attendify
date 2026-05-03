@@ -81,6 +81,7 @@
             android:layout_marginEnd="24dp" android:orientation="vertical">
 
             <androidx.cardview.widget.CardView
+                android:id="@+id/card_personal_info"
                 android:layout_width="match_parent" android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
                 app:cardCornerRadius="16dp" app:cardElevation="1dp">
@@ -89,16 +90,17 @@
                     android:orientation="horizontal" android:padding="16dp">
                     <ImageView android:id="@+id/iv_profile_icon_1" android:layout_width="40dp" android:layout_height="40dp"
                         android:background="@drawable/bg_circle_blue50" android:padding="9dp"
-                        android:src="@android:drawable/ic_menu_myplaces" android:tint="@color/blue_600" />
-                    <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                        android:src="@android:drawable/ic_menu_myplaces" app:tint="@color/blue_600" />
+                    <TextView android:id="@+id/tv_label_1" android:layout_width="0dp" android:layout_height="wrap_content"
                         android:layout_marginStart="12dp" android:layout_weight="1"
                         android:text="@string/personal_info" android:textColor="@color/gray_700" android:textSize="15sp" />
                     <ImageView android:layout_width="20dp" android:layout_height="20dp"
-                        android:src="@android:drawable/ic_media_play" android:tint="@color/gray_400" />
+                        android:src="@android:drawable/ic_media_play" app:tint="@color/gray_400" />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
             <androidx.cardview.widget.CardView
+                android:id="@+id/card_notifications"
                 android:layout_width="match_parent" android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
                 app:cardCornerRadius="16dp" app:cardElevation="1dp">
@@ -107,16 +109,17 @@
                     android:orientation="horizontal" android:padding="16dp">
                     <ImageView android:id="@+id/iv_profile_icon_2" android:layout_width="40dp" android:layout_height="40dp"
                         android:background="@drawable/bg_circle_blue50" android:padding="9dp"
-                        android:src="@android:drawable/ic_menu_agenda" android:tint="@color/blue_600" />
-                    <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                        android:src="@android:drawable/ic_menu_agenda" app:tint="@color/blue_600" />
+                    <TextView android:id="@+id/tv_label_2" android:layout_width="0dp" android:layout_height="wrap_content"
                         android:layout_marginStart="12dp" android:layout_weight="1"
                         android:text="@string/notifications" android:textColor="@color/gray_700" android:textSize="15sp" />
                     <ImageView android:layout_width="20dp" android:layout_height="20dp"
-                        android:src="@android:drawable/ic_media_play" android:tint="@color/gray_400" />
+                        android:src="@android:drawable/ic_media_play" app:tint="@color/gray_400" />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
             <androidx.cardview.widget.CardView
+                android:id="@+id/card_privacy_security"
                 android:layout_width="match_parent" android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
                 app:cardCornerRadius="16dp" app:cardElevation="1dp">
@@ -125,16 +128,17 @@
                     android:orientation="horizontal" android:padding="16dp">
                     <ImageView android:id="@+id/iv_profile_icon_3" android:layout_width="40dp" android:layout_height="40dp"
                         android:background="@drawable/bg_circle_blue50" android:padding="9dp"
-                        android:src="@android:drawable/ic_lock_idle_lock" android:tint="@color/blue_600" />
-                    <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                        android:src="@android:drawable/ic_lock_idle_lock" app:tint="@color/blue_600" />
+                    <TextView android:id="@+id/tv_label_3" android:layout_width="0dp" android:layout_height="wrap_content"
                         android:layout_marginStart="12dp" android:layout_weight="1"
                         android:text="@string/privacy_security" android:textColor="@color/gray_700" android:textSize="15sp" />
                     <ImageView android:layout_width="20dp" android:layout_height="20dp"
-                        android:src="@android:drawable/ic_media_play" android:tint="@color/gray_400" />
+                        android:src="@android:drawable/ic_media_play" app:tint="@color/gray_400" />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
             <androidx.cardview.widget.CardView
+                android:id="@+id/card_app_settings"
                 android:layout_width="match_parent" android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
                 app:cardCornerRadius="16dp" app:cardElevation="1dp">
@@ -143,16 +147,17 @@
                     android:orientation="horizontal" android:padding="16dp">
                     <ImageView android:id="@+id/iv_profile_icon_4" android:layout_width="40dp" android:layout_height="40dp"
                         android:background="@drawable/bg_circle_blue50" android:padding="9dp"
-                        android:src="@android:drawable/ic_menu_manage" android:tint="@color/blue_600" />
-                    <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                        android:src="@android:drawable/ic_menu_manage" app:tint="@color/blue_600" />
+                    <TextView android:id="@+id/tv_label_4" android:layout_width="0dp" android:layout_height="wrap_content"
                         android:layout_marginStart="12dp" android:layout_weight="1"
                         android:text="@string/app_settings" android:textColor="@color/gray_700" android:textSize="15sp" />
                     <ImageView android:layout_width="20dp" android:layout_height="20dp"
-                        android:src="@android:drawable/ic_media_play" android:tint="@color/gray_400" />
+                        android:src="@android:drawable/ic_media_play" app:tint="@color/gray_400" />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
             <androidx.cardview.widget.CardView
+                android:id="@+id/card_about"
                 android:layout_width="match_parent" android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
                 app:cardCornerRadius="16dp" app:cardElevation="1dp">
@@ -161,12 +166,12 @@
                     android:orientation="horizontal" android:padding="16dp">
                     <ImageView android:id="@+id/iv_profile_icon_5" android:layout_width="40dp" android:layout_height="40dp"
                         android:background="@drawable/bg_circle_blue50" android:padding="9dp"
-                        android:src="@android:drawable/ic_dialog_info" android:tint="@color/blue_600" />
-                    <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                        android:src="@android:drawable/ic_dialog_info" app:tint="@color/blue_600" />
+                    <TextView android:id="@+id/tv_label_5" android:layout_width="0dp" android:layout_height="wrap_content"
                         android:layout_marginStart="12dp" android:layout_weight="1"
                         android:text="@string/help_support" android:textColor="@color/gray_700" android:textSize="15sp" />
                     <ImageView android:layout_width="20dp" android:layout_height="20dp"
-                        android:src="@android:drawable/ic_media_play" android:tint="@color/gray_400" />
+                        android:src="@android:drawable/ic_media_play" app:tint="@color/gray_400" />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 

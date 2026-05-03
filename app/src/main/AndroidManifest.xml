@@ -49,9 +49,34 @@
             android:configChanges="uiMode" />
 
         <activity
+            android:name=".activities.MonthDetailActivity"
+            android:exported="false"
+            android:configChanges="uiMode" />
+
+        <activity
+            android:name=".activities.StudentMonthDetailActivity"
+            android:exported="false"
+            android:configChanges="uiMode" />
+
+        <activity
+            android:name=".activities.SecretaryMonthDetailActivity"
+            android:exported="false"
+            android:configChanges="uiMode" />
+
+        <activity
             android:name=".SetupActivity"
             android:exported="false"
             android:configChanges="uiMode" />
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="com.example.attendify.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
 
     </application>
 
