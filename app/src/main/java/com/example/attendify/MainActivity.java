@@ -81,16 +81,16 @@ public class MainActivity extends AppCompatActivity {
 
     //14.707776, 121.050512
 
-    private static final double GEOFENCE_LAT = 14.707776; //14.704375;
-    private static final double GEOFENCE_LNG = 121.050512; //121.036763;
+    private static final double GEOFENCE_LAT = 14.704375; //14.704375;
+    private static final double GEOFENCE_LNG = 121.036763; //121.036763;
 
     // ── Hysteresis thresholds ────────────────────────────────────────────────
     // Two thresholds instead of one to prevent bouncing at the boundary.
     // Must go BELOW ENTER_RADIUS to be considered inside,
     // must go ABOVE EXIT_RADIUS  to be considered outside.
     // The gap between them (45–60 m) is a dead zone where state never changes.
-    private static final int GEOFENCE_ENTER_RADIUS = 100;  // cross inward  at 45 m
-    private static final int GEOFENCE_EXIT_RADIUS  = 150;  // cross outward at 60 m
+    private static final int GEOFENCE_ENTER_RADIUS = 80;  // cross inward  at 45 m
+    private static final int GEOFENCE_EXIT_RADIUS  = 130;  // cross outward at 60 m
 
     private FusedLocationProviderClient fusedClient;
     private LocationCallback locationCallback;
