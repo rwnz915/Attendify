@@ -83,7 +83,7 @@ public class AttendanceFragment extends Fragment {
                 header.getPaddingRight(),
                 header.getPaddingBottom());
 
-        // Header subject labels (added via layout update — see fragment_attendance.xml patch)
+        // Header subject labels
         tvSubjectName = view.findViewById(R.id.tv_current_subject_name);
         tvSubjectInfo = view.findViewById(R.id.tv_current_subject_info);
 
@@ -104,7 +104,7 @@ public class AttendanceFragment extends Fragment {
         progressBar   = view.findViewById(R.id.progress_bar);
 
         View searchButton = view.findViewById(R.id.btn_search_toggle);
-        View searchBar = view.findViewById(R.id.search_bar_container);
+        View searchBar    = view.findViewById(R.id.search_bar_container);
 
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
         adapter = new StudentAdapter(requireContext(), new ArrayList<>());
@@ -115,6 +115,8 @@ public class AttendanceFragment extends Fragment {
             for (Student s : allStudents) {
                 if (s.getId() == tapped.getId()) {
                     s.cycleStatus();
+                    // ── Update user status in Firestore when marked Present or Late ──
+                    updateUserStatusInFirestore(s);
                     break;
                 }
             }
@@ -138,6 +140,43 @@ public class AttendanceFragment extends Fragment {
 
         // Step 1: resolve current subject by time, then load students
         resolveCurrentSubjectAndLoad();
+    }
+
+    // ── Status update helper ──────────────────────────────────────────────────
+
+    /**
+     * Writes the student's current status to Firestore:
+     *   users/{studentId}/status = "in school"   when Present or Late
+     *   users/{studentId}/status = "absent"       when Absent
+     *
+     * Only fires if the student has a valid Firebase UID (studentId field).
+     */
+    private void updateUserStatusInFirestore(Student student) {
+        String uid = student.getStudentId();
+        if (uid == null || uid.isEmpty()) return;
+
+        String newStatus;
+        switch (student.getStatus()) {
+            case Student.STATUS_PRESENT:
+            case Student.STATUS_LATE:
+                newStatus = "in school";
+                break;
+            case Student.STATUS_ABSENT:
+            default:
+                newStatus = "absent";
+                break;
+        }
+
+        FirebaseFirestore.getInstance()
+                .collection("users")
+                .document(uid)
+                .update("status", newStatus)
+                .addOnSuccessListener(v ->
+                        android.util.Log.d("AttendanceFragment",
+                                "Status updated to '" + newStatus + "' for " + uid))
+                .addOnFailureListener(e ->
+                        android.util.Log.w("AttendanceFragment",
+                                "Failed to update status for " + uid + ": " + e.getMessage()));
     }
 
     // ── Step 1: find the subject that matches today's day + current time ──────
@@ -189,26 +228,22 @@ public class AttendanceFragment extends Fragment {
     /**
      * Returns the SubjectItem whose schedule covers the current day and time,
      * or null if none matches.
-     *
-     * Late threshold: class start + 15 minutes.
-     * Being within the window (start to end) = on time or late.
      */
     private SubjectRepository.SubjectItem findCurrentSubject(
             List<SubjectRepository.SubjectItem> subjects) {
 
         Calendar now = Calendar.getInstance();
-        int todayDow  = now.get(Calendar.DAY_OF_WEEK);   // 1=Sun … 7=Sat
+        int todayDow   = now.get(Calendar.DAY_OF_WEEK);
         int nowMinutes = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE);
 
         for (SubjectRepository.SubjectItem item : subjects) {
             if (item.schedule == null || item.schedule.isEmpty()) continue;
 
-            // Split "MWF 8:00-9:30" into ["MWF", "8:00-9:30"]
             String[] parts = item.schedule.trim().split("\\s+", 2);
             if (parts.length < 2) continue;
 
-            String dayCodes = parts[0];   // e.g. "MWF" or "TTH"
-            String timeRange = parts[1];  // e.g. "8:00-9:30"
+            String dayCodes  = parts[0];
+            String timeRange = parts[1];
 
             if (!dayMatchesToday(dayCodes, todayDow)) continue;
 
@@ -219,7 +254,6 @@ public class AttendanceFragment extends Fragment {
             int endMin   = parseTimeToMinutes(times[1].trim());
             if (startMin < 0 || endMin < 0) continue;
 
-            // Current time must be inside [startMin, endMin]
             if (nowMinutes >= startMin && nowMinutes <= endMin) {
                 return item;
             }
@@ -229,18 +263,14 @@ public class AttendanceFragment extends Fragment {
 
     /**
      * Maps the day-code string to the current Calendar day-of-week.
-     * Supports: M, T, W, TH, F, S, SU  (and their combinations e.g. "MWF", "TTH", "MTWTHFS")
+     * Supports: M, T, W, TH, F, S, SU  (and combinations e.g. "MWF", "TTH")
      */
     private boolean dayMatchesToday(String dayCodes, int calDow) {
-        // calDow: 1=Sun, 2=Mon, 3=Tue, 4=Wed, 5=Thu, 6=Fri, 7=Sat
         dayCodes = dayCodes.toUpperCase(Locale.ENGLISH);
 
-        // Parse two-letter codes first to avoid ambiguity (TH before T, SU before S)
         boolean hasMon = dayCodes.contains("M");
         boolean hasThu = dayCodes.contains("TH");
-        boolean hasTue = !hasThu && dayCodes.contains("T");  // bare T = Tuesday only if no TH
-        // Re-check: if string has "TTH" it contains both T and TH
-        hasTue = dayCodes.replaceAll("TH", "").contains("T");
+        boolean hasTue = dayCodes.replaceAll("TH", "").contains("T");
         boolean hasWed = dayCodes.contains("W");
         boolean hasFri = dayCodes.contains("F");
         boolean hasSun = dayCodes.contains("SU");
@@ -259,18 +289,8 @@ public class AttendanceFragment extends Fragment {
     }
 
     /**
-     * Parses "8:00" or "09:30" → minutes from midnight.
-     * Returns -1 on parse error.
-     */
-    /**
      * Parses a time string into minutes-from-midnight.
-     * Handles all of these formats:
-     *   "8:00"      → 480
-     *   "13:00"     → 780
-     *   "1:00pm"    → 780
-     *   "1:00PM"    → 780
-     *   "1:00 PM"   → 780
-     *   "8:00am"    → 480
+     * Handles: "8:00", "13:00", "1:00pm", "1:00PM", "1:00 PM", "8:00am"
      * Returns -1 on any parse error.
      */
     private int parseTimeToMinutes(String timeStr) {
@@ -278,14 +298,12 @@ public class AttendanceFragment extends Fragment {
             timeStr = timeStr.trim().toLowerCase(Locale.ENGLISH);
             boolean isPm = timeStr.contains("pm");
             boolean isAm = timeStr.contains("am");
-            // Strip am/pm suffix so we can parse the digits cleanly
             timeStr = timeStr.replace("pm", "").replace("am", "").trim();
 
             String[] hm = timeStr.split(":");
             int h = Integer.parseInt(hm[0].trim());
             int m = Integer.parseInt(hm[1].trim());
 
-            // Convert 12-hour → 24-hour
             if (isPm && h != 12) h += 12;
             if (isAm && h == 12) h = 0;
 
@@ -333,13 +351,11 @@ public class AttendanceFragment extends Fragment {
             return;
         }
 
-        // Load roster first, then overlay today's attendance records
         StudentRepository.getInstance().getStudentsBySection(section,
                 new StudentRepository.StudentsCallback() {
                     @Override
                     public void onSuccess(List<Student> students) {
                         if (getActivity() == null) return;
-                        // Step 4: overlay today's real attendance on top of the roster
                         fetchTodayAttendanceAndMerge(students, subject);
                     }
 
@@ -356,11 +372,11 @@ public class AttendanceFragment extends Fragment {
     /**
      * Queries attendance collection for today + this subjectId.
      * For every record found, updates the matching Student's status + time.
-     * Students with no record stay "Absent".
-     *
-     * Late rule: if the class starts at H:M, any time > H:M+15 is Late.
-     * The stored `status` field in Firestore is the source of truth —
-     * we use it directly so QR scans / secretary overrides are respected.
+     * Also fires a status update to users/{uid}/status for any student
+     * already marked Present or Late from a prior QR scan or secretary action.
+     * Students with no record stay "Absent" — but a second pass checks the
+     * geofence collection so that students who entered via geofence (and have
+     * no attendance doc yet) are shown as "In school" rather than "Absent".
      */
     private void fetchTodayAttendanceAndMerge(List<Student> roster,
                                               SubjectRepository.SubjectItem subject) {
@@ -374,7 +390,6 @@ public class AttendanceFragment extends Fragment {
                 .addOnSuccessListener(snapshot -> {
                     if (getActivity() == null) return;
 
-                    // Build a map: studentId → {status, time} from today's records
                     Map<String, String[]> todayMap = new HashMap<>();
                     for (DocumentSnapshot doc : snapshot.getDocuments()) {
                         String studentId = doc.getString("studentId");
@@ -385,42 +400,49 @@ public class AttendanceFragment extends Fragment {
                         }
                     }
 
-                    // Parse the class start time once (e.g. "1:00pm" from "MWF 1:00pm-2:30pm")
                     int classStartMinutes = parseClassStartMinutes(subject.schedule);
 
-                    // Merge into roster
                     for (Student s : roster) {
                         String sid = s.getStudentId();
                         if (sid != null && todayMap.containsKey(sid)) {
-                            String[] entry   = todayMap.get(sid);
-                            String dbStatus  = entry[0];
-                            String dbTime    = entry[1];
+                            String[] entry  = todayMap.get(sid);
+                            String dbStatus = entry[0];
+                            String dbTime   = entry[1];
 
-                            // Re-evaluate status from arrival time so wrong stored values
-                            // (e.g. "Present" saved when student arrived 19 min late) are corrected.
-                            // Only override Present↔Late — keep "Absent" as-is (no arrival time).
                             int statusCode;
                             if ("Absent".equals(dbStatus)) {
                                 statusCode = Student.STATUS_ABSENT;
+                            } else if ("in school".equals(dbStatus)) {
+                                statusCode = Student.STATUS_IN_SCHOOL;
                             } else {
-                                // Re-derive from actual arrival time
                                 statusCode = resolveStatus(dbTime, classStartMinutes);
                             }
                             s.setStatusFromDb(statusCode, dbTime);
+
+                            // ── Sync status field for students already recorded ──
+                            if (statusCode != Student.STATUS_ABSENT
+                                    && statusCode != Student.STATUS_IN_SCHOOL) {
+                                updateUserStatusInFirestore(s);
+                            }
                         }
                         // else: remains STATUS_ABSENT / "--:--" from constructor
                     }
 
-                    getActivity().runOnUiThread(() -> {
-                        allStudents = roster;
-                        if (progressBar != null) progressBar.setVisibility(View.GONE);
-                        updateStats();
-                        applyFilter("All");
+                    // ── Second pass: check geofence collection for students still
+                    // showing Absent (no attendance record yet) who entered via
+                    // geofence while this class was active. ────────────────────
+                    mergeGeofenceEntries(roster, subject.id, () -> {
+                        if (getActivity() == null) return;
+                        getActivity().runOnUiThread(() -> {
+                            allStudents = roster;
+                            if (progressBar != null) progressBar.setVisibility(View.GONE);
+                            updateStats();
+                            applyFilter("All");
+                        });
                     });
                 })
                 .addOnFailureListener(e -> {
                     if (getActivity() == null) return;
-                    // Even on failure, show the roster (all marked Absent by default)
                     getActivity().runOnUiThread(() -> {
                         allStudents = roster;
                         if (progressBar != null) progressBar.setVisibility(View.GONE);
@@ -430,6 +452,60 @@ public class AttendanceFragment extends Fragment {
                                 "Could not load today's records. Showing default.", Toast.LENGTH_SHORT).show();
                     });
                 });
+    }
+
+    /**
+     * For each student still showing STATUS_ABSENT (no attendance record yet),
+     * reads their users/{uid}/status field. If it is "in school" (set by the
+     * geofence receiver when they entered the school), promote them to
+     * STATUS_IN_SCHOOL so the teacher can see they are physically present.
+     *
+     * This approach works even when the geofence doc has subjectId == "" (old
+     * entries recorded before the subjectId fix was deployed).
+     *
+     * Calls {@code onDone} when all checks are complete.
+     */
+    private void mergeGeofenceEntries(List<Student> roster, String subjectId, Runnable onDone) {
+        // Collect only the students still showing Absent — we only need to check those
+        List<Student> absentStudents = new ArrayList<>();
+        for (Student s : roster) {
+            if (s.getStatus() == Student.STATUS_ABSENT && s.getStudentId() != null
+                    && !s.getStudentId().isEmpty()) {
+                absentStudents.add(s);
+            }
+        }
+
+        if (absentStudents.isEmpty()) {
+            onDone.run();
+            return;
+        }
+
+        int[] remaining = {absentStudents.size()};
+
+        for (Student s : absentStudents) {
+            FirebaseFirestore.getInstance()
+                    .collection("users")
+                    .document(s.getStudentId())
+                    .get()
+                    .addOnSuccessListener(doc -> {
+                        String userStatus = doc.getString("status");
+                        if ("in school".equalsIgnoreCase(userStatus)) {
+                            s.setStatusFromDb(Student.STATUS_IN_SCHOOL, "--:--");
+                            android.util.Log.d("AttendanceFragment",
+                                    "users/status promote → IN_SCHOOL: " + s.getName());
+                        }
+                        synchronized (remaining) {
+                            remaining[0]--;
+                            if (remaining[0] == 0) onDone.run();
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        synchronized (remaining) {
+                            remaining[0]--;
+                            if (remaining[0] == 0) onDone.run();
+                        }
+                    });
+        }
     }
 
     // ── Late / Present resolution ─────────────────────────────────────────────
@@ -443,10 +519,8 @@ public class AttendanceFragment extends Fragment {
     private int parseClassStartMinutes(String schedule) {
         if (schedule == null || schedule.isEmpty()) return -1;
         try {
-            // e.g. "MWF 1:00pm-2:30pm" → split on space → ["MWF", "1:00pm-2:30pm"]
             String[] parts = schedule.trim().split("\\s+", 2);
             if (parts.length < 2) return -1;
-            // take the start half: "1:00pm-2:30pm" → "1:00pm"
             String startPart = parts[1].split("-", 2)[0].trim();
             return parseTimeToMinutes(startPart);
         } catch (Exception e) {
@@ -455,13 +529,12 @@ public class AttendanceFragment extends Fragment {
     }
 
     /**
-     * Given a stored arrival time string (e.g. "1:19PM") and the class start in
-     * minutes, returns STATUS_PRESENT if within the 15-min grace period, else
-     * STATUS_LATE. Falls back to STATUS_PRESENT if the time can't be parsed.
+     * Returns STATUS_PRESENT if arrival is within the 15-min grace period,
+     * else STATUS_LATE. Falls back to STATUS_PRESENT if time can't be parsed.
      */
     private int resolveStatus(String arrivalTimeStr, int classStartMinutes) {
         if (classStartMinutes < 0 || arrivalTimeStr == null || "--:--".equals(arrivalTimeStr)) {
-            return Student.STATUS_PRESENT; // can't determine — be lenient
+            return Student.STATUS_PRESENT;
         }
         int arrivalMinutes = parseTimeToMinutes(arrivalTimeStr);
         if (arrivalMinutes < 0) return Student.STATUS_PRESENT;
@@ -510,9 +583,10 @@ public class AttendanceFragment extends Fragment {
         int p = 0, l = 0, a = 0;
         for (Student s : allStudents) {
             switch (s.getStatus()) {
-                case Student.STATUS_PRESENT: p++; break;
-                case Student.STATUS_LATE:    l++; break;
-                case Student.STATUS_ABSENT:  a++; break;
+                case Student.STATUS_PRESENT:   p++; break;
+                case Student.STATUS_LATE:      l++; break;
+                case Student.STATUS_ABSENT:    a++; break;
+                case Student.STATUS_IN_SCHOOL: a++; break;
             }
         }
         tvPresent.setText(String.valueOf(p));

@@ -203,6 +203,11 @@ public class AuthRepository {
         LocalCacheManager cache = LocalCacheManager.getInstance(appContext);
         cache.saveSession(uid, role);
         cache.saveUserProfile(uid, user);
+        // Cache section so GeofenceReceiver can resolve the active subject
+        // without a full Firestore call for the UserProfile
+        if (user != null && user.getSection() != null) {
+            cache.saveSection(user.getSection());
+        }
     }
 
     private UserProfile getCachedProfile(String uid) {

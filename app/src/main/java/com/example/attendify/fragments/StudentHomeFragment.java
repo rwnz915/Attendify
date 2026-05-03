@@ -147,23 +147,62 @@ public class StudentHomeFragment extends Fragment {
 
                                         final int fp = totalPresent, fl = totalLate, fa = totalAbsent;
                                         final List<AttendanceRecord> todayFinal = todayRecords;
-                                        final String finalStatus = headerStatus;
+                                        final String prelimStatus = headerStatus;
 
-                                        getActivity().runOnUiThread(() -> {
-                                            // Update header card with status badge
-                                            updateTodayClassCard(view, todaySubject, finalStatus, finalIsNextEarly);
+                                        // If no attendance record exists for the active subject yet,
+                                        // check users/{userId}/status — set to "in school" by the
+                                        // geofence receiver whenever the student enters the school.
+                                        // This works regardless of whether subjectId was stored in
+                                        // the geofence doc.
+                                        if (prelimStatus == null && todaySubject != null) {
+                                            com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                                                    .collection("users")
+                                                    .document(user.getId())
+                                                    .get()
+                                                    .addOnSuccessListener(userDoc -> {
+                                                        String userStatus = userDoc.getString("status");
+                                                        // Show "In school" badge only when actively inside;
+                                                        // ignore "absent" or null so badge stays hidden.
+                                                        final String resolvedStatus =
+                                                                "in school".equalsIgnoreCase(userStatus)
+                                                                        ? "In school" : null;
+                                                        if (getActivity() == null) return;
+                                                        getActivity().runOnUiThread(() -> {
+                                                            updateTodayClassCard(view, todaySubject, resolvedStatus, finalIsNextEarly);
+                                                            ((TextView) view.findViewById(R.id.tv_present_count)).setText(String.valueOf(fp));
+                                                            ((TextView) view.findViewById(R.id.tv_late_count)).setText(String.valueOf(fl));
+                                                            ((TextView) view.findViewById(R.id.tv_absent_count)).setText(String.valueOf(fa));
+                                                            bindTodayList(view, todayFinal);
+                                                        });
+                                                    })
+                                                    .addOnFailureListener(e -> {
+                                                        if (getActivity() == null) return;
+                                                        getActivity().runOnUiThread(() -> {
+                                                            updateTodayClassCard(view, todaySubject, null, finalIsNextEarly);
+                                                            ((TextView) view.findViewById(R.id.tv_present_count)).setText(String.valueOf(fp));
+                                                            ((TextView) view.findViewById(R.id.tv_late_count)).setText(String.valueOf(fl));
+                                                            ((TextView) view.findViewById(R.id.tv_absent_count)).setText(String.valueOf(fa));
+                                                            bindTodayList(view, todayFinal);
+                                                        });
+                                                    });
+                                        } else {
+                                            final String finalStatus = prelimStatus;
+                                            getActivity().runOnUiThread(() -> {
+                                                // Update header card with status badge
+                                                updateTodayClassCard(view, todaySubject, finalStatus, finalIsNextEarly);
 
-                                            // Stat cards — all-time
-                                            ((TextView) view.findViewById(R.id.tv_present_count))
-                                                    .setText(String.valueOf(fp));
-                                            ((TextView) view.findViewById(R.id.tv_late_count))
-                                                    .setText(String.valueOf(fl));
-                                            ((TextView) view.findViewById(R.id.tv_absent_count))
-                                                    .setText(String.valueOf(fa));
+                                                // Stat cards — all-time
+                                                ((TextView) view.findViewById(R.id.tv_present_count))
+                                                        .setText(String.valueOf(fp));
+                                                ((TextView) view.findViewById(R.id.tv_late_count))
+                                                        .setText(String.valueOf(fl));
+                                                ((TextView) view.findViewById(R.id.tv_absent_count))
+                                                        .setText(String.valueOf(fa));
 
-                                            // Recent list — today only
-                                            bindTodayList(view, todayFinal);
-                                        });
+                                                // Recent list — today only
+                                                bindTodayList(view, todayFinal);
+                                            });
+                                        }
                                     }
 
                                     @Override
@@ -306,6 +345,11 @@ public class StudentHomeFragment extends Fragment {
                     tvStatus.setTextColor(0xFFC62828);
                     tvStatus.setBackgroundResource(R.drawable.bg_badge_absent);
                     break;
+                case "In school":
+                case "in school":
+                    tvStatus.setTextColor(0xFF1565C0);
+                    tvStatus.setBackgroundResource(R.drawable.bg_button_white);
+                    break;
                 default:
                     tvStatus.setTextColor(0xFF1565C0);
                     tvStatus.setBackgroundResource(R.drawable.bg_button_white);
@@ -353,6 +397,7 @@ public class StudentHomeFragment extends Fragment {
                     tvStatus.setBackgroundResource(R.drawable.bg_badge_late);
                     break;
                 case "Absent":
+                case "in school":
                     tvStatus.setTextColor(0xFFC62828);
                     tvStatus.setBackgroundResource(R.drawable.bg_badge_absent);
                     break;

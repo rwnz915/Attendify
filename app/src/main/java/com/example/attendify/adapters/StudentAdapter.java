@@ -60,6 +60,7 @@ public class StudentAdapter extends RecyclerView.Adapter<StudentAdapter.ViewHold
                 badgeColor = context.getResources().getColor(R.color.yellow_700, context.getTheme());
                 break;
             case Student.STATUS_ABSENT:
+            case Student.STATUS_IN_SCHOOL:
                 dotBg     = R.drawable.bg_dot_red;
                 badgeBg   = R.drawable.bg_badge_absent;
                 badgeColor = context.getResources().getColor(R.color.red_700, context.getTheme());

@@ -3,7 +3,8 @@ package com.example.attendify.models;
 public class Student {
     public static final int STATUS_PRESENT = 0;
     public static final int STATUS_LATE    = 1;
-    public static final int STATUS_ABSENT  = 2;
+    public static final int STATUS_ABSENT   = 2;
+    public static final int STATUS_IN_SCHOOL = 3;
 
     private int    id;
     private String name;
@@ -45,10 +46,11 @@ public class Student {
 
     public String getStatusLabel() {
         switch (status) {
-            case STATUS_PRESENT: return "Present";
-            case STATUS_LATE:    return "Late";
-            case STATUS_ABSENT:  return "Absent";
-            default:             return "Present";
+            case STATUS_PRESENT:   return "Present";
+            case STATUS_LATE:      return "Late";
+            case STATUS_ABSENT:    return "Absent";
+            case STATUS_IN_SCHOOL: return "In school";
+            default:               return "Present";
         }
     }
 }

@@ -48,8 +48,9 @@ public class LocalCacheManager {
     private static final String PREFS_NAME = "attendify_cache";
 
     // Global keys
-    private static final String KEY_UID  = "cache_uid";
-    private static final String KEY_ROLE = "cache_role";
+    private static final String KEY_UID     = "cache_uid";
+    private static final String KEY_ROLE    = "cache_role";
+    private static final String KEY_SECTION = "cache_section";
 
     private static LocalCacheManager instance;
     private final SharedPreferences prefs;
@@ -87,11 +88,16 @@ public class LocalCacheManager {
         Log.d(TAG, "Session saved uid=" + uid + " role=" + role);
     }
 
-    public String getCachedUid()  { return prefs.getString(KEY_UID,  null); }
-    public String getCachedRole() { return prefs.getString(KEY_ROLE, null); }
+    public String getCachedUid()     { return prefs.getString(KEY_UID,     null); }
+    public String getCachedRole()    { return prefs.getString(KEY_ROLE,    null); }
+    public String getCachedSection() { return prefs.getString(KEY_SECTION, null); }
+
+    public void saveSection(String section) {
+        if (section != null) prefs.edit().putString(KEY_SECTION, section).apply();
+    }
 
     public void clearSession() {
-        prefs.edit().remove(KEY_UID).remove(KEY_ROLE).apply();
+        prefs.edit().remove(KEY_UID).remove(KEY_ROLE).remove(KEY_SECTION).apply();
     }
 
     // ── UserProfile ───────────────────────────────────────────────────────────
@@ -268,6 +274,23 @@ public class LocalCacheManager {
             Log.w(TAG, "getListOfMaps parse error for " + key, e);
             return null;
         }
+    }
+
+    // ── Raw public helpers (used by GeofenceRepository) ───────────────────────
+
+    /**
+     * Read an arbitrary string value stored under <uid>_<key>.
+     * Returns null if the key does not exist.
+     */
+    public String getRaw(String uid, String key) {
+        return get(uid, key);
+    }
+
+    /**
+     * Write an arbitrary string value under <uid>_<key>.
+     */
+    public void putRaw(String uid, String key, String value) {
+        put(uid, key, value);
     }
 
     /** Replace characters that can't go in a SharedPreferences key. */

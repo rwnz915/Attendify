@@ -6,6 +6,10 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.LocationManager;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
+import android.net.NetworkRequest;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -75,19 +79,23 @@ public class MainActivity extends AppCompatActivity {
     private static final int REQ_FINE = 1001;
     private static final int REQ_BG   = 1002;
 
-    private static final double GEOFENCE_LAT = 14.704375;
-    private static final double GEOFENCE_LNG = 121.036763;
+    //14.707776, 121.050512
+
+    private static final double GEOFENCE_LAT = 14.707776; //14.704375;
+    private static final double GEOFENCE_LNG = 121.050512; //121.036763;
 
     // ── Hysteresis thresholds ────────────────────────────────────────────────
     // Two thresholds instead of one to prevent bouncing at the boundary.
     // Must go BELOW ENTER_RADIUS to be considered inside,
     // must go ABOVE EXIT_RADIUS  to be considered outside.
     // The gap between them (45–60 m) is a dead zone where state never changes.
-    private static final int GEOFENCE_ENTER_RADIUS = 50;  // cross inward  at 45 m
-    private static final int GEOFENCE_EXIT_RADIUS  = 100;  // cross outward at 60 m
+    private static final int GEOFENCE_ENTER_RADIUS = 100;  // cross inward  at 45 m
+    private static final int GEOFENCE_EXIT_RADIUS  = 150;  // cross outward at 60 m
 
     private FusedLocationProviderClient fusedClient;
     private LocationCallback locationCallback;
+    private ConnectivityManager connectivityManager;
+    private ConnectivityManager.NetworkCallback networkCallback;
 
     // Launcher to re-check location after returning from Settings
     private final ActivityResultLauncher<Intent> locationSettingsLauncher =
@@ -172,6 +180,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         checkLocationServices();
+        registerNetworkCallback();
     }
 
     // ─────────────────────────────────────────
@@ -513,6 +522,40 @@ public class MainActivity extends AppCompatActivity {
                             (nowInside ? "✅ Inside" : "❌ Outside")
                                     + " (" + (highConfidence ? "HIGH" : "LOW") + " accuracy)"
                     );
+
+                    if (nowInside) {
+                        // ── ENTER: resolve active subject then record time-in
+                        com.example.attendify.models.UserProfile loggedIn =
+                                AuthRepository.getInstance().getLoggedInUser();
+                        if (loggedIn != null) {
+                            final String _userId  = loggedIn.getId();
+                            final String _section = loggedIn.getSection();
+                            if (_section != null && !_section.isEmpty()) {
+                                com.example.attendify.repository.SubjectRepository
+                                        .getInstance()
+                                        .getStudentSubjects(_section,
+                                                new com.example.attendify.repository.SubjectRepository.SubjectsCallback() {
+                                                    @Override
+                                                    public void onSuccess(java.util.List<com.example.attendify.repository.SubjectRepository.SubjectItem> subjects) {
+                                                        String activeId = findActiveSubjectId(subjects);
+                                                        com.example.attendify.repository.GeofenceRepository
+                                                                .getInstance()
+                                                                .recordTimeIn(MainActivity.this, _userId, activeId);
+                                                    }
+                                                    @Override
+                                                    public void onFailure(String err) {
+                                                        com.example.attendify.repository.GeofenceRepository
+                                                                .getInstance()
+                                                                .recordTimeIn(MainActivity.this, _userId, "");
+                                                    }
+                                                });
+                            } else {
+                                com.example.attendify.repository.GeofenceRepository
+                                        .getInstance()
+                                        .recordTimeIn(MainActivity.this, _userId, "");
+                            }
+                        }
+                    }
                 }
 
                 // ── Throttled distance updates ───────────────────
@@ -542,6 +585,68 @@ public class MainActivity extends AppCompatActivity {
     }
 
     // ─────────────────────────────────────────
+
+    // ─────────────────────────────────────────
+    // SUBJECT SCHEDULE HELPERS  (used by distance-tracking ENTER event)
+    // ─────────────────────────────────────────
+
+    /** Returns the Firestore doc ID of the subject active right now, or "". */
+    private String findActiveSubjectId(
+            java.util.List<com.example.attendify.repository.SubjectRepository.SubjectItem> subjects) {
+        if (subjects == null) return "";
+        java.util.Calendar now = java.util.Calendar.getInstance();
+        int calDow = now.get(java.util.Calendar.DAY_OF_WEEK);
+        int nowMin = now.get(java.util.Calendar.HOUR_OF_DAY) * 60
+                + now.get(java.util.Calendar.MINUTE);
+        for (com.example.attendify.repository.SubjectRepository.SubjectItem item : subjects) {
+            if (item.schedule == null || item.schedule.isEmpty()) continue;
+            String[] parts = item.schedule.trim().split("\\s+", 2);
+            if (parts.length < 2) continue;
+            if (!subjectDayMatchesToday(parts[0], calDow)) continue;
+            String[] times = parts[1].split("-", 2);
+            if (times.length < 2) continue;
+            int s = parseSubjectTime(times[0].trim());
+            int e = parseSubjectTime(times[1].trim());
+            if (s < 0 || e < 0) continue;
+            if (nowMin >= s && nowMin <= e) {
+                Log.d("MainActivity", "Active subject: " + item.id);
+                return item.id != null ? item.id : "";
+            }
+        }
+        return "";
+    }
+
+    private boolean subjectDayMatchesToday(String d, int calDow) {
+        d = d.toUpperCase(java.util.Locale.ENGLISH);
+        boolean thu = d.contains("TH");
+        boolean tue = d.replace("TH","").contains("T");
+        boolean sun = d.contains("SU");
+        boolean sat = !sun && d.contains("S");
+        switch (calDow) {
+            case java.util.Calendar.MONDAY:    return d.contains("M");
+            case java.util.Calendar.TUESDAY:   return tue;
+            case java.util.Calendar.WEDNESDAY: return d.contains("W");
+            case java.util.Calendar.THURSDAY:  return thu;
+            case java.util.Calendar.FRIDAY:    return d.contains("F");
+            case java.util.Calendar.SATURDAY:  return sat;
+            case java.util.Calendar.SUNDAY:    return sun;
+            default: return false;
+        }
+    }
+
+    private int parseSubjectTime(String t) {
+        try {
+            t = t.trim().toLowerCase(java.util.Locale.ENGLISH);
+            boolean pm = t.contains("pm"), am = t.contains("am");
+            t = t.replace("pm","").replace("am","").trim();
+            String[] hm = t.split(":");
+            int h = Integer.parseInt(hm[0].trim()), m = Integer.parseInt(hm[1].trim());
+            if (pm && h != 12) h += 12;
+            if (am && h == 12) h = 0;
+            return h * 60 + m;
+        } catch (Exception ex) { return -1; }
+    }
+
     // TOAST HELPERS
     // ─────────────────────────────────────────
 
@@ -594,6 +699,41 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
         if (fusedClient != null && locationCallback != null) {
             fusedClient.removeLocationUpdates(locationCallback);
+        }
+        unregisterNetworkCallback();
+    }
+
+    // ── Network callback: flush cached geofence entries when back online ────
+    private void registerNetworkCallback() {
+        connectivityManager =
+                (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+        if (connectivityManager == null) return;
+
+        networkCallback = new ConnectivityManager.NetworkCallback() {
+            @Override
+            public void onAvailable(Network network) {
+                // Back online — push any cached geofence time-in records
+                com.example.attendify.models.UserProfile loggedIn =
+                        AuthRepository.getInstance().getLoggedInUser();
+                if (loggedIn != null) {
+                    com.example.attendify.repository.GeofenceRepository
+                            .getInstance()
+                            .flushPendingEntries(MainActivity.this, loggedIn.getId());
+                }
+            }
+        };
+
+        NetworkRequest req = new NetworkRequest.Builder()
+                .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                .build();
+        connectivityManager.registerNetworkCallback(req, networkCallback);
+    }
+
+    private void unregisterNetworkCallback() {
+        if (connectivityManager != null && networkCallback != null) {
+            try {
+                connectivityManager.unregisterNetworkCallback(networkCallback);
+            } catch (Exception ignored) {}
         }
     }
 }
