@@ -9,6 +9,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -302,6 +303,12 @@ public class TeacherContactParentFragment extends Fragment {
             h.tvParentName.setText(p.parentName   != null ? p.parentName  : "Parent");
             h.tvContact.setText(p.contact         != null ? p.contact     : "No contact number");
 
+            // Apply theme — replaces hardcoded blue on both the call button and icon circle
+            String role = AuthRepository.getInstance().getLoggedInUser() != null
+                    ? AuthRepository.getInstance().getLoggedInUser().getRole() : "teacher";
+            ThemeApplier.applyButton(h.itemView.getContext(), role, h.btnCall);
+            ThemeApplier.applyOval(h.itemView.getContext(), role, h.ivPersonIcon);
+
             h.btnCall.setOnClickListener(v -> {
                 if (p.contact == null || p.contact.trim().isEmpty()) {
                     Toast.makeText(requireContext(),
@@ -319,8 +326,9 @@ public class TeacherContactParentFragment extends Fragment {
         public int getItemCount() { return list.size(); }
 
         class VH extends RecyclerView.ViewHolder {
-            TextView tvStudentName, tvParentName, tvContact;
-            View     btnCall;
+            TextView  tvStudentName, tvParentName, tvContact;
+            View      btnCall;
+            ImageView ivPersonIcon;
 
             VH(View v) {
                 super(v);
@@ -328,6 +336,7 @@ public class TeacherContactParentFragment extends Fragment {
                 tvParentName  = v.findViewById(R.id.tv_parent_name);
                 tvContact     = v.findViewById(R.id.tv_parent_contact);
                 btnCall       = v.findViewById(R.id.btn_call_parent);
+                ivPersonIcon  = v.findViewById(R.id.iv_person_icon);
             }
         }
     }

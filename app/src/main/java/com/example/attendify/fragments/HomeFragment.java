@@ -228,6 +228,7 @@ public class HomeFragment extends Fragment {
         TextView tvLabel = view.findViewById(R.id.tv_class_label);
         TextView tvName  = view.findViewById(R.id.tv_today_subject_name);
         TextView tvTime  = view.findViewById(R.id.tv_today_subject_time);
+        TextView tvSection = view.findViewById(R.id.tv_today_subject_section);
 
         if (subj == null) {
             if (tvLabel != null) tvLabel.setText("Today's Class");
@@ -238,6 +239,7 @@ public class HomeFragment extends Fragment {
 
         if (tvLabel != null) tvLabel.setText(isNext ? "Next Class" : "Today's Class");
         tvName.setText(subj.name);
+        tvSection.setText("- " + subj.section);
 
         String formattedTime = formatScheduleTime(subj.schedule);
         if (isNext) {

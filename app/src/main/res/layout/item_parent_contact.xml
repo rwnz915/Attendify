@@ -17,11 +17,12 @@
 
         <!-- Phone icon circle -->
         <ImageView
+            android:id="@+id/iv_person_icon"
             android:layout_width="50dp"
             android:layout_height="50dp"
             android:background="@drawable/bg_circle_blue50"
             android:padding="12dp"
-            android:src="@drawable/phone"
+            android:src="@drawable/ic_person24"
             android:tint="@color/white" />
 
         <!-- Student name + parent + contact -->

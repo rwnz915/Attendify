@@ -66,7 +66,7 @@ public class MainActivity extends AppCompatActivity {
 
     // ── GPS smoothing ────────────────────────────────────────────────────────
     // Discard any fix whose reported accuracy is worse than this (in metres).
-    private static final float MAX_ACCURACY_METERS = 30f;
+    private static final float MAX_ACCURACY_METERS = 150f;
 
     // Rolling average window — keeps the last N valid distance readings
     private static final int SMOOTH_WINDOW = 5;
@@ -449,10 +449,10 @@ public class MainActivity extends AppCompatActivity {
         if (locationCallback != null) return;
 
         LocationRequest request = new LocationRequest.Builder(
-                Priority.PRIORITY_HIGH_ACCURACY, 10_000   // request every 10 s
+                Priority.PRIORITY_HIGH_ACCURACY, 10_000
         )
-                .setMinUpdateIntervalMillis(8_000)                 // never faster than 8 s
-                .setMinUpdateDistanceMeters(2f)                    // skip if moved < 2 m
+                .setMinUpdateIntervalMillis(5_000)
+                .setMinUpdateDistanceMeters(2f)
                 .build();
 
         locationCallback = new LocationCallback() {
@@ -462,19 +462,20 @@ public class MainActivity extends AppCompatActivity {
                 Location loc = result.getLastLocation();
                 if (loc == null) return;
 
+                float accuracy = loc.getAccuracy();
+
                 float[] dist = new float[1];
                 Location.distanceBetween(
-                        loc.getLatitude(), loc.getLongitude(),
-                        GEOFENCE_LAT, GEOFENCE_LNG,
+                        loc.getLatitude(),
+                        loc.getLongitude(),
+                        GEOFENCE_LAT,
+                        GEOFENCE_LNG,
                         dist
                 );
 
-                // ── Accuracy filter — discard noisy fixes ────────────────
-                if (loc.getAccuracy() > MAX_ACCURACY_METERS) return;
-
                 int rawMeters = (int) dist[0];
 
-                // ── Rolling average — smooth out GPS jitter ──────────────────
+                // ── Smooth GPS noise ─────────────────────────────
                 if (distanceWindow.size() >= SMOOTH_WINDOW) distanceWindow.poll();
                 distanceWindow.add(rawMeters);
 
@@ -482,53 +483,62 @@ public class MainActivity extends AppCompatActivity {
                 for (int d : distanceWindow) smoothed += d;
                 smoothed /= distanceWindow.size();
 
-                // ── Hysteresis — prevent boundary bouncing ───────────────
-                // Only change state when clearly crossing a threshold,
-                // ignore readings in the dead zone (45–60 m).
-                boolean nowInside;
-                if (isInsideGeofence == null) {
-                    // First fix: pick initial state based on enter threshold
-                    nowInside = smoothed <= GEOFENCE_ENTER_RADIUS;
-                } else if (isInsideGeofence) {
-                    // Currently INSIDE — only flip outside if beyond exit radius
-                    nowInside = smoothed < GEOFENCE_EXIT_RADIUS;
-                } else {
-                    // Currently OUTSIDE — only flip inside if within enter radius
-                    nowInside = smoothed <= GEOFENCE_ENTER_RADIUS;
+                // ── Confidence check (DO NOT BLOCK UPDATES) ───────
+                boolean highConfidence = accuracy <= MAX_ACCURACY_METERS;
+
+                // Slight correction for low accuracy (prevents “false closer” readings)
+                if (!highConfidence) {
+                    smoothed += (int) (accuracy * 0.25f);
                 }
 
-                // ── Enter / Exit transition toast (fires only on state change) ──
+                // ── Adaptive geofence thresholds ─────────────────
+                int enterRadius = highConfidence ? GEOFENCE_ENTER_RADIUS : 80;
+                int exitRadius  = highConfidence ? GEOFENCE_EXIT_RADIUS  : 150;
+
+                boolean nowInside;
+
+                if (isInsideGeofence == null) {
+                    nowInside = smoothed <= enterRadius;
+                } else if (isInsideGeofence) {
+                    nowInside = smoothed < exitRadius;
+                } else {
+                    nowInside = smoothed <= enterRadius;
+                }
+
+                // ── State change (ENTER / EXIT) ──────────────────
                 if (isInsideGeofence == null || isInsideGeofence != nowInside) {
                     isInsideGeofence = nowInside;
 
-                    if (nowInside) {
-                        showGeofenceToast("✅ Inside Geofence — " + smoothed + " m from classroom");
-                    } else {
-                        showGeofenceToast("❌ Outside Geofence — " + smoothed + " m from classroom");
-                    }
+                    showGeofenceToast(
+                            (nowInside ? "✅ Inside" : "❌ Outside")
+                                    + " (" + (highConfidence ? "HIGH" : "LOW") + " accuracy)"
+                    );
                 }
 
-                // ── Periodic distance toast (every 10 s) ────────────────────
+                // ── Throttled distance updates ───────────────────
                 long nowMs = System.currentTimeMillis();
                 if (nowMs - lastDistanceToastTime >= TOAST_INTERVAL_MS) {
                     lastDistanceToastTime = nowMs;
-                    String status = nowInside ? "Inside Geofence ✅" : "Outside Geofence ❌";
-                    showDistanceToast("📍 " + smoothed + " m from classroom — " + status);
+
+                    showDistanceToast(
+                            "📍 " + smoothed +
+                                    "m (±" + (int) accuracy + "m)"
+                    );
                 }
             }
         };
 
         if (ActivityCompat.checkSelfPermission(this,
                 Manifest.permission.ACCESS_FINE_LOCATION)
-                == PackageManager.PERMISSION_GRANTED) {
-
-            fusedClient.requestLocationUpdates(request, locationCallback, getMainLooper());
-
-        } else {
-            Toast.makeText(MainActivity.this,
-                    "Location permission not granted — tracking unavailable",
-                    Toast.LENGTH_LONG).show();
+                != PackageManager.PERMISSION_GRANTED) {
+            return;
         }
+
+        fusedClient.requestLocationUpdates(
+                request,
+                locationCallback,
+                Looper.getMainLooper()
+        );
     }
 
     // ─────────────────────────────────────────

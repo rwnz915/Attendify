@@ -130,6 +130,17 @@
                         app:layout_constraintTop_toTopOf="parent" />
 
                     <TextView
+                        android:id="@+id/tv_today_subject_section"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:text="—"
+                        android:textColor="#CCFFFFFF"
+                        android:textSize="12sp"
+                        app:layout_constraintStart_toEndOf="@id/tv_class_label"
+                        app:layout_constraintBaseline_toBaselineOf="@id/tv_class_label" />
+
+                    <TextView
                         android:id="@+id/tv_today_subject_name"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
