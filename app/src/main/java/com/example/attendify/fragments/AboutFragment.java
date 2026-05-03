@@ -6,10 +6,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import com.example.attendify.MainActivity;
 import com.example.attendify.R;
 import com.example.attendify.ThemeApplier;
 import com.example.attendify.models.UserProfile;
@@ -33,10 +35,33 @@ public class AboutFragment extends Fragment {
         // Apply theme
         ThemeApplier.applyHeader(requireContext(), user.getRole(), view.findViewById(R.id.about_header));
 
-        // Back button
-        view.findViewById(R.id.btn_back).setOnClickListener(v -> requireActivity().getSupportFragmentManager().popBackStack());
+        if (getActivity() instanceof MainActivity)
+            ((MainActivity) getActivity()).applyNavBarPadding(view.findViewById(R.id.bottom_bar));
+
+        // Handle system back button
+        requireActivity().getOnBackPressedDispatcher().addCallback(getViewLifecycleOwner(),
+                new OnBackPressedCallback(true) {
+                    @Override
+                    public void handleOnBackPressed() {
+                        navigateBackToProfile();
+                    }
+                });
+
+        // Back button in layout
+        view.findViewById(R.id.btn_back).setOnClickListener(v -> navigateBackToProfile());
 
         // Fill support contact
         ((TextView) view.findViewById(R.id.tv_support_contact)).setText("support@attendify.com");
+    }
+
+    private void navigateBackToProfile() {
+        requireActivity().getSupportFragmentManager().popBackStack();
+        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+            if (getActivity() instanceof MainActivity) {
+                MainActivity main = (MainActivity) getActivity();
+                main.currentTab = -1;
+                main.selectTab(4);
+            }
+        }, 200);
     }
 }

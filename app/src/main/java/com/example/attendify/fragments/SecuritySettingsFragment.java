@@ -7,10 +7,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import com.example.attendify.MainActivity;
 import com.example.attendify.R;
 import com.example.attendify.ThemeApplier;
 import com.example.attendify.models.UserProfile;
@@ -40,8 +42,17 @@ public class SecuritySettingsFragment extends Fragment {
         ThemeApplier.applyHeader(requireContext(), user.getRole(), view.findViewById(R.id.security_header));
         ThemeApplier.applyButton(requireContext(), user.getRole(), view.findViewById(R.id.btn_update_password));
 
-        // Back button
-        view.findViewById(R.id.btn_back).setOnClickListener(v -> requireActivity().getSupportFragmentManager().popBackStack());
+        // Handle system back button
+        requireActivity().getOnBackPressedDispatcher().addCallback(getViewLifecycleOwner(),
+                new OnBackPressedCallback(true) {
+                    @Override
+                    public void handleOnBackPressed() {
+                        navigateBackToProfile();
+                    }
+                });
+
+        // Back button in layout
+        view.findViewById(R.id.btn_back).setOnClickListener(v -> navigateBackToProfile());
 
         TextInputEditText etCurrent = view.findViewById(R.id.et_current_password);
         TextInputEditText etNew = view.findViewById(R.id.et_new_password);
@@ -69,6 +80,17 @@ public class SecuritySettingsFragment extends Fragment {
 
             updatePassword(currentPw, newPw);
         });
+    }
+
+    private void navigateBackToProfile() {
+        requireActivity().getSupportFragmentManager().popBackStack();
+        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+            if (getActivity() instanceof MainActivity) {
+                MainActivity main = (MainActivity) getActivity();
+                main.currentTab = -1;
+                main.selectTab(4);
+            }
+        }, 200);
     }
 
     private void updatePassword(String currentPw, String newPw) {

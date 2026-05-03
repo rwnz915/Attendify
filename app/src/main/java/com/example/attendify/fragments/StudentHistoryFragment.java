@@ -8,6 +8,7 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -50,7 +51,7 @@ public class StudentHistoryFragment extends Fragment {
     private Spinner spinnerSubject;
     private RecyclerView rvMonths;
     private ProgressBar progressBar;
-    private Button btnExport;
+    private ImageView btnExport;
 
     private String selectedSubject = "All Subjects";
 
@@ -68,7 +69,14 @@ public class StudentHistoryFragment extends Fragment {
         // Apply saved theme to header
         UserProfile shUser = AuthRepository.getInstance().getLoggedInUser();
         if (shUser != null) {
-            ThemeApplier.applyHeader(requireContext(), shUser.getRole(), view.findViewById(R.id.history_header));
+            ThemeApplier.applyHeader(requireContext(), shUser.getRole(),
+                    view.findViewById(R.id.history_header));
+            ImageView exportIcon = view.findViewById(R.id.btn_export);
+            if (exportIcon != null) {
+                int primary = com.example.attendify.ThemeManager.getPrimaryColor(
+                        requireContext(), shUser.getRole());
+                exportIcon.setColorFilter(primary);
+            }
         }
 
         View header = view.findViewById(R.id.history_header);
@@ -87,6 +95,12 @@ public class StudentHistoryFragment extends Fragment {
         rvMonths      = view.findViewById(R.id.rv_history);
         progressBar   = view.findViewById(R.id.progress_bar);
         btnExport     = view.findViewById(R.id.btn_export);
+
+        TextView tvDate = view.findViewById(R.id.tv_stats_date);
+        if (tvDate != null) {
+            tvDate.setText(new java.text.SimpleDateFormat("MMM dd, yyyy", java.util.Locale.ENGLISH)
+                    .format(new java.util.Date()));
+        }
 
         rvMonths.setLayoutManager(new LinearLayoutManager(requireContext()));
         
@@ -135,8 +149,22 @@ public class StudentHistoryFragment extends Fragment {
         
         List<String> subjectList = new ArrayList<>(subjects);
         Collections.sort(subjectList);
-        
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, subjectList);
+
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(
+                requireContext(), android.R.layout.simple_spinner_item, subjectList) {
+            @Override
+            public View getView(int position, View convertView, ViewGroup parent) {
+                View v = super.getView(position, convertView, parent);
+                ((TextView) v.findViewById(android.R.id.text1)).setTextSize(11f);
+                return v;
+            }
+            @Override
+            public View getDropDownView(int position, View convertView, ViewGroup parent) {
+                View v = super.getDropDownView(position, convertView, parent);
+                ((TextView) v.findViewById(android.R.id.text1)).setTextSize(11f);
+                return v;
+            }
+        };
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerSubject.setAdapter(adapter);
         

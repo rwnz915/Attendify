@@ -5,11 +5,13 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import androidx.activity.OnBackPressedCallback;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import com.example.attendify.MainActivity;
 import com.example.attendify.R;
 import com.example.attendify.ThemeApplier;
 import com.example.attendify.models.UserProfile;
@@ -33,8 +35,17 @@ public class PersonalInfoFragment extends Fragment {
         // Apply theme to header
         ThemeApplier.applyHeader(requireContext(), user.getRole(), view.findViewById(R.id.personal_info_header));
 
-        // Back button
-        view.findViewById(R.id.btn_back).setOnClickListener(v -> requireActivity().getSupportFragmentManager().popBackStack());
+        // Handle system back button
+        requireActivity().getOnBackPressedDispatcher().addCallback(getViewLifecycleOwner(),
+                new OnBackPressedCallback(true) {
+                    @Override
+                    public void handleOnBackPressed() {
+                        navigateBackToProfile();
+                    }
+                });
+
+        // Back button in layout
+        view.findViewById(R.id.btn_back).setOnClickListener(v -> navigateBackToProfile());
 
         // Fill data
         ((TextView) view.findViewById(R.id.tv_full_name)).setText(user.getFullName());
@@ -54,13 +65,48 @@ public class PersonalInfoFragment extends Fragment {
         if (user.isStudent()) {
             parentLayout.setVisibility(View.VISIBLE);
             parentDivider.setVisibility(View.VISIBLE);
-            ((TextView) view.findViewById(R.id.tv_parent_name)).setText(
-                    user.getParentName() != null ? user.getParentName() : "Not provided");
-            ((TextView) view.findViewById(R.id.tv_parent_contact)).setText(
-                    user.getParentContact() != null ? user.getParentContact() : "Not provided");
+
+            // Fetch from parents/{uid} collection
+            com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                    .collection("parents")
+                    .document(user.getId())
+                    .get()
+                    .addOnSuccessListener(doc -> {
+                        if (doc.exists()) {
+                            String parentName    = doc.getString("parent");
+                            String parentContact = doc.getString("contact");
+
+                            TextView tvParentName    = view.findViewById(R.id.tv_parent_name);
+                            TextView tvParentContact = view.findViewById(R.id.tv_parent_contact);
+
+                            if (tvParentName != null)
+                                tvParentName.setText(parentName != null ? parentName : "Not provided");
+                            if (tvParentContact != null)
+                                tvParentContact.setText(parentContact != null ? parentContact : "Not provided");
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        // leave "Not provided" as default
+                    });
+
+            // Set defaults while loading
+            ((TextView) view.findViewById(R.id.tv_parent_name)).setText("Loading...");
+            ((TextView) view.findViewById(R.id.tv_parent_contact)).setText("Loading...");
+
         } else {
             parentLayout.setVisibility(View.GONE);
             parentDivider.setVisibility(View.GONE);
         }
+    }
+
+    private void navigateBackToProfile() {
+        requireActivity().getSupportFragmentManager().popBackStack();
+        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+            if (getActivity() instanceof MainActivity) {
+                MainActivity main = (MainActivity) getActivity();
+                main.currentTab = -1;
+                main.selectTab(4);
+            }
+        }, 200);
     }
 }

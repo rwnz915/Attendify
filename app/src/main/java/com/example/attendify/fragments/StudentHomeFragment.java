@@ -11,6 +11,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import com.example.attendify.MainActivity;
 import com.example.attendify.R;
 import com.example.attendify.ThemeManager;
 import com.example.attendify.models.AttendanceRecord;
@@ -266,12 +267,10 @@ public class StudentHomeFragment extends Fragment {
                         .commit());
 
         // Excuse Letter
-        view.findViewById(R.id.btn_class_list).setOnClickListener(v ->
-                requireActivity().getSupportFragmentManager()
-                        .beginTransaction()
-                        .replace(R.id.fragment_container, new ExcuseLetterFragment())
-                        .addToBackStack(null)
-                        .commit());
+        view.findViewById(R.id.btn_class_list).setOnClickListener(v -> {
+            if (getActivity() instanceof MainActivity)
+                ((MainActivity) getActivity()).navigateTo(new ExcuseLetterFragment());
+        });
 
         // Subjects — switch to the Subjects tab (index 1)
         view.findViewById(R.id.btn_student_subjects).setOnClickListener(v -> {
@@ -279,11 +278,10 @@ public class StudentHomeFragment extends Fragment {
                 ((com.example.attendify.MainActivity) getActivity()).selectTab(1);
         });
 
-        // Settings — placeholder until a settings screen is added
+        // Settings
         view.findViewById(R.id.btn_student_settings).setOnClickListener(v -> {
-            // TODO: replace with SettingsFragment when ready
-            android.widget.Toast.makeText(requireContext(),
-                    "Settings coming soon", android.widget.Toast.LENGTH_SHORT).show();
+            if (getActivity() instanceof MainActivity)
+                ((MainActivity) getActivity()).navigateTo(new AppSettingsFragment());
         });
     }
 

@@ -56,6 +56,9 @@ public class MonthDetailActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_month_detail);
 
+        // Enable edge to edge
+        androidx.activity.EdgeToEdge.enable(this);
+
         monthYear = getIntent().getStringExtra("MONTH_YEAR");
         initialSection = getIntent().getStringExtra("SECTION");
         initialSubject = getIntent().getStringExtra("SUBJECT");

@@ -3,17 +3,21 @@ package com.example.attendify.fragments;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import com.example.attendify.MainActivity;
 import com.example.attendify.R;
 import com.example.attendify.ThemeApplier;
 import com.example.attendify.ThemeManager;
@@ -44,10 +48,32 @@ public class AppSettingsFragment extends Fragment {
         // Apply theme to header
         ThemeApplier.applyHeader(requireContext(), role, view.findViewById(R.id.app_settings_header));
 
-        // Back button
-        view.findViewById(R.id.btn_back).setOnClickListener(v -> requireActivity().getSupportFragmentManager().popBackStack());
+        // Handle system back button
+        requireActivity().getOnBackPressedDispatcher().addCallback(getViewLifecycleOwner(),
+                new OnBackPressedCallback(true) {
+                    @Override
+                    public void handleOnBackPressed() {
+                        navigateBackToProfile();
+                    }
+                });
+
+        // Back button in layout
+        view.findViewById(R.id.btn_back).setOnClickListener(v -> navigateBackToProfile());
 
         buildThemeList(view);
+    }
+
+    private void navigateBackToProfile() {
+        requireActivity().getSupportFragmentManager().popBackStack();
+        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+            if (getActivity() instanceof MainActivity) {
+                MainActivity main = (MainActivity) getActivity();
+                int returnTab = main.navSourceTab != -1 ? main.navSourceTab : 4;
+                main.navSourceTab = -1; // reset after use
+                main.currentTab = -1;
+                main.selectTab(returnTab);
+            }
+        }, 200);
     }
 
     private void buildThemeList(View root) {
@@ -97,7 +123,7 @@ public class AppSettingsFragment extends Fragment {
             // Save and apply immediately to header
             ThemeManager.saveTheme(requireContext(), role, themeKey);
             ThemeApplier.applyHeader(requireContext(), role, getView().findViewById(R.id.app_settings_header));
-            Toast.makeText(requireContext(), "Theme updated!", Toast.LENGTH_SHORT).show();
+            //Toast.makeText(requireContext(), "Theme updated!", Toast.LENGTH_SHORT).show();
         });
 
         return row;

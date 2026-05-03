@@ -109,13 +109,6 @@
                     android:textSize="14sp" />
             </LinearLayout>
 
-            <ProgressBar
-                android:id="@+id/progress_bar"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:layout_marginTop="4dp"
-                android:visibility="gone" />
         </LinearLayout>
     </FrameLayout>
 
@@ -313,6 +306,15 @@
                 android:textSize="12sp" />
         </LinearLayout>
     </HorizontalScrollView>
+
+    <ProgressBar
+        android:id="@+id/progress_bar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="32dp"
+        android:layout_marginBottom="8dp"
+        android:visibility="gone" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rv_students"

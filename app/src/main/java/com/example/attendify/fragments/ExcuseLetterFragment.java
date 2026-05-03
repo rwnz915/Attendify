@@ -17,6 +17,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.attendify.MainActivity;
 import com.example.attendify.R;
 import com.example.attendify.ThemeApplier;
 import com.example.attendify.ThemeManager;
@@ -62,8 +63,13 @@ public class ExcuseLetterFragment extends Fragment {
         emptyState  = view.findViewById(R.id.layout_empty);
         progressBar = view.findViewById(R.id.progress_bar);
 
-        view.findViewById(R.id.btn_submit_new).setOnClickListener(v ->
-                navigateTo(new SubmitExcuseLetterFragment()));
+        if (getActivity() instanceof MainActivity)
+            ((MainActivity) getActivity()).applyNavBarPadding(view.findViewById(R.id.bottom_bar));
+
+        view.findViewById(R.id.btn_submit_new).setOnClickListener(v -> {
+        if (getActivity() instanceof MainActivity)
+            ((MainActivity) getActivity()).navigateTo(new SubmitExcuseLetterFragment());
+        });
 
         loadLetters();
     }

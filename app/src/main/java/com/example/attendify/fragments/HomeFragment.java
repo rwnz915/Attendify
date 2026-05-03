@@ -82,21 +82,16 @@ public class HomeFragment extends Fragment {
         });
 
         // Pending Approvals is now in the Quick Actions row
-        view.findViewById(R.id.card_pending_approvals).setOnClickListener(v ->
-                requireActivity().getSupportFragmentManager()
-                        .beginTransaction()
-                        .replace(R.id.fragment_container, new ApprovalRequestsFragment())
-                        .addToBackStack(null)
-                        .commit());
+        view.findViewById(R.id.card_pending_approvals).setOnClickListener(v -> {
+            if (getActivity() instanceof MainActivity)
+                ((MainActivity) getActivity()).navigateTo(new ApprovalRequestsFragment());
+        });
 
         // Contact Parent quick action
-        view.findViewById(R.id.btn_contact_parent).setOnClickListener(v ->
-                requireActivity().getSupportFragmentManager()
-                        .beginTransaction()
-                        .setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out)
-                        .replace(R.id.fragment_container, new TeacherContactParentFragment())
-                        .addToBackStack(null)
-                        .commit());
+        view.findViewById(R.id.btn_contact_parent).setOnClickListener(v -> {
+            if (getActivity() instanceof MainActivity)
+                ((MainActivity) getActivity()).navigateTo(new TeacherContactParentFragment());
+        });
 
         UserProfile me = AuthRepository.getInstance().getLoggedInUser();
         if (me != null) {

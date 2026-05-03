@@ -53,7 +53,9 @@ public class MainActivity extends AppCompatActivity {
     private LinearLayout bottomNav;
     private FrameLayout fragmentContainer;
 
-    private int currentTab = -1;
+    public int currentTab = -1;
+    private int previousTab = -1;
+    public int navSourceTab = -1;
     private String userRole = "";
 
     private boolean geofenceAdded = false;
@@ -161,8 +163,9 @@ public class MainActivity extends AppCompatActivity {
         userRole = getIntent().getStringExtra("userRole");
 
         if (savedInstanceState != null) {
-            userRole   = savedInstanceState.getString("userRole", userRole);
-            currentTab = savedInstanceState.getInt("currentTab", -1);
+            userRole    = savedInstanceState.getString("userRole", userRole);
+            currentTab  = savedInstanceState.getInt("currentTab", -1);
+            previousTab = savedInstanceState.getInt("previousTab", -1);
         }
 
         if (userRole == null || userRole.isEmpty()) {
@@ -253,6 +256,7 @@ public class MainActivity extends AppCompatActivity {
     // ─────────────────────────────────────────
     public void selectTab(int index) {
         if (currentTab == index) return;
+        previousTab = currentTab;
         currentTab = index;
 
         Fragment fragment;
@@ -304,9 +308,50 @@ public class MainActivity extends AppCompatActivity {
         fragment.setArguments(b);
 
         FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
-        ft.setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out);
+
         ft.replace(R.id.fragment_container, fragment);
         ft.commit();
+    }
+
+    public void navigateTo(Fragment fragment) {
+        navSourceTab = currentTab; // remember which tab opened the sub-fragment
+        bottomNav.setVisibility(View.GONE);
+
+        getSupportFragmentManager().addOnBackStackChangedListener(new androidx.fragment.app.FragmentManager.OnBackStackChangedListener() {
+            @Override
+            public void onBackStackChanged() {
+                if (getSupportFragmentManager().getBackStackEntryCount() == 0) {
+                    getSupportFragmentManager().removeOnBackStackChangedListener(this);
+                    bottomNav.setVisibility(View.VISIBLE);
+                }
+            }
+        });
+
+        // popEnter is 0 (no animation on the profile when sub-fragment pops).
+        // The old nav_slide_in_left popEnter briefly teleported the already-visible
+        // profile view to translateX=-100% before sliding it back, which corrupted
+        // the ScrollView's internal touch-tracking state and broke scrolling.
+        // Only the departing sub-fragment needs to animate (popExit).
+        getSupportFragmentManager().beginTransaction()
+                .setCustomAnimations(
+                        R.anim.nav_slide_in_right,  // sub-fragment enters from right
+                        0,                           // no exit anim (profile stays put)
+                        0,                           // FIX: no popEnter on profile (was scroll bug)
+                        R.anim.nav_slide_out_right)  // sub-fragment exits right on back
+                .add(R.id.fragment_container, fragment)
+                .addToBackStack(null)
+                .commit();
+    }
+
+    // Reusable helper — put this in a utility class if you have many fragments
+    public void applyNavBarPadding(View bottomBar) {
+        int extra = (int)(20 * getResources().getDisplayMetrics().density);
+        bottomBar.setPadding(
+                bottomBar.getPaddingLeft(),
+                bottomBar.getPaddingTop(),
+                bottomBar.getPaddingRight(),
+                extra + MainActivity.navBarHeight
+        );
     }
 
     // ─────────────────────────────────────────
@@ -655,21 +700,21 @@ public class MainActivity extends AppCompatActivity {
      * Shown at the TOP of the screen so it doesn't collide with the bottom nav.
      */
     private void showGeofenceToast(String message) {
-        runOnUiThread(() -> {
+       /* runOnUiThread(() -> {
             Toast toast = Toast.makeText(this, message, Toast.LENGTH_LONG);
             toast.setGravity(Gravity.TOP | Gravity.CENTER_HORIZONTAL,
                     0, statusBarHeight + 16);
             toast.show();
-        });
+        });*/
     }
 
     /**
      * Standard bottom toast for the periodic distance update.
      */
     private void showDistanceToast(String message) {
-        runOnUiThread(() ->
+        /*runOnUiThread(() ->
                 Toast.makeText(this, "📍 " + message, Toast.LENGTH_SHORT).show()
-        );
+        );*/
     }
 
     // ─────────────────────────────────────────
@@ -691,6 +736,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onSaveInstanceState(@NonNull Bundle outState) {
         outState.putString("userRole", userRole);
         outState.putInt("currentTab", currentTab);
+        outState.putInt("previousTab", previousTab);
         super.onSaveInstanceState(outState);
     }
 

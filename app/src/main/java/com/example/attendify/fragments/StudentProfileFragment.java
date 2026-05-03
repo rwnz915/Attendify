@@ -10,6 +10,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
 
 import com.example.attendify.MainActivity;
 import com.example.attendify.R;
@@ -18,6 +19,8 @@ import com.example.attendify.repository.AuthRepository;
 import com.example.attendify.ThemeApplier;
 
 public class StudentProfileFragment extends Fragment {
+
+    private FragmentManager.OnBackStackChangedListener backStackListener;
 
     @Nullable
     @Override
@@ -42,7 +45,7 @@ public class StudentProfileFragment extends Fragment {
             int primary = com.example.attendify.ThemeManager.getPrimaryColor(requireContext(), spUser.getRole());
             int lightTint = com.example.attendify.ThemeManager.getLightTintColor(requireContext(), spUser.getRole());
             int[] iconIds = {R.id.iv_profile_icon_1, R.id.iv_profile_icon_2, R.id.iv_profile_icon_3,
-                             R.id.iv_profile_icon_4, R.id.iv_profile_icon_5};
+                    R.id.iv_profile_icon_4, R.id.iv_profile_icon_5};
             for (int id : iconIds) {
                 ImageView iv = view.findViewById(id);
                 if (iv != null) {
@@ -100,10 +103,51 @@ public class StudentProfileFragment extends Fragment {
     }
 
     private void navigateTo(Fragment fragment) {
-        getParentFragmentManager().beginTransaction()
-                .setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out, android.R.anim.fade_in, android.R.anim.fade_out)
-                .replace(R.id.fragment_container, fragment)
-                .addToBackStack(null)
-                .commit();
+        if (getActivity() instanceof MainActivity)
+            ((MainActivity) getActivity()).navigateTo(fragment);
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        backStackListener = () -> {
+            if (getParentFragmentManager().getBackStackEntryCount() == 0) {
+                reapplyTheme();
+            }
+        };
+        getParentFragmentManager().addOnBackStackChangedListener(backStackListener);
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        if (backStackListener != null) {
+            getParentFragmentManager().removeOnBackStackChangedListener(backStackListener);
+            backStackListener = null;
+        }
+    }
+
+    private void reapplyTheme() {
+        View view = getView();
+        if (view == null) return;
+        UserProfile spUser = AuthRepository.getInstance().getLoggedInUser();
+        if (spUser == null) return;
+        ThemeApplier.applyHeader(requireContext(), spUser.getRole(), view.findViewById(R.id.profile_header_bg));
+        ThemeApplier.applyOval(requireContext(), spUser.getRole(), view.findViewById(R.id.iv_profile_avatar));
+        int primary   = com.example.attendify.ThemeManager.getPrimaryColor(requireContext(), spUser.getRole());
+        int lightTint = com.example.attendify.ThemeManager.getLightTintColor(requireContext(), spUser.getRole());
+        int[] iconIds = {R.id.iv_profile_icon_1, R.id.iv_profile_icon_2, R.id.iv_profile_icon_3,
+                R.id.iv_profile_icon_4, R.id.iv_profile_icon_5};
+        for (int id : iconIds) {
+            ImageView iv = view.findViewById(id);
+            if (iv != null) {
+                android.graphics.drawable.GradientDrawable gd = new android.graphics.drawable.GradientDrawable();
+                gd.setShape(android.graphics.drawable.GradientDrawable.RECTANGLE);
+                gd.setCornerRadius(50f * requireContext().getResources().getDisplayMetrics().density);
+                gd.setColor(lightTint);
+                iv.setBackground(gd);
+                iv.setColorFilter(primary);
+            }
+        }
     }
 }

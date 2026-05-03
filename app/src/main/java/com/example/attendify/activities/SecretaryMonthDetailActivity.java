@@ -54,6 +54,8 @@ public class SecretaryMonthDetailActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_secretary_month_detail);
 
+        androidx.activity.EdgeToEdge.enable(this);
+
         monthYear = getIntent().getStringExtra("MONTH_YEAR");
         initialSubject = getIntent().getStringExtra("SUBJECT");
         userSection = getIntent().getStringExtra("SECTION");
