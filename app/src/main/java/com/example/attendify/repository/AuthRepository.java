@@ -1,5 +1,9 @@
 package com.example.attendify.repository;
 
+import android.content.Context;
+import android.util.Log;
+
+import com.example.attendify.LocalCacheManager;
 import com.example.attendify.models.UserProfile;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -10,8 +14,18 @@ import java.util.List;
 /**
  * Handles Firebase Auth login and fetches the user profile from Firestore.
  * Keeps a static in-memory session so fragments can call getLoggedInUser() anywhere.
+ *
+ * OFFLINE SUPPORT
+ * ───────────────
+ * • On successful login / profile fetch → profile is cached to LocalCacheManager.
+ * • If the device is offline and fetchUserProfile is called, the cached profile
+ *   is restored into the in-memory session so auto-login still works.
+ * • saveSession() persists uid + role globally so RoleSelectionActivity can
+ *   restore the session without touching Firestore.
  */
 public class AuthRepository {
+
+    private static final String TAG = "AuthRepository";
 
     private static AuthRepository instance;
     private static UserProfile loggedInUser = null;
@@ -19,11 +33,21 @@ public class AuthRepository {
     private final FirebaseAuth auth = FirebaseAuth.getInstance();
     private final FirebaseFirestore db = FirebaseFirestore.getInstance();
 
+    private Context appContext; // set once via init()
+
     private AuthRepository() {}
 
     public static AuthRepository getInstance() {
         if (instance == null) instance = new AuthRepository();
         return instance;
+    }
+
+    /**
+     * Call this once from Application or the first Activity so repositories
+     * can access the cache without needing to pass Context everywhere.
+     */
+    public void init(Context ctx) {
+        this.appContext = ctx.getApplicationContext();
     }
 
     // ── Callback ──────────────────────────────────────────────────────────────
@@ -38,38 +62,44 @@ public class AuthRepository {
     /**
      * Signs in with Firebase Auth, then loads the user profile from Firestore.
      * Validates that the role in Firestore matches the role card the user tapped.
+     * On success, the profile is cached locally for offline use.
      */
-    public void login(String email, String password, String expectedRole, LoginCallback callback) {
+    public void login(String email, String password, String expectedRole,
+                      LoginCallback callback) {
         auth.signInWithEmailAndPassword(email, password)
                 .addOnSuccessListener(result -> {
                     String uid = result.getUser().getUid();
 
-                    // Fetch profile from Firestore using the UID
                     db.collection("users").document(uid).get()
                             .addOnSuccessListener(doc -> {
                                 if (!doc.exists()) {
-                                    callback.onFailure("Account not found. Contact your administrator.");
+                                    callback.onFailure(
+                                            "Account not found. Contact your administrator.");
                                     return;
                                 }
 
                                 String role = doc.getString("role");
 
-                                // Make sure the role matches the card they tapped
                                 if (!expectedRole.equals(role)) {
                                     auth.signOut();
-                                    callback.onFailure("This account is not registered as a " + expectedRole + ".");
+                                    callback.onFailure(
+                                            "This account is not registered as a "
+                                                    + expectedRole + ".");
                                     return;
                                 }
 
-                                // Build the UserProfile from Firestore fields
                                 UserProfile user = buildUserProfile(uid, doc);
                                 loggedInUser = user;
+
+                                // ── Cache everything ──────────────────────────
+                                cacheProfile(uid, role, user);
+
                                 callback.onSuccess(user);
                             })
-                            .addOnFailureListener(e -> callback.onFailure("Failed to load profile: " + e.getMessage()));
+                            .addOnFailureListener(e ->
+                                    callback.onFailure("Failed to load profile: " + e.getMessage()));
                 })
                 .addOnFailureListener(e -> {
-                    // Make the Firebase error messages friendlier
                     String msg = e.getMessage();
                     if (msg != null && msg.contains("password")) {
                         callback.onFailure("Incorrect password. Please try again.");
@@ -77,6 +107,72 @@ public class AuthRepository {
                         callback.onFailure("No account found with that email.");
                     } else {
                         callback.onFailure("Login failed. Please check your credentials.");
+                    }
+                });
+    }
+
+    // ── Auto-login (called from RoleSelectionActivity on app start) ───────────
+
+    /**
+     * Fetches the user profile from Firestore (online) and falls back to the
+     * local cache when offline. Either way the in-memory session is restored
+     * so the app can navigate straight to MainActivity.
+     */
+    public void fetchUserProfile(String uid, String savedRole, LoginCallback callback) {
+
+        // ── Offline fast-path ─────────────────────────────────────────────────
+        if (appContext != null && !LocalCacheManager.isOnline(appContext)) {
+            Log.d(TAG, "fetchUserProfile: OFFLINE — returning cached profile");
+            UserProfile cached = getCachedProfile(uid);
+            if (cached != null) {
+                loggedInUser = cached;
+                callback.onSuccess(cached);
+            } else {
+                callback.onFailure("No cached profile. Please connect to the internet.");
+            }
+            return;
+        }
+
+        // ── Online path ───────────────────────────────────────────────────────
+        db.collection("users").document(uid).get()
+                .addOnSuccessListener(doc -> {
+                    if (!doc.exists()) {
+                        // Firestore miss — try cache before failing
+                        UserProfile cached = getCachedProfile(uid);
+                        if (cached != null) {
+                            loggedInUser = cached;
+                            callback.onSuccess(cached);
+                            return;
+                        }
+                        callback.onFailure("Profile not found.");
+                        return;
+                    }
+
+                    String role = doc.getString("role");
+
+                    if (!savedRole.equals(role)) {
+                        auth.signOut();
+                        callback.onFailure("Role mismatch. Please log in again.");
+                        return;
+                    }
+
+                    UserProfile user = buildUserProfile(uid, doc);
+                    loggedInUser = user;
+
+                    // Refresh cache with latest Firestore data
+                    cacheProfile(uid, role, user);
+
+                    callback.onSuccess(user);
+                })
+                .addOnFailureListener(e -> {
+                    // Network error — fall back to cache
+                    Log.w(TAG, "fetchUserProfile network error — trying cache", e);
+                    UserProfile cached = getCachedProfile(uid);
+                    if (cached != null) {
+                        loggedInUser = cached;
+                        callback.onSuccess(cached);
+                    } else {
+                        callback.onFailure("Failed to load profile: " + e.getMessage());
                     }
                 });
     }
@@ -91,38 +187,27 @@ public class AuthRepository {
         user.setLastname(doc.getString("lastname"));
         user.setEmail(doc.getString("email"));
         user.setRole(doc.getString("role"));
-        user.setSection(doc.getString("section"));       // students only
-        user.setStudentID(doc.getString("studentID"));   // students only
+        user.setSection(doc.getString("section"));
+        user.setStudentID(doc.getString("studentID"));
 
-        // teachers only — sections list
         List<String> sections = (List<String>) doc.get("sections");
         user.setSections(sections);
 
         return user;
     }
 
-    public void fetchUserProfile(String uid, String savedRole, LoginCallback callback) {
-        db.collection("users").document(uid).get()
-                .addOnSuccessListener(doc -> {
-                    if (!doc.exists()) {
-                        callback.onFailure("Profile not found.");
-                        return;
-                    }
+    // ── Cache helpers ──────────────────────────────────────────────────────────
 
-                    String role = doc.getString("role");
+    private void cacheProfile(String uid, String role, UserProfile user) {
+        if (appContext == null) return;
+        LocalCacheManager cache = LocalCacheManager.getInstance(appContext);
+        cache.saveSession(uid, role);
+        cache.saveUserProfile(uid, user);
+    }
 
-                    // Make sure the saved role still matches what's in Firestore
-                    if (!savedRole.equals(role)) {
-                        auth.signOut();
-                        callback.onFailure("Role mismatch. Please log in again.");
-                        return;
-                    }
-
-                    UserProfile user = buildUserProfile(uid, doc);
-                    loggedInUser = user;
-                    callback.onSuccess(user);
-                })
-                .addOnFailureListener(e -> callback.onFailure("Failed to load profile: " + e.getMessage()));
+    private UserProfile getCachedProfile(String uid) {
+        if (appContext == null) return null;
+        return LocalCacheManager.getInstance(appContext).getUserProfile(uid);
     }
 
     // ── Session ───────────────────────────────────────────────────────────────
@@ -132,15 +217,21 @@ public class AuthRepository {
         return loggedInUser;
     }
 
+    /** Sets the in-memory user (used when restoring from cache). */
+    public void setLoggedInUser(UserProfile user) {
+        loggedInUser = user;
+    }
+
     /** Clears session and signs out from Firebase Auth. */
     public void logout() {
         loggedInUser = null;
         auth.signOut();
+        if (appContext != null) {
+            LocalCacheManager.getInstance(appContext).clearSession();
+        }
     }
 
-    // ── Legacy stub — kept so existing code doesn't break during migration ────
+    // ── Legacy stub ───────────────────────────────────────────────────────────
     @Deprecated
-    public void loginAsRole(String role) {
-        // No-op — replaced by login(email, password, role, callback)
-    }
+    public void loginAsRole(String role) {}
 }
