@@ -3,7 +3,7 @@
 
     <!-- Nav labels -->
     <string name="nav_home">Home</string>
-    <string name="nav_attendance">Attend</string>
+    <string name="nav_attendance">Attendance</string>
     <string name="nav_history">History</string>
     <string name="nav_profile">Profile</string>
 

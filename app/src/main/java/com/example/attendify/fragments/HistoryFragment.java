@@ -36,12 +36,10 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 
 public class HistoryFragment extends Fragment {
 
@@ -49,12 +47,11 @@ public class HistoryFragment extends Fragment {
     private List<SubjectRepository.SubjectItem> teacherSubjects = new ArrayList<>();
 
     private TextView tvTotalPresent, tvTotalLate, tvTotalAbsent, tvEmpty;
-    private Spinner spinnerSection, spinnerSubject;
     private RecyclerView rvMonths;
     private ProgressBar progressBar;
+    private Spinner spinnerSection;
 
     private String selectedSection = "All Sections";
-    private String selectedSubject = "All Subjects";
 
     @Nullable
     @Override
@@ -67,13 +64,11 @@ public class HistoryFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // Apply saved theme to header
         UserProfile histUser = AuthRepository.getInstance().getLoggedInUser();
         if (histUser != null) {
             ThemeApplier.applyHeader(requireContext(), histUser.getRole(),
                     view.findViewById(R.id.history_header));
 
-            // Tint export icon with theme primary color
             ImageView btnExport = view.findViewById(R.id.btn_export);
             if (btnExport != null) {
                 int primary = com.example.attendify.ThemeManager.getPrimaryColor(
@@ -82,7 +77,6 @@ public class HistoryFragment extends Fragment {
             }
         }
 
-        // Expand header to cover status bar
         View header = view.findViewById(R.id.history_header);
         header.setPadding(
                 header.getPaddingLeft(),
@@ -90,17 +84,18 @@ public class HistoryFragment extends Fragment {
                 header.getPaddingRight(),
                 header.getPaddingBottom());
 
-        // Bind views
         tvTotalPresent = view.findViewById(R.id.tv_total_present);
         tvTotalLate    = view.findViewById(R.id.tv_total_late);
         tvTotalAbsent  = view.findViewById(R.id.tv_total_absent);
         tvEmpty        = view.findViewById(R.id.tv_empty);
-        spinnerSection = view.findViewById(R.id.spinner_section);
-        spinnerSubject = view.findViewById(R.id.spinner_subject);
         rvMonths       = view.findViewById(R.id.rv_history);
         progressBar    = view.findViewById(R.id.progress_bar);
+        spinnerSection = view.findViewById(R.id.spinner_section);
 
-        // Set current date
+        // Hide subject spinner — not used
+        View spinnerSubject = view.findViewById(R.id.spinner_subject);
+        if (spinnerSubject != null) spinnerSubject.setVisibility(View.GONE);
+
         TextView tvDate = view.findViewById(R.id.tv_stats_date);
         if (tvDate != null) {
             tvDate.setText(new SimpleDateFormat("MMM dd, yyyy", Locale.ENGLISH)
@@ -114,6 +109,53 @@ public class HistoryFragment extends Fragment {
         loadSubjectsAndHistory();
     }
 
+    /**
+     * Populate the section spinner once subjects are loaded.
+     * First item is always "All Sections".
+     */
+    private void setupSectionSpinner() {
+        // Collect unique non-null sections
+        List<String> sections = new ArrayList<>();
+        sections.add("All Sections");
+        for (SubjectRepository.SubjectItem s : teacherSubjects) {
+            if (s.section != null && !s.section.isEmpty() && !sections.contains(s.section)) {
+                sections.add(s.section);
+            }
+        }
+
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                requireContext(),
+                android.R.layout.simple_spinner_item,
+                sections
+        ) {
+            @Override
+            public View getView(int position, View convertView, ViewGroup parent) {
+                View v = super.getView(position, convertView, parent);
+                ((TextView) v.findViewById(android.R.id.text1)).setTextSize(11f);
+                return v;
+            }
+            @Override
+            public View getDropDownView(int position, View convertView, ViewGroup parent) {
+                View v = super.getDropDownView(position, convertView, parent);
+                ((TextView) v.findViewById(android.R.id.text1)).setTextSize(11f);
+                return v;
+            }
+        };
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerSection.setAdapter(adapter);
+
+        spinnerSection.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                selectedSection = sections.get(position);
+                buildMonthSectionList(); // re-render with filter applied
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {}
+        });
+    }
+
     private void loadSubjectsAndHistory() {
         UserProfile user = AuthRepository.getInstance().getLoggedInUser();
         if (user == null) return;
@@ -125,7 +167,6 @@ public class HistoryFragment extends Fragment {
                     @Override
                     public void onSuccess(List<SubjectRepository.SubjectItem> subjects) {
                         teacherSubjects = subjects;
-                        setupSpinners();
 
                         List<String> subjectIds = new ArrayList<>();
                         for (SubjectRepository.SubjectItem s : subjects) subjectIds.add(s.id);
@@ -139,7 +180,8 @@ public class HistoryFragment extends Fragment {
                                             if (progressBar != null)
                                                 progressBar.setVisibility(View.GONE);
                                             allRecords = records;
-                                            applyFilters();
+                                            setupSectionSpinner(); // populate spinner first
+                                            buildMonthSectionList();
                                         });
                                     }
 
@@ -169,119 +211,19 @@ public class HistoryFragment extends Fragment {
                 });
     }
 
-    private void setupSpinners() {
-        Set<String> sections = new HashSet<>();
-        sections.add("All Sections");
-        for (SubjectRepository.SubjectItem s : teacherSubjects)
-            if (s.section != null) sections.add(s.section);
-
-        List<String> sectionList = new ArrayList<>(sections);
-        Collections.sort(sectionList);
-
-        ArrayAdapter<String> sectionAdapter = new ArrayAdapter<String>(
-                requireContext(), android.R.layout.simple_spinner_item, sectionList) {
-            @Override
-            public View getView(int position, View convertView, ViewGroup parent) {
-                View v = super.getView(position, convertView, parent);
-                ((TextView) v.findViewById(android.R.id.text1)).setTextSize(11f);
-                return v;
-            }
-            @Override
-            public View getDropDownView(int position, View convertView, ViewGroup parent) {
-                View v = super.getDropDownView(position, convertView, parent);
-                ((TextView) v.findViewById(android.R.id.text1)).setTextSize(11f);
-                return v;
-            }
-        };
-        sectionAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerSection.setAdapter(sectionAdapter);
-
-        spinnerSection.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                selectedSection = sectionList.get(position);
-                updateSubjectSpinner();
-                applyFilters();
-            }
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {}
-        });
-    }
-
-    private void updateSubjectSpinner() {
-        List<String> subjects = new ArrayList<>();
-        subjects.add("All Subjects");
-        for (SubjectRepository.SubjectItem s : teacherSubjects) {
-            if (selectedSection.equals("All Sections") || selectedSection.equals(s.section)) {
-                subjects.add(s.name);
-            }
-        }
-
-        ArrayAdapter<String> subjectAdapter = new ArrayAdapter<String>(
-                requireContext(), android.R.layout.simple_spinner_item, subjects) {
-            @Override
-            public View getView(int position, View convertView, ViewGroup parent) {
-                View v = super.getView(position, convertView, parent);
-                ((TextView) v.findViewById(android.R.id.text1)).setTextSize(11f);
-                return v;
-            }
-            @Override
-            public View getDropDownView(int position, View convertView, ViewGroup parent) {
-                View v = super.getDropDownView(position, convertView, parent);
-                ((TextView) v.findViewById(android.R.id.text1)).setTextSize(11f);
-                return v;
-            }
-        };
-        subjectAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerSubject.setAdapter(subjectAdapter);
-
-        spinnerSubject.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                selectedSubject = subjects.get(position);
-                applyFilters();
-            }
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {}
-        });
-    }
-
-    private void applyFilters() {
-        List<AttendanceRecord> filtered = new ArrayList<>();
-        int p = 0, l = 0, a = 0;
-
-        Set<String> allowedSubjectIds = new HashSet<>();
-        for (SubjectRepository.SubjectItem s : teacherSubjects) {
-            boolean sectionMatch = selectedSection.equals("All Sections")
-                    || selectedSection.equals(s.section);
-            boolean subjectMatch = selectedSubject.equals("All Subjects")
-                    || selectedSubject.equals(s.name);
-            if (sectionMatch && subjectMatch) allowedSubjectIds.add(s.id);
-        }
-
-        for (AttendanceRecord rec : allRecords) {
-            if (allowedSubjectIds.contains(rec.getSubjectId())) {
-                filtered.add(rec);
-                p += rec.getPresent();
-                l += rec.getLate();
-                a += rec.getAbsent();
-            }
-        }
-
-        tvTotalPresent.setText(String.valueOf(p));
-        tvTotalLate.setText(String.valueOf(l));
-        tvTotalAbsent.setText(String.valueOf(a));
-
-        updateMonthList(filtered);
-    }
-
-    private void updateMonthList(List<AttendanceRecord> filteredRecords) {
+    /**
+     * Build list grouped by (monthYear + section), filtered by selectedSection.
+     */
+    private void buildMonthSectionList() {
         SimpleDateFormat sdfInput  = new SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH);
         SimpleDateFormat sdfOutput = new SimpleDateFormat("MMMM yyyy",  Locale.ENGLISH);
 
-        Map<String, MonthHistoryAdapter.MonthSummary> groups = new LinkedHashMap<>();
+        // Build subjectId -> SubjectItem map
+        Map<String, SubjectRepository.SubjectItem> subjectMap = new LinkedHashMap<>();
+        for (SubjectRepository.SubjectItem s : teacherSubjects) subjectMap.put(s.id, s);
 
-        Collections.sort(filteredRecords, (r1, r2) -> {
+        // Sort records by date descending
+        Collections.sort(allRecords, (r1, r2) -> {
             try {
                 Date d1 = sdfInput.parse(r1.getDate());
                 Date d2 = sdfInput.parse(r2.getDate());
@@ -289,30 +231,52 @@ public class HistoryFragment extends Fragment {
             } catch (ParseException e) { return 0; }
         });
 
-        for (AttendanceRecord rec : filteredRecords) {
+        Map<String, MonthHistoryAdapter.MonthSummary> groups = new LinkedHashMap<>();
+
+        int totalP = 0, totalL = 0, totalA = 0;
+
+        for (AttendanceRecord rec : allRecords) {
+            SubjectRepository.SubjectItem subj = subjectMap.get(rec.getSubjectId());
+            String section = (subj != null && subj.section != null) ? subj.section : "";
+
+            // Apply section filter
+            if (!selectedSection.equals("All Sections") && !selectedSection.equals(section)) {
+                continue;
+            }
+
             try {
-                Date date   = sdfInput.parse(rec.getDate());
-                String key  = sdfOutput.format(date);
+                Date date = sdfInput.parse(rec.getDate());
+                String monthYear = sdfOutput.format(date);
+                String key = monthYear + "|||" + section;
 
                 MonthHistoryAdapter.MonthSummary s = groups.get(key);
                 if (s == null) {
                     s = new MonthHistoryAdapter.MonthSummary();
-                    s.monthYear = key;
+                    s.monthYear = monthYear;
+                    s.subtitle  = section;
+                    s.section   = section;
                     groups.put(key, s);
                 }
                 s.present += rec.getPresent();
                 s.late    += rec.getLate();
                 s.absent  += rec.getAbsent();
-            } catch (ParseException e) { /* skip bad records */ }
+
+                totalP += rec.getPresent();
+                totalL += rec.getLate();
+                totalA += rec.getAbsent();
+            } catch (ParseException e) { /* skip */ }
         }
+
+        tvTotalPresent.setText(String.valueOf(totalP));
+        tvTotalLate.setText(String.valueOf(totalL));
+        tvTotalAbsent.setText(String.valueOf(totalA));
 
         List<MonthHistoryAdapter.MonthSummary> summaries = new ArrayList<>(groups.values());
         MonthHistoryAdapter adapter = new MonthHistoryAdapter(requireContext(), summaries);
         adapter.setOnMonthClickListener(summary -> {
             Intent intent = new Intent(requireContext(), MonthDetailActivity.class);
             intent.putExtra("MONTH_YEAR", summary.monthYear);
-            intent.putExtra("SECTION",   selectedSection);
-            intent.putExtra("SUBJECT",   selectedSubject);
+            intent.putExtra("SECTION",   summary.section);
             startActivity(intent);
         });
         rvMonths.setAdapter(adapter);
@@ -321,25 +285,7 @@ public class HistoryFragment extends Fragment {
     }
 
     private void exportCurrentData() {
-        List<AttendanceRecord> filtered = new ArrayList<>();
-        Set<String> allowedSubjectIds = new HashSet<>();
-        for (SubjectRepository.SubjectItem s : teacherSubjects) {
-            boolean sectionMatch = selectedSection.equals("All Sections")
-                    || selectedSection.equals(s.section);
-            boolean subjectMatch = selectedSubject.equals("All Subjects")
-                    || selectedSubject.equals(s.name);
-            if (sectionMatch && subjectMatch) allowedSubjectIds.add(s.id);
-        }
-
-        for (AttendanceRecord rec : allRecords) {
-            if (allowedSubjectIds.contains(rec.getSubjectId())) {
-                filtered.add(rec);
-            }
-        }
-
-        String fileName = "Attendance_Report_"
-                + selectedSection.replace(" ", "_") + "_"
-                + selectedSubject.replace(" ", "_");
-        ExportUtils.exportToCsv(requireContext(), fileName, filtered);
+        String fileName = "Attendance_Report_All";
+        ExportUtils.exportToCsv(requireContext(), fileName, allRecords);
     }
 }

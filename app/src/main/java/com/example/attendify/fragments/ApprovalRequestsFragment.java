@@ -14,7 +14,6 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -35,7 +34,7 @@ public class ApprovalRequestsFragment extends Fragment {
     private static final int TAB_HISTORY = 1;
 
     private int currentTab = TAB_PENDING;
-    private int themeAccentColor = 0xFF1D4ED8; // fallback
+    private int themeAccentColor = 0xFF1D4ED8;
 
     private RecyclerView rv;
     private LinearLayout emptyState;
@@ -62,7 +61,8 @@ public class ApprovalRequestsFragment extends Fragment {
         if (approvalUser != null) {
             ThemeApplier.applyHeader(requireContext(), approvalUser.getRole(),
                     view.findViewById(R.id.approval_header_bg));
-            themeAccentColor = ThemeManager.getPrimaryColor(requireContext(), approvalUser.getRole());
+            themeAccentColor = ThemeManager.getPrimaryColor(
+                    requireContext(), approvalUser.getRole());
         }
 
         rv              = view.findViewById(R.id.rv_approvals);
@@ -73,7 +73,6 @@ public class ApprovalRequestsFragment extends Fragment {
         tabPending      = view.findViewById(R.id.tab_pending);
         tabHistory      = view.findViewById(R.id.tab_history);
 
-        // Fix initial tab selected text color — XML has it hardcoded blue
         tabPending.setTextColor(themeAccentColor);
 
         tabPending.setOnClickListener(v -> switchTab(TAB_PENDING));
@@ -96,7 +95,6 @@ public class ApprovalRequestsFragment extends Fragment {
             tabPending.setBackgroundResource(R.drawable.bg_tab_selected);
             tabPending.setTextColor(themeAccentColor);
             tabPending.setTypeface(null, Typeface.BOLD);
-
             tabHistory.setBackgroundColor(0x00000000);
             tabHistory.setTextColor(0xAAFFFFFF);
             tabHistory.setTypeface(null, Typeface.BOLD);
@@ -104,7 +102,6 @@ public class ApprovalRequestsFragment extends Fragment {
             tabHistory.setBackgroundResource(R.drawable.bg_tab_selected);
             tabHistory.setTextColor(themeAccentColor);
             tabHistory.setTypeface(null, Typeface.BOLD);
-
             tabPending.setBackgroundColor(0x00000000);
             tabPending.setTextColor(0xAAFFFFFF);
             tabPending.setTypeface(null, Typeface.BOLD);
@@ -217,7 +214,7 @@ public class ApprovalRequestsFragment extends Fragment {
         });
     }
 
-    // ── Outline drawable helper (shared by both adapters) ────────────────────
+    // ── Outline drawable helper ───────────────────────────────────────────────
 
     private android.graphics.drawable.GradientDrawable buildOutlineDrawable(int color) {
         android.graphics.drawable.GradientDrawable gd =
@@ -264,7 +261,7 @@ public class ApprovalRequestsFragment extends Fragment {
                 }
             }
 
-            // View Attachment — themed outline + text
+            // View Attachment
             if (letter.hasImage()) {
                 h.btnViewAttachment.setVisibility(View.VISIBLE);
                 h.btnViewAttachment.setTextColor(themeAccentColor);
@@ -274,39 +271,32 @@ public class ApprovalRequestsFragment extends Fragment {
                 h.btnViewAttachment.setVisibility(View.GONE);
             }
 
-            // Approve — kept green (status color, not theme)
-            // Decline — kept red (status color, not theme)
-            // Approve — themed gradient button
+            // Approve button — themed gradient
             ThemeApplier.applyButton(requireContext(),
                     AuthRepository.getInstance().getLoggedInUser() != null
                             ? AuthRepository.getInstance().getLoggedInUser().getRole()
                             : "teacher",
                     h.btnApprove);
 
-            // Decline — kept red (semantic status color, not theme)
+            // Approve — single confirm dialog (no reject shown)
             h.btnApprove.setOnClickListener(v ->
-                    confirmPendingAction(letter, "approved", h.getAdapterPosition()));
+                    showExcuseActionDialog(letter, "Approve Excuse Letter",
+                            true, false,
+                            h.getAdapterPosition(), items, this));
+
+            // Reject — single confirm dialog (no approve shown)
             h.btnDecline.setOnClickListener(v ->
-                    confirmPendingAction(letter, "rejected", h.getAdapterPosition()));
+                    showExcuseActionDialog(letter, "Reject Excuse Letter",
+                            false, true,
+                            h.getAdapterPosition(), items, this));
         }
 
         @Override public int getItemCount() { return items.size(); }
 
-        private void confirmPendingAction(ExcuseLetter letter, String action, int position) {
-            String label = action.equals("approved") ? "Approve" : "Reject";
-            new AlertDialog.Builder(requireContext())
-                    .setTitle(label + " Excuse Letter")
-                    .setMessage("Are you sure you want to " + label.toLowerCase()
-                            + " this excuse letter from " + letter.getStudentName() + "?")
-                    .setPositiveButton(label, (d, w) ->
-                            applyStatus(letter, action, position, items, this))
-                    .setNegativeButton("Cancel", null)
-                    .show();
-        }
-
         class VH extends RecyclerView.ViewHolder {
             TextView tvStudentName, tvStudentNumber, tvDate,
-                    tvMessage, tvSubjectBadge, btnViewAttachment, btnApprove, btnDecline;
+                    tvMessage, tvSubjectBadge, btnViewAttachment,
+                    btnApprove, btnDecline;
 
             VH(@NonNull View itemView) {
                 super(itemView);
@@ -349,7 +339,7 @@ public class ApprovalRequestsFragment extends Fragment {
             h.tvDate.setText(formatTimestamp(letter.getSubmittedAt()));
             h.tvMessage.setText(letter.getMessage());
 
-            // Status badge — kept as semantic colors (green/red), not theme
+            // Status badge
             if (isApproved) {
                 h.tvStatusBadge.setText("✓  Approved");
                 h.tvStatusBadge.setBackgroundResource(R.drawable.bg_badge_green_pill);
@@ -369,7 +359,7 @@ public class ApprovalRequestsFragment extends Fragment {
                 h.tvSubjectBadge.setVisibility(View.GONE);
             }
 
-            // View Attachment — themed outline + text
+            // View Attachment
             if (letter.hasImage()) {
                 h.btnViewAttachment.setVisibility(View.VISIBLE);
                 h.btnViewAttachment.setTextColor(themeAccentColor);
@@ -379,36 +369,23 @@ public class ApprovalRequestsFragment extends Fragment {
                 h.btnViewAttachment.setVisibility(View.GONE);
             }
 
-            // Change Decision — themed gradient button
+            // Change Decision button — themed gradient
             ThemeApplier.applyButton(requireContext(),
                     AuthRepository.getInstance().getLoggedInUser() != null
                             ? AuthRepository.getInstance().getLoggedInUser().getRole()
                             : "teacher",
                     h.btnChangeDecision);
 
-            String targetStatus = isApproved ? "rejected" : "approved";
-            String targetLabel  = isApproved ? "Reject"   : "Approve";
+            // History — show opposite action only
+            // If currently approved → show Reject only
+            // If currently rejected → show Approve only
             h.btnChangeDecision.setOnClickListener(v ->
-                    confirmChangeDecision(letter, targetStatus, targetLabel,
-                            h.getAdapterPosition()));
+                    showExcuseActionDialog(letter, "Change Decision",
+                            !isApproved, isApproved,
+                            h.getAdapterPosition(), items, this));
         }
 
         @Override public int getItemCount() { return items.size(); }
-
-        private void confirmChangeDecision(ExcuseLetter letter,
-                                           String newStatus,
-                                           String actionLabel,
-                                           int position) {
-            new AlertDialog.Builder(requireContext())
-                    .setTitle("Change Decision")
-                    .setMessage("Change this letter from \""
-                            + letter.getStudentName()
-                            + "\" to \"" + actionLabel + "\"?")
-                    .setPositiveButton(actionLabel, (d, w) ->
-                            applyStatus(letter, newStatus, position, items, this))
-                    .setNegativeButton("Cancel", null)
-                    .show();
-        }
 
         class VH extends RecyclerView.ViewHolder {
             TextView tvAvatar, tvStudentName, tvStudentNumber, tvDate,
@@ -478,6 +455,105 @@ public class ApprovalRequestsFragment extends Fragment {
                                         Toast.LENGTH_SHORT).show());
                     }
                 });
+    }
+
+    // ── Shared custom dialog ──────────────────────────────────────────────────
+
+    private void showExcuseActionDialog(ExcuseLetter letter,
+                                        String title,
+                                        boolean showApprove,
+                                        boolean showReject,
+                                        int position,
+                                        List<ExcuseLetter> items,
+                                        RecyclerView.Adapter<?> adapter) {
+
+        android.app.Dialog dialog = new android.app.Dialog(requireContext());
+        dialog.requestWindowFeature(android.view.Window.FEATURE_NO_TITLE);
+        dialog.setContentView(R.layout.dialog_excuse_action);
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+            dialog.getWindow().setLayout(
+                    (int) (getResources().getDisplayMetrics().widthPixels * 0.90),
+                    android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
+
+            android.graphics.drawable.GradientDrawable bg =
+                    new android.graphics.drawable.GradientDrawable();
+            bg.setColor(0xFFFFFFFF);
+            bg.setCornerRadius(24 * getResources().getDisplayMetrics().density);
+            dialog.getWindow().setBackgroundDrawable(bg);
+        }
+
+        ((TextView) dialog.findViewById(R.id.dialog_title)).setText(title);
+        ((TextView) dialog.findViewById(R.id.dialog_student_name))
+                .setText(letter.getStudentName());
+
+        // Subject
+        TextView tvSubject = dialog.findViewById(R.id.dialog_subject);
+        String subj = letter.getSubjectName();
+        if (subj != null && !subj.isEmpty()) {
+            tvSubject.setText(subj);
+            tvSubject.setVisibility(View.VISIBLE);
+        } else {
+            tvSubject.setVisibility(View.GONE);
+        }
+
+        // Status badge — only for history
+        TextView tvStatus = dialog.findViewById(R.id.dialog_status_badge);
+        if ("pending".equals(letter.getStatus())) {
+            tvStatus.setVisibility(View.GONE);
+        } else {
+            tvStatus.setVisibility(View.VISIBLE);
+            boolean isApproved = "approved".equals(letter.getStatus());
+            android.graphics.drawable.GradientDrawable badgeBg =
+                    new android.graphics.drawable.GradientDrawable();
+            badgeBg.setCornerRadius(50 * getResources().getDisplayMetrics().density);
+            if (isApproved) {
+                badgeBg.setColor(0xFFDCFCE7);
+                tvStatus.setTextColor(0xFF15803D);
+                tvStatus.setText("✓  Approved");
+            } else {
+                badgeBg.setColor(0xFFFEE2E2);
+                tvStatus.setTextColor(0xFFDC2626);
+                tvStatus.setText("✕  Rejected");
+            }
+            tvStatus.setBackground(badgeBg);
+        }
+
+        ((TextView) dialog.findViewById(R.id.dialog_message))
+                .setText(letter.getMessage());
+
+        TextView btnApprove = dialog.findViewById(R.id.dialog_btn_approve);
+        TextView btnReject  = dialog.findViewById(R.id.dialog_btn_reject);
+        TextView btnCancel  = dialog.findViewById(R.id.dialog_btn_cancel);
+
+        if (showApprove) {
+            btnApprove.setVisibility(View.VISIBLE);
+            ThemeApplier.applyButton(requireContext(),
+                    AuthRepository.getInstance().getLoggedInUser().getRole(), btnApprove);
+            btnApprove.setOnClickListener(v -> {
+                dialog.dismiss();
+                applyStatus(letter, "approved", position, items,
+                        (RecyclerView.Adapter) adapter);
+            });
+        } else {
+            btnApprove.setVisibility(View.GONE);
+        }
+
+        if (showReject) {
+            btnReject.setVisibility(View.VISIBLE);
+            btnReject.setOnClickListener(v -> {
+                dialog.dismiss();
+                applyStatus(letter, "rejected", position, items,
+                        (RecyclerView.Adapter) adapter);
+            });
+        } else {
+            btnReject.setVisibility(View.GONE);
+        }
+
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
+
+        dialog.show();
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

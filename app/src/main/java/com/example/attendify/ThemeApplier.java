@@ -3,6 +3,9 @@ package com.example.attendify;
 import android.content.Context;
 import android.graphics.drawable.GradientDrawable;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ImageView;
+import android.widget.TextView;
 
 /**
  * ThemeApplier
@@ -39,6 +42,12 @@ public class ThemeApplier {
         GradientDrawable gd = new GradientDrawable(
                 GradientDrawable.Orientation.LEFT_RIGHT, new int[]{primary, secondary});
         gd.setCornerRadius(dp(ctx, 16));
+        // MaterialButton's backgroundTint overrides setBackground(), so we must
+        // clear it first — otherwise the XML blue_600 tint always wins.
+        if (btn instanceof com.google.android.material.button.MaterialButton) {
+            ((com.google.android.material.button.MaterialButton) btn)
+                    .setBackgroundTintList(null);
+        }
         btn.setBackground(gd);
     }
 
@@ -72,6 +81,98 @@ public class ThemeApplier {
         gd.setColor(ThemeManager.getLightTintColor(ctx, role));
         gd.setCornerRadius(dp(ctx, radiusDp));
         view.setBackground(gd);
+    }
+
+    // ── Quick action card background (light tint, rounded) ────────────────────
+
+    public static void applyQuickActionBg(Context ctx, String role, View view) {
+        if (view == null) return;
+        GradientDrawable gd = new GradientDrawable();
+        gd.setColor(ThemeManager.getLightTintColor(ctx, role));
+        gd.setCornerRadius(dp(ctx, 10));
+        view.setBackground(gd);
+    }
+
+    // ── Quick action preset colors (4 slots, themed) ──────────────────────────
+    // Each index = one button: 0=Subjects, 1=ClassList, 2=History, 3=Settings
+
+    public static int[][] getQuickActionColors(Context ctx, String role) {
+        String theme = ThemeManager.getSavedTheme(ctx, role);
+        // Each int[2]: { backgroundArgb, iconAndTextArgb }
+        switch (theme) {
+            case ThemeManager.THEME_PROFESSIONAL_SLATE:
+                return new int[][]{
+                        {0xFFE2E8F0, 0xFF334155},  // Subjects   – slate blue-gray
+                        {0xFFDBEAFE, 0xFF1D4ED8},  // Class List – blue
+                        {0xFFDCFCE7, 0xFF15803D},  // History    – green
+                        {0xFFF1F5F9, 0xFF475569},  // Settings   – light slate
+                };
+            case ThemeManager.THEME_SUCCESS_GREEN:
+                return new int[][]{
+                        {0xFFDCFCE7, 0xFF15803D},  // Subjects   – green
+                        {0xFFCCFBF1, 0xFF0F766E},  // Class List – teal
+                        {0xFFDBEAFE, 0xFF1D4ED8},  // History    – blue
+                        {0xFFF0FDF4, 0xFF166534},  // Settings   – deep green
+                };
+            case ThemeManager.THEME_MODERN_INDIGO:
+                return new int[][]{
+                        {0xFFE0E7FF, 0xFF4338CA},  // Subjects   – indigo
+                        {0xFFEDE9FE, 0xFF6D28D9},  // Class List – violet
+                        {0xFFDBEAFE, 0xFF1D4ED8},  // History    – blue
+                        {0xFFCCFBF1, 0xFF0F766E},  // Settings   – teal
+                };
+            case ThemeManager.THEME_ROYAL_PURPLE:
+                return new int[][]{
+                        {0xFFF3E8FF, 0xFF7C3AED},  // Subjects   – purple
+                        {0xFFFCE7F3, 0xFFBE185D},  // Class List – pink
+                        {0xFFEDE9FE, 0xFF6D28D9},  // History    – violet
+                        {0xFFDBEAFE, 0xFF1D4ED8},  // Settings   – blue
+                };
+            case ThemeManager.THEME_ELEGANT_ROSE:
+                return new int[][]{
+                        {0xFFFFE4E6, 0xFFBE123C},  // Subjects   – rose
+                        {0xFFFCE7F3, 0xFFBE185D},  // Class List – pink
+                        {0xFFF3E8FF, 0xFF7C3AED},  // History    – purple
+                        {0xFFFFF7ED, 0xFFC2410C},  // Settings   – orange
+                };
+            default: // THEME_ACADEMIC_BLUE
+                return new int[][]{
+                        {0xFFDBEAFE, 0xFF1D4ED8},  // Subjects   – blue
+                        {0xFFEDE9FE, 0xFF6D28D9},  // Class List – violet
+                        {0xFFDCFCE7, 0xFF15803D},  // History    – green
+                        {0xFFFFEDD5, 0xFFC2410C},  // Settings   – orange
+                };
+        }
+    }
+
+    // ── Apply per-slot quick action color ─────────────────────────────────────
+
+    public static void applyQuickActionColor(Context ctx, String role,
+                                             View container, int slot) {
+        if (container == null) return;
+        int[][] colors = getQuickActionColors(ctx, role);
+        if (slot < 0 || slot >= colors.length) return;
+
+        int bg   = colors[slot][0];
+        int tint = colors[slot][1];
+
+        // Background
+        GradientDrawable gd = new GradientDrawable();
+        gd.setColor(bg);
+        gd.setCornerRadius(dp(ctx, 10));
+        container.setBackground(gd);
+
+        // Tint children (ImageView + TextView)
+        if (container instanceof ViewGroup) {
+            ViewGroup vg = (ViewGroup) container;
+            for (int i = 0; i < vg.getChildCount(); i++) {
+                View child = vg.getChildAt(i);
+                if (child instanceof ImageView)
+                    ((ImageView) child).setColorFilter(tint);
+                else if (child instanceof TextView)
+                    ((TextView) child).setTextColor(tint);
+            }
+        }
     }
 
     // ── Generate subject card preset colors derived from theme ────────────────
@@ -117,5 +218,11 @@ public class ThemeApplier {
 
     private static int dp(Context ctx, int value) {
         return (int) (value * ctx.getResources().getDisplayMetrics().density);
+    }
+
+    // ── Quick action icon/text tint (primary color for icons & labels) ────────
+
+    public static int getQuickActionTint(Context ctx, String role) {
+        return ThemeManager.getPrimaryColor(ctx, role);
     }
 }

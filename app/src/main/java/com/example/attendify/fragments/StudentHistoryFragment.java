@@ -7,7 +7,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.Spinner;
@@ -46,7 +45,7 @@ import java.util.Set;
 public class StudentHistoryFragment extends Fragment {
 
     private List<AttendanceRecord> allRecords = new ArrayList<>();
-    
+
     private TextView tvTotalPresent, tvTotalLate, tvTotalAbsent, tvEmpty;
     private Spinner spinnerSubject;
     private RecyclerView rvMonths;
@@ -66,7 +65,6 @@ public class StudentHistoryFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // Apply saved theme to header
         UserProfile shUser = AuthRepository.getInstance().getLoggedInUser();
         if (shUser != null) {
             ThemeApplier.applyHeader(requireContext(), shUser.getRole(),
@@ -88,9 +86,9 @@ public class StudentHistoryFragment extends Fragment {
 
         tvTotalPresent = view.findViewById(R.id.tv_total_present);
         tvTotalLate    = view.findViewById(R.id.tv_total_late);
-        tvTotalAbsent   = view.findViewById(R.id.tv_total_absent);
-        tvEmpty         = view.findViewById(R.id.tv_empty);
-        
+        tvTotalAbsent  = view.findViewById(R.id.tv_total_absent);
+        tvEmpty        = view.findViewById(R.id.tv_empty);
+
         spinnerSubject = view.findViewById(R.id.spinner_subject);
         rvMonths      = view.findViewById(R.id.rv_history);
         progressBar   = view.findViewById(R.id.progress_bar);
@@ -103,7 +101,7 @@ public class StudentHistoryFragment extends Fragment {
         }
 
         rvMonths.setLayoutManager(new LinearLayoutManager(requireContext()));
-        
+
         btnExport.setOnClickListener(v -> exportCurrentData());
 
         loadHistory();
@@ -146,7 +144,7 @@ public class StudentHistoryFragment extends Fragment {
                 subjects.add(rec.getSubject());
             }
         }
-        
+
         List<String> subjectList = new ArrayList<>(subjects);
         Collections.sort(subjectList);
 
@@ -167,7 +165,7 @@ public class StudentHistoryFragment extends Fragment {
         };
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerSubject.setAdapter(adapter);
-        
+
         spinnerSubject.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
@@ -182,7 +180,7 @@ public class StudentHistoryFragment extends Fragment {
     private void applyFilters() {
         List<AttendanceRecord> filtered = new ArrayList<>();
         int p = 0, l = 0, a = 0;
-        
+
         for (AttendanceRecord rec : allRecords) {
             if (selectedSubject.equals("All Subjects") || selectedSubject.equals(rec.getSubject())) {
                 filtered.add(rec);
@@ -195,26 +193,50 @@ public class StudentHistoryFragment extends Fragment {
         tvTotalPresent.setText(String.valueOf(p));
         tvTotalLate.setText(String.valueOf(l));
         tvTotalAbsent.setText(String.valueOf(a));
-        
+
         updateMonthList(filtered);
     }
 
     private void updateMonthList(List<AttendanceRecord> filteredRecords) {
-        SimpleDateFormat sdfInput = new SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH);
-        SimpleDateFormat sdfOutput = new SimpleDateFormat("MMMM yyyy", Locale.ENGLISH);
-        
+        SimpleDateFormat sdfInput  = new SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH);
+        SimpleDateFormat sdfOutput = new SimpleDateFormat("MMMM yyyy",  Locale.ENGLISH);
+
+        // Sort descending
+        Collections.sort(filteredRecords, (r1, r2) -> {
+            try {
+                Date d1 = sdfInput.parse(r1.getDate());
+                Date d2 = sdfInput.parse(r2.getDate());
+                return d2.compareTo(d1);
+            } catch (ParseException e) { return 0; }
+        });
+
+        // Group by month + subject name (so "May 2026 - Programming" and "May 2026 - Math" are separate)
         Map<String, MonthHistoryAdapter.MonthSummary> groups = new LinkedHashMap<>();
-        
-        // Grouping
+
         for (AttendanceRecord rec : filteredRecords) {
             try {
-                Date date = sdfInput.parse(rec.getDate());
-                String key = sdfOutput.format(date);
-                
+                Date date    = sdfInput.parse(rec.getDate());
+                String month = sdfOutput.format(date);
+                String subj  = rec.getSubject() != null ? rec.getSubject() : "";
+
+                // If filtering by a specific subject, key = just month (one row per month)
+                // If "All Subjects", key = month + subject name (separate row per subject)
+                String key;
+                String subtitle;
+                if (selectedSubject.equals("All Subjects")) {
+                    key      = month + "|||" + subj;
+                    subtitle = subj;
+                } else {
+                    key      = month;
+                    subtitle = subj;
+                }
+
                 MonthHistoryAdapter.MonthSummary s = groups.get(key);
                 if (s == null) {
                     s = new MonthHistoryAdapter.MonthSummary();
-                    s.monthYear = key;
+                    s.monthYear   = month;
+                    s.subtitle    = subtitle;
+                    s.subjectName = subj;
                     groups.put(key, s);
                 }
                 s.present += rec.getPresent();
@@ -228,11 +250,11 @@ public class StudentHistoryFragment extends Fragment {
         adapter.setOnMonthClickListener(summary -> {
             Intent intent = new Intent(requireContext(), StudentMonthDetailActivity.class);
             intent.putExtra("MONTH_YEAR", summary.monthYear);
-            intent.putExtra("SUBJECT", selectedSubject);
+            intent.putExtra("SUBJECT",    summary.subjectName);
             startActivity(intent);
         });
         rvMonths.setAdapter(adapter);
-        
+
         tvEmpty.setVisibility(summaries.isEmpty() ? View.VISIBLE : View.GONE);
     }
 
@@ -243,7 +265,7 @@ public class StudentHistoryFragment extends Fragment {
                 filtered.add(rec);
             }
         }
-        
+
         String fileName = "My_Attendance_Report_" + selectedSubject.replace(" ", "_");
         ExportUtils.exportToCsvStudent(requireContext(), fileName, filtered);
     }

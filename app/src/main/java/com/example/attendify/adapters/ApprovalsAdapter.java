@@ -15,10 +15,17 @@ import java.util.List;
 
 public class ApprovalsAdapter extends RecyclerView.Adapter<ApprovalsAdapter.ViewHolder> {
 
-    private final List<ApprovalRequest> items;
+    public interface OnActionListener {
+        void onApprove(ApprovalRequest request, int position);
+        void onReject(ApprovalRequest request, int position);
+    }
 
-    public ApprovalsAdapter(List<ApprovalRequest> items) {
+    private final List<ApprovalRequest> items;
+    private final OnActionListener listener;
+
+    public ApprovalsAdapter(List<ApprovalRequest> items, OnActionListener listener) {
         this.items = items;
+        this.listener = listener;
     }
 
     @NonNull
@@ -36,11 +43,27 @@ public class ApprovalsAdapter extends RecyclerView.Adapter<ApprovalsAdapter.View
         holder.tvStudentName.setText(request.getStudentName());
         holder.tvDateRange.setText(request.getDateRange());
         holder.tvReason.setText(request.getReason());
+
+        holder.btnApprove.setOnClickListener(v -> {
+            if (listener != null)
+                listener.onApprove(request, holder.getAdapterPosition());
+        });
+
+        holder.btnDecline.setOnClickListener(v -> {
+            if (listener != null)
+                listener.onReject(request, holder.getAdapterPosition());
+        });
     }
 
     @Override
     public int getItemCount() {
         return items.size();
+    }
+
+    public void removeItem(int position) {
+        items.remove(position);
+        notifyItemRemoved(position);
+        notifyItemRangeChanged(position, items.size());
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {

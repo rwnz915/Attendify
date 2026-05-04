@@ -4,6 +4,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/gray_50"
+    android:clickable="true"
+    android:focusable="true"
     android:orientation="vertical">
 
     <FrameLayout
@@ -31,6 +33,7 @@
             android:layout_marginStart="8dp"
             android:padding="12dp"
             android:src="@drawable/ic_arrow_back"
+            android:background="@drawable/bg_icon_white_transparent"
             app:tint="@color/white"
             android:layout_marginBottom="10dp"
             android:contentDescription="Back" />

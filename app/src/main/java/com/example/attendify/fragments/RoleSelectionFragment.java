@@ -7,6 +7,7 @@ import android.preference.PreferenceManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.text.InputFilter;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -67,6 +68,9 @@ public class RoleSelectionFragment extends Fragment {
         etPassword   = view.findViewById(R.id.et_password);
         cbRememberMe = view.findViewById(R.id.cb_remember_me);
         btnLogin     = view.findViewById(R.id.btn_login);
+
+        // Hard-cap password at 16 characters (covers paste as well as typing)
+        etPassword.setFilters(new InputFilter[]{ new InputFilter.LengthFilter(16) });
 
         tabTeacher.setOnClickListener(v   -> selectRole("teacher"));
         tabStudent.setOnClickListener(v   -> selectRole("student"));

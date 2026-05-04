@@ -18,6 +18,10 @@ public class MonthHistoryAdapter extends RecyclerView.Adapter<MonthHistoryAdapte
 
     public static class MonthSummary {
         public String monthYear;
+        public String subtitle; // e.g. section name (IT-203) or subject name (Programming)
+        public String subjectId; // for teacher: used to pass to detail
+        public String section;   // for teacher: section this entry belongs to
+        public String subjectName; // for student/secretary
         public int present;
         public int late;
         public int absent;
@@ -52,8 +56,15 @@ public class MonthHistoryAdapter extends RecyclerView.Adapter<MonthHistoryAdapte
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         MonthSummary s = summaries.get(position);
-        holder.tvName.setText(s.monthYear);
-        holder.tvStats.setText(s.present + " Present • " + s.late + " Late • " + s.absent + " Absent");
+
+        // Show "May 2026 - IT-203" or "May 2026 - Programming" if subtitle exists
+        if (s.subtitle != null && !s.subtitle.isEmpty()) {
+            holder.tvName.setText(s.monthYear + " - " + s.subtitle);
+        } else {
+            holder.tvName.setText(s.monthYear);
+        }
+
+        holder.tvStats.setText(s.present + " Present \u2022 " + s.late + " Late \u2022 " + s.absent + " Absent");
 
         int total = s.getTotal();
         if (total > 0) {

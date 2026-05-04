@@ -43,7 +43,7 @@
                     android:layout_height="44dp"
                     android:background="@drawable/bg_circle_white_transparent"
                     android:padding="10dp"
-                    android:src="@drawable/ic_person24"
+                    android:src="@drawable/logo"
                     android:tint="@color/white"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent"

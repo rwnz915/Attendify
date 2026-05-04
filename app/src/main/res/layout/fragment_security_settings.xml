@@ -4,8 +4,11 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/gray_50"
+    android:clickable="true"
+    android:focusable="true"
     android:orientation="vertical">
 
+    <!-- Header -->
     <FrameLayout
         android:id="@+id/security_header"
         android:layout_width="match_parent"
@@ -29,87 +32,69 @@
             android:layout_height="48dp"
             android:layout_gravity="start|center_vertical"
             android:layout_marginStart="8dp"
-            android:padding="12dp"
             android:layout_marginBottom="10dp"
+            android:padding="12dp"
             android:src="@drawable/ic_arrow_back"
+            android:background="@drawable/bg_icon_white_transparent"
             app:tint="@color/white"
             android:contentDescription="Back" />
     </FrameLayout>
 
+    <!-- Password Card -->
     <LinearLayout
+        android:id="@+id/card_change_password"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="24dp"
         android:background="@drawable/bg_card"
-        android:orientation="vertical"
-        android:padding="20dp">
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="20dp"
+        android:clickable="true"
+        android:focusable="true">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Change Password"
-            android:textColor="@color/gray_800"
-            android:textSize="16sp"
-            android:textStyle="bold" />
+        <!-- Lock icon circle -->
+        <ImageView
+            android:id="@+id/iv_password_icon"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:padding="10dp"
+            android:src="@drawable/ic_lock"
+            android:contentDescription="Password" />
 
-        <TextView
-            android:layout_width="wrap_content"
+        <!-- Text block -->
+        <LinearLayout
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Update your password to keep your account secure."
-            android:textColor="@color/gray_500"
-            android:textSize="14sp" />
+            android:layout_weight="1"
+            android:layout_marginStart="14dp"
+            android:orientation="vertical">
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:hint="Current Password"
-            app:passwordToggleEnabled="true">
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/et_current_password"
-                android:layout_width="match_parent"
+            <TextView
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:inputType="textPassword" />
-        </com.google.android.material.textfield.TextInputLayout>
+                android:text="Change Password"
+                android:textColor="@color/gray_800"
+                android:textSize="15sp"
+                android:textStyle="bold" />
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:hint="New Password"
-            app:passwordToggleEnabled="true">
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/et_new_password"
-                android:layout_width="match_parent"
+            <TextView
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:inputType="textPassword" />
-        </com.google.android.material.textfield.TextInputLayout>
+                android:layout_marginTop="2dp"
+                android:text="Update your account password"
+                android:textColor="@color/gray_500"
+                android:textSize="13sp" />
+        </LinearLayout>
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:hint="Confirm New Password"
-            app:passwordToggleEnabled="true">
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/et_confirm_password"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="textPassword" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <Button
-            android:id="@+id/btn_update_password"
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:layout_marginTop="24dp"
-            android:backgroundTint="@color/blue_600"
-            android:text="Update Password"
-            android:textAllCaps="false"
-            android:textColor="@color/white"
-            android:textStyle="bold"
-            app:cornerRadius="12dp" />
+        <!-- Chevron arrow -->
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:src="@drawable/ic_arrow_back"
+            android:rotation="180"
+            android:alpha="0.4"
+            android:contentDescription="Open" />
 
     </LinearLayout>
 

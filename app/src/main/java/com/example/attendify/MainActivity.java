@@ -314,33 +314,71 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void navigateTo(Fragment fragment) {
-        navSourceTab = currentTab; // remember which tab opened the sub-fragment
+        navSourceTab = currentTab;
         bottomNav.setVisibility(View.GONE);
 
-        getSupportFragmentManager().addOnBackStackChangedListener(new androidx.fragment.app.FragmentManager.OnBackStackChangedListener() {
-            @Override
-            public void onBackStackChanged() {
-                if (getSupportFragmentManager().getBackStackEntryCount() == 0) {
-                    getSupportFragmentManager().removeOnBackStackChangedListener(this);
-                    bottomNav.setVisibility(View.VISIBLE);
-                }
-            }
-        });
+        // Disable interaction on ProfileFragment if it's underneath
+        Fragment current = getSupportFragmentManager()
+                .findFragmentById(R.id.fragment_container);
+        if (current instanceof ProfileFragment) {
+            ((ProfileFragment) current).setInteractionEnabled(false);
+        }
 
-        // popEnter is 0 (no animation on the profile when sub-fragment pops).
-        // The old nav_slide_in_left popEnter briefly teleported the already-visible
-        // profile view to translateX=-100% before sliding it back, which corrupted
-        // the ScrollView's internal touch-tracking state and broke scrolling.
-        // Only the departing sub-fragment needs to animate (popExit).
+        getSupportFragmentManager().addOnBackStackChangedListener(
+                new androidx.fragment.app.FragmentManager.OnBackStackChangedListener() {
+                    @Override
+                    public void onBackStackChanged() {
+                        if (getSupportFragmentManager().getBackStackEntryCount() == 0) {
+                            getSupportFragmentManager().removeOnBackStackChangedListener(this);
+                            bottomNav.setVisibility(View.VISIBLE);
+
+                            // Re-enable ProfileFragment interaction
+                            Fragment restored = getSupportFragmentManager()
+                                    .findFragmentById(R.id.fragment_container);
+                            if (restored instanceof ProfileFragment) {
+                                ((ProfileFragment) restored).setInteractionEnabled(true);
+                            }
+                        }
+                    }
+                });
+
         getSupportFragmentManager().beginTransaction()
                 .setCustomAnimations(
-                        R.anim.nav_slide_in_right,  // sub-fragment enters from right
-                        0,                           // no exit anim (profile stays put)
-                        0,                           // FIX: no popEnter on profile (was scroll bug)
-                        R.anim.nav_slide_out_right)  // sub-fragment exits right on back
+                        R.anim.nav_slide_in_right,
+                        0,
+                        0,
+                        R.anim.nav_slide_out_right)
                 .add(R.id.fragment_container, fragment)
                 .addToBackStack(null)
                 .commit();
+    }
+
+// ── Touch helpers ─────────────────────────────────────────────────────────
+
+    private void disableAllFragmentTouches() {
+        for (Fragment f : getSupportFragmentManager().getFragments()) {
+            if (f != null && f.getView() != null) {
+                f.getView().setOnTouchListener((v, event) -> true);
+            }
+        }
+    }
+
+    private void enableAllFragmentTouches() {
+        for (Fragment f : getSupportFragmentManager().getFragments()) {
+            if (f != null && f.getView() != null) {
+                f.getView().setOnTouchListener(null);
+            }
+        }
+    }
+
+    private void enableTopFragmentTouches() {
+        java.util.List<Fragment> fragments = getSupportFragmentManager().getFragments();
+        if (fragments.isEmpty()) return;
+        // The last fragment in the list is the top one
+        Fragment top = fragments.get(fragments.size() - 1);
+        if (top != null && top.getView() != null) {
+            top.getView().setOnTouchListener(null);
+        }
     }
 
     // Reusable helper — put this in a utility class if you have many fragments

@@ -4,6 +4,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -16,23 +17,29 @@ import com.example.attendify.MainActivity;
 import com.example.attendify.R;
 import com.example.attendify.models.UserProfile;
 import com.example.attendify.repository.AuthRepository;
+import com.example.attendify.repository.SubjectRepository;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+
 import com.example.attendify.ThemeApplier;
 
 public class SecretaryHomeFragment extends Fragment {
 
-    private static final int ABSENCE_THRESHOLD = 3;
-
-    private TextView tvName, tvPresent, tvLate, tvAbsent;
-    private LinearLayout llAttentionStudents;
-    private TextView tvAttentionEmpty;
-    private ProgressBar progressAttention;
+    private TextView tvName;
+    private TextView tvPresent, tvLate, tvAbsent;
+    private LinearLayout llRecentActivity;
+    private TextView tvRecentEmpty;
+    private ProgressBar progressRecent;
 
     @Nullable
     @Override
@@ -46,56 +53,31 @@ public class SecretaryHomeFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // Apply saved theme to header
         UserProfile secThemeUser = AuthRepository.getInstance().getLoggedInUser();
         if (secThemeUser != null) {
-            ThemeApplier.applyHeader(requireContext(), secThemeUser.getRole(), view.findViewById(R.id.sec_header_bg));
+            ThemeApplier.applyHeader(requireContext(), secThemeUser.getRole(),
+                    view.findViewById(R.id.sec_header_bg));
 
-            // Apply theme to the Class List quick action card
-            android.view.View btnClassList = view.findViewById(R.id.btn_quick_class_list);
-            if (btnClassList != null) {
-                ThemeApplier.applyLightTint(requireContext(), secThemeUser.getRole(), btnClassList, 20);
-                // Tint the icon inside it
-                android.widget.ImageView clIcon = btnClassList.findViewWithTag("class_list_icon");
-                if (clIcon == null) {
-                    // find first ImageView child
-                    if (btnClassList instanceof android.view.ViewGroup) {
-                        android.view.ViewGroup vg = (android.view.ViewGroup) btnClassList;
-                        for (int ci = 0; ci < vg.getChildCount(); ci++) {
-                            android.view.View child = vg.getChildAt(ci);
-                            if (child instanceof android.widget.ImageView) {
-                                ((android.widget.ImageView) child).setColorFilter(
-                                        com.example.attendify.ThemeManager.getPrimaryColor(requireContext(), secThemeUser.getRole()));
-                            } else if (child instanceof android.widget.TextView) {
-                                ((android.widget.TextView) child).setTextColor(
-                                        com.example.attendify.ThemeManager.getPrimaryColor(requireContext(), secThemeUser.getRole()));
-                            }
-                        }
-                    }
-                }
-            }
+            String role = secThemeUser.getRole();
+
+            ThemeApplier.applyQuickActionColor(requireContext(), role,
+                    view.findViewById(R.id.btn_quick_subjects), 0);
+            ThemeApplier.applyQuickActionColor(requireContext(), role,
+                    view.findViewById(R.id.btn_quick_class_list), 1);
+            ThemeApplier.applyQuickActionColor(requireContext(), role,
+                    view.findViewById(R.id.btn_quick_history), 2);
+            ThemeApplier.applyQuickActionColor(requireContext(), role,
+                    view.findViewById(R.id.btn_quick_settings), 3);
         }
 
-        // FIX: set paddingTop absolutely (base dp + statusBarHeight) instead of
-        // reading getPaddingTop() which causes accumulation on every tab switch.
-        // sec_header_bg is constrained to sec_header_spacer so no height tweak needed.
-        /*View headerContent = view.findViewById(R.id.sec_home_header);
-        if (headerContent != null) {
-            int basePx = (int) (56 * view.getResources().getDisplayMetrics().density);
-            headerContent.setPadding(
-                    headerContent.getPaddingLeft(),
-                    basePx + MainActivity.statusBarHeight,
-                    headerContent.getPaddingRight(),
-                    headerContent.getPaddingBottom());
-        }*/
+        tvName    = view.findViewById(R.id.tv_sec_name);
+        tvPresent = view.findViewById(R.id.tv_overview_present);
+        tvLate    = view.findViewById(R.id.tv_overview_late);
+        tvAbsent  = view.findViewById(R.id.tv_overview_absent);
 
-        tvName              = view.findViewById(R.id.tv_sec_name);
-        tvPresent           = view.findViewById(R.id.tv_overview_present);
-        tvLate              = view.findViewById(R.id.tv_overview_late);
-        tvAbsent            = view.findViewById(R.id.tv_overview_absent);
-        llAttentionStudents = view.findViewById(R.id.ll_attention_students);
-        tvAttentionEmpty    = view.findViewById(R.id.tv_attention_empty);
-        progressAttention   = view.findViewById(R.id.progress_attention);
+        llRecentActivity = view.findViewById(R.id.ll_attention_students);
+        tvRecentEmpty    = view.findViewById(R.id.tv_attention_empty);
+        progressRecent   = view.findViewById(R.id.progress_attention);
 
         view.findViewById(R.id.btn_quick_subjects).setOnClickListener(v -> {
             if (getActivity() instanceof MainActivity)
@@ -107,26 +89,111 @@ public class SecretaryHomeFragment extends Fragment {
                 ((MainActivity) getActivity()).navigateTo(new SecretaryClassListFragment());
         });
 
-        loadSecretaryInfo();
+        view.findViewById(R.id.btn_quick_history).setOnClickListener(v -> {
+            if (getActivity() instanceof MainActivity)
+                ((MainActivity) getActivity()).selectTab(3);
+        });
+
+        view.findViewById(R.id.btn_quick_settings).setOnClickListener(v -> {
+            if (getActivity() instanceof MainActivity)
+                ((MainActivity) getActivity()).navigateTo(new AppSettingsFragment());
+        });
+
+        loadSecretaryInfo(view);
         loadTodayOverview();
-        loadAttentionStudents();
+        loadTodayRecentActivity();
+        loadCurrentOrNextSubject(view);
     }
 
-    private void loadSecretaryInfo() {
+    private void loadSecretaryInfo(View view) {
         UserProfile user = AuthRepository.getInstance().getLoggedInUser();
         if (user == null) return;
         if (tvName != null) tvName.setText(user.getFullName());
 
-        TextView tvRole = getView() != null ? getView().findViewById(R.id.tv_sec_role) : null;
+        TextView tvRole = view.findViewById(R.id.tv_sec_role);
         if (tvRole != null) {
             String section = user.getSection();
-            tvRole.setText(section != null ? "Class Secretary  \u2022  " + section : "Class Secretary");
+            tvRole.setText(section != null
+                    ? "Class Secretary  \u2022  " + section
+                    : "Class Secretary");
         }
 
-        TextView tvLabel = getView() != null ? getView().findViewById(R.id.tv_overview_label) : null;
+        TextView tvLabel = view.findViewById(R.id.tv_overview_label);
         if (tvLabel != null && user.getSection() != null)
             tvLabel.setText("Today's Overview  \u2022  " + user.getSection());
+
+        TextView tvAttentionTitle = view.findViewById(R.id.tv_attention_title);
+        if (tvAttentionTitle != null) tvAttentionTitle.setText("Recent Activity");
+
+        TextView tvAttentionSubtitle = view.findViewById(R.id.tv_attention_subtitle);
+        if (tvAttentionSubtitle != null)
+            tvAttentionSubtitle.setText("Today's attendance by subject");
+
+        TextView tvEmpty = view.findViewById(R.id.tv_attention_empty);
+        if (tvEmpty != null) tvEmpty.setText("No attendance recorded today");
     }
+
+    // ── Current / Next subject card ───────────────────────────────────────────
+
+    private void loadCurrentOrNextSubject(View view) {
+        UserProfile user = AuthRepository.getInstance().getLoggedInUser();
+        if (user == null || user.getSection() == null) return;
+
+        SubjectRepository.getInstance().getStudentSubjects(user.getSection(),
+                new SubjectRepository.SubjectsCallback() {
+                    @Override
+                    public void onSuccess(List<SubjectRepository.SubjectItem> subjects) {
+                        if (getActivity() == null) return;
+                        String todayAbbr = getTodayDayAbbr();
+
+                        SubjectRepository.SubjectItem active = getActiveSubject(subjects, todayAbbr);
+                        boolean isNext = false;
+                        SubjectRepository.SubjectItem display = active;
+
+                        if (display == null) {
+                            display = getNextSubject(subjects, todayAbbr);
+                            isNext = true;
+                        }
+
+                        final SubjectRepository.SubjectItem finalSubject = display;
+                        final boolean finalIsNext = isNext;
+
+                        getActivity().runOnUiThread(() ->
+                                updateClassCard(view, finalSubject, finalIsNext));
+                    }
+
+                    @Override
+                    public void onFailure(String errorMessage) {}
+                });
+    }
+
+    private void updateClassCard(View view,
+                                 SubjectRepository.SubjectItem subj,
+                                 boolean isNext) {
+        TextView tvStatus  = view.findViewById(R.id.tv_sec_class_status);
+        View divider       = view.findViewById(R.id.divider_class_status);
+        if (tvStatus == null) return;
+
+        if (subj == null) {
+            tvStatus.setVisibility(View.GONE);
+            if (divider != null) divider.setVisibility(View.GONE);
+            return;
+        }
+
+        String formattedTime = formatScheduleTime(subj.schedule);
+
+        if (isNext) {
+            String dateLabel = getNextClassDate(subj.schedule);
+            tvStatus.setText("Next class: " + subj.name + " - " + formattedTime + " " + dateLabel);
+        } else {
+            tvStatus.setText("Ongoing class: " + subj.name + " - " + formattedTime);
+        }
+
+        tvStatus.setVisibility(View.VISIBLE);
+        if (divider != null) divider.setVisibility(View.VISIBLE);
+    }
+
+    // ── Today's overview ─────────────────────────────────────────────────────
 
     private void loadTodayOverview() {
         String today = new SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH).format(new Date());
@@ -143,7 +210,8 @@ public class SecretaryHomeFragment extends Fragment {
                     if (getActivity() == null) return;
                     List<DocumentSnapshot> docs = userSnap.getDocuments();
                     if (docs.isEmpty()) return;
-                    java.util.List<String> uids = new java.util.ArrayList<>();
+
+                    List<String> uids = new ArrayList<>();
                     for (DocumentSnapshot d : docs) uids.add(d.getId());
 
                     db.collection("attendance")
@@ -172,12 +240,19 @@ public class SecretaryHomeFragment extends Fragment {
                 });
     }
 
-    private void loadAttentionStudents() {
+    // ── Recent activity ───────────────────────────────────────────────────────
+
+    private void loadTodayRecentActivity() {
+        String today = new SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH).format(new Date());
         UserProfile user = AuthRepository.getInstance().getLoggedInUser();
-        if (user == null) return;
-        String section = user.getSection();
-        if (section == null || section.isEmpty()) { showEmptyAttention(); return; }
+        if (user == null || user.getSection() == null) {
+            showEmptyRecent();
+            return;
+        }
+        final String section = user.getSection();
         FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        if (progressRecent != null) progressRecent.setVisibility(View.VISIBLE);
 
         db.collection("users")
                 .whereEqualTo("role", "student")
@@ -185,74 +260,289 @@ public class SecretaryHomeFragment extends Fragment {
                 .get()
                 .addOnSuccessListener(userSnap -> {
                     if (getActivity() == null) return;
-                    List<DocumentSnapshot> students = userSnap.getDocuments();
-                    if (students.isEmpty()) {
-                        getActivity().runOnUiThread(this::showEmptyAttention);
+                    List<DocumentSnapshot> docs = userSnap.getDocuments();
+                    if (docs.isEmpty()) {
+                        getActivity().runOnUiThread(this::showEmptyRecent);
                         return;
                     }
-                    final int[] processed = {0};
-                    final int total = students.size();
 
-                    for (DocumentSnapshot studentDoc : students) {
-                        String uid       = studentDoc.getId();
-                        String firstname = studentDoc.getString("firstname");
-                        String lastname  = studentDoc.getString("lastname");
-                        String schoolId  = studentDoc.getString("studentID");
-                        String fullName  = (lastname != null ? lastname : "")
-                                + ", " + (firstname != null ? firstname : "");
+                    List<String> uids = new ArrayList<>();
+                    for (DocumentSnapshot d : docs) uids.add(d.getId());
 
-                        db.collection("attendance")
-                                .whereEqualTo("studentId", uid)
-                                .whereEqualTo("status", "Absent")
-                                .get()
-                                .addOnSuccessListener(absSnap -> {
-                                    if (getActivity() == null) return;
-                                    int absences = absSnap.size();
-                                    if (absences >= ABSENCE_THRESHOLD)
-                                        getActivity().runOnUiThread(() ->
-                                                addAttentionStudent(fullName, schoolId, absences));
-                                    synchronized (processed) {
-                                        processed[0]++;
-                                        if (processed[0] == total)
-                                            getActivity().runOnUiThread(this::finishLoadingAttention);
+                    db.collection("attendance")
+                            .whereEqualTo("date", today)
+                            .whereIn("studentId", uids.subList(0, Math.min(uids.size(), 30)))
+                            .get()
+                            .addOnSuccessListener(attSnap -> {
+                                if (getActivity() == null) return;
+
+                                Map<String, int[]> bySubject = new LinkedHashMap<>();
+                                for (DocumentSnapshot doc : attSnap.getDocuments()) {
+                                    String subjectName = doc.getString("subjectName");
+                                    String status      = doc.getString("status");
+                                    if (subjectName == null || status == null) continue;
+                                    int[] counts = bySubject.computeIfAbsent(
+                                            subjectName, k -> new int[3]);
+                                    switch (status) {
+                                        case "Present": counts[0]++; break;
+                                        case "Late":    counts[1]++; break;
+                                        case "Absent":  counts[2]++; break;
                                     }
-                                })
-                                .addOnFailureListener(e -> {
-                                    synchronized (processed) {
-                                        processed[0]++;
-                                        if (processed[0] == total)
-                                            getActivity().runOnUiThread(this::finishLoadingAttention);
+                                }
+
+                                getActivity().runOnUiThread(() -> {
+                                    if (progressRecent != null)
+                                        progressRecent.setVisibility(View.GONE);
+
+                                    if (bySubject.isEmpty()) {
+                                        showEmptyRecent();
+                                        return;
+                                    }
+
+                                    if (tvRecentEmpty    != null)
+                                        tvRecentEmpty.setVisibility(View.GONE);
+                                    if (llRecentActivity != null)
+                                        llRecentActivity.removeAllViews();
+
+                                    LayoutInflater li = LayoutInflater.from(requireContext());
+                                    String dateDisplay = new SimpleDateFormat(
+                                            "MMM d, yyyy", Locale.ENGLISH).format(new Date());
+
+                                    for (Map.Entry<String, int[]> entry : bySubject.entrySet()) {
+                                        int[] c = entry.getValue();
+                                        View card = li.inflate(
+                                                R.layout.item_activity_record,
+                                                llRecentActivity, false);
+
+                                        ((TextView) card.findViewById(R.id.tv_record_date))
+                                                .setText(dateDisplay);
+                                        ((TextView) card.findViewById(R.id.tv_record_subject))
+                                                .setText(section + " \u2022 " + entry.getKey());
+                                        ((TextView) card.findViewById(R.id.tv_record_present))
+                                                .setText(c[0] + " P");
+
+                                        TextView tvLateView =
+                                                card.findViewById(R.id.tv_record_late);
+                                        if (c[1] > 0) {
+                                            tvLateView.setText(c[1] + " L");
+                                            tvLateView.setVisibility(View.VISIBLE);
+                                        } else {
+                                            tvLateView.setVisibility(View.GONE);
+                                        }
+
+                                        ((TextView) card.findViewById(R.id.tv_record_absent))
+                                                .setText(c[2] + " A");
+
+                                        if (llRecentActivity != null)
+                                            llRecentActivity.addView(card);
                                     }
                                 });
-                    }
+                            })
+                            .addOnFailureListener(e -> {
+                                if (getActivity() != null)
+                                    getActivity().runOnUiThread(this::showEmptyRecent);
+                            });
                 })
                 .addOnFailureListener(e -> {
-                    if (getActivity() != null) getActivity().runOnUiThread(this::showEmptyAttention);
+                    if (getActivity() != null)
+                        getActivity().runOnUiThread(this::showEmptyRecent);
                 });
     }
 
-    private void addAttentionStudent(String name, String schoolId, int absences) {
-        if (llAttentionStudents == null || getContext() == null) return;
-        if (progressAttention != null) progressAttention.setVisibility(View.GONE);
-        if (tvAttentionEmpty  != null) tvAttentionEmpty.setVisibility(View.GONE);
-
-        View item = LayoutInflater.from(getContext())
-                .inflate(R.layout.item_attention_student, llAttentionStudents, false);
-        ((TextView) item.findViewById(R.id.tv_attention_student_name)).setText(name);
-        ((TextView) item.findViewById(R.id.tv_attention_student_id))
-                .setText(schoolId != null ? schoolId : "—");
-        ((TextView) item.findViewById(R.id.tv_absence_count)).setText(String.valueOf(absences));
-        llAttentionStudents.addView(item);
+    private void showEmptyRecent() {
+        if (progressRecent != null) progressRecent.setVisibility(View.GONE);
+        if (tvRecentEmpty  != null) tvRecentEmpty.setVisibility(View.VISIBLE);
     }
 
-    private void finishLoadingAttention() {
-        if (progressAttention != null) progressAttention.setVisibility(View.GONE);
-        if (llAttentionStudents != null && llAttentionStudents.getChildCount() <= 2)
-            showEmptyAttention();
+    // ── Schedule helpers (mirrors HomeFragment) ───────────────────────────────
+
+    private SubjectRepository.SubjectItem getActiveSubject(
+            List<SubjectRepository.SubjectItem> subjects, String todayAbbr) {
+        for (SubjectRepository.SubjectItem s : subjects) {
+            if (s.schedule == null) continue;
+            if (runsToday(s.schedule, todayAbbr) && isClassActive(s.schedule)) return s;
+        }
+        return null;
     }
 
-    private void showEmptyAttention() {
-        if (progressAttention != null) progressAttention.setVisibility(View.GONE);
-        if (tvAttentionEmpty  != null) tvAttentionEmpty.setVisibility(View.VISIBLE);
+    private SubjectRepository.SubjectItem getNextSubject(
+            List<SubjectRepository.SubjectItem> subjects, String todayAbbr) {
+        SimpleDateFormat sdf = new SimpleDateFormat("h:mma", Locale.ENGLISH);
+        Calendar now = Calendar.getInstance();
+
+        for (int offset = 0; offset < 7; offset++) {
+            Calendar dayCal = Calendar.getInstance();
+            dayCal.add(Calendar.DAY_OF_YEAR, offset);
+            String dayAbbr = calToDayAbbr(dayCal.get(Calendar.DAY_OF_WEEK));
+
+            SubjectRepository.SubjectItem earliest = null;
+            Date earliestStart = null;
+
+            for (SubjectRepository.SubjectItem s : subjects) {
+                if (s.schedule == null) continue;
+                String[] scheduleParts = s.schedule.trim().split("\\s+", 2);
+                if (scheduleParts.length < 1) continue;
+                if (!matchesDay(scheduleParts[0].toUpperCase(Locale.ENGLISH), dayAbbr)) continue;
+
+                String startStr = extractStartTime(s.schedule);
+                if (startStr == null) continue;
+                try {
+                    Date parsed = sdf.parse(startStr.toUpperCase(Locale.ENGLISH));
+                    if (parsed == null) continue;
+
+                    Calendar startCal;
+                    if (offset == 0) {
+                        startCal = toTodayCal(parsed);
+                        if (!startCal.after(now)) continue;
+                    } else {
+                        startCal = (Calendar) dayCal.clone();
+                        Calendar tmp = Calendar.getInstance();
+                        tmp.setTime(parsed);
+                        startCal.set(Calendar.HOUR_OF_DAY, tmp.get(Calendar.HOUR_OF_DAY));
+                        startCal.set(Calendar.MINUTE,      tmp.get(Calendar.MINUTE));
+                        startCal.set(Calendar.SECOND,      0);
+                        startCal.set(Calendar.MILLISECOND, 0);
+                    }
+
+                    if (earliestStart == null || startCal.getTime().before(earliestStart)) {
+                        earliestStart = startCal.getTime();
+                        earliest = s;
+                    }
+                } catch (ParseException ignored) {}
+            }
+            if (earliest != null) return earliest;
+        }
+        return null;
+    }
+
+    private boolean isClassActive(String schedule) {
+        try {
+            String[] parts = schedule.trim().split("\\s+", 2);
+            if (parts.length < 2) return false;
+            String[] times = parts[1].split("-");
+            if (times.length < 2) return false;
+            SimpleDateFormat sdf = new SimpleDateFormat("h:mma", Locale.ENGLISH);
+            Date start = sdf.parse(times[0].trim().toUpperCase(Locale.ENGLISH));
+            Date end   = sdf.parse(times[1].trim().toUpperCase(Locale.ENGLISH));
+            if (start == null || end == null) return false;
+            Calendar now = Calendar.getInstance();
+            return now.after(toTodayCal(start)) && now.before(toTodayCal(end));
+        } catch (ParseException e) { return false; }
+    }
+
+    private boolean runsToday(String schedule, String todayAbbr) {
+        String[] parts = schedule.trim().split("\\s+", 2);
+        if (parts.length == 0) return false;
+        String days = parts[0].toUpperCase(Locale.ENGLISH);
+        switch (todayAbbr) {
+            case "TH": return days.contains("TH");
+            case "T":  return days.replace("TH", "").contains("T");
+            case "SU": return days.contains("SU");
+            case "S":  return days.replace("SU", "").contains("S");
+            default:   return days.contains(todayAbbr);
+        }
+    }
+
+    private boolean matchesDay(String daysPart, String abbr) {
+        switch (abbr) {
+            case "TH": return daysPart.contains("TH");
+            case "T":  return daysPart.replace("TH", "").contains("T");
+            case "SU": return daysPart.contains("SU");
+            case "S":  return daysPart.replace("SU", "").contains("S");
+            default:   return daysPart.contains(abbr);
+        }
+    }
+
+    private String extractStartTime(String schedule) {
+        String[] parts = schedule.trim().split("\\s+", 2);
+        if (parts.length < 2) return null;
+        String[] times = parts[1].split("-");
+        return times.length > 0 ? times[0].trim() : null;
+    }
+
+    private String formatScheduleTime(String schedule) {
+        if (schedule == null) return "—";
+        String[] parts = schedule.trim().split("\\s+", 2);
+        if (parts.length < 2) return schedule;
+        String[] times = parts[1].split("-");
+        if (times.length < 2) return parts[1];
+        try {
+            SimpleDateFormat inFmt  = new SimpleDateFormat("h:mma",  Locale.ENGLISH);
+            SimpleDateFormat outFmt = new SimpleDateFormat("h:mm a", Locale.ENGLISH);
+            String s = outFmt.format(inFmt.parse(times[0].trim().toUpperCase(Locale.ENGLISH)));
+            String e = outFmt.format(inFmt.parse(times[1].trim().toUpperCase(Locale.ENGLISH)));
+            return s + " - " + e;
+        } catch (ParseException ex) { return parts[1].replace("-", " - "); }
+    }
+
+    private String getNextClassDate(String schedule) {
+        if (schedule == null) return "";
+        String[] parts = schedule.trim().split("\\s+", 2);
+        if (parts.length == 0) return "";
+        String daysPart = parts[0].toUpperCase(Locale.ENGLISH);
+        SimpleDateFormat outFmt = new SimpleDateFormat("MMM d", Locale.ENGLISH);
+        Calendar cal = Calendar.getInstance();
+
+        for (int i = 0; i < 7; i++) {
+            String abbr = calToDayAbbr(cal.get(Calendar.DAY_OF_WEEK));
+            if (matchesDay(daysPart, abbr)) {
+                if (i == 0) {
+                    String startStr = parts.length > 1
+                            ? parts[1].split("-")[0].trim() : null;
+                    if (startStr != null) {
+                        try {
+                            SimpleDateFormat sdf =
+                                    new SimpleDateFormat("h:mma", Locale.ENGLISH);
+                            Date start = sdf.parse(startStr.toUpperCase(Locale.ENGLISH));
+                            if (start != null && Calendar.getInstance()
+                                    .before(toTodayCal(start))) {
+                                return outFmt.format(cal.getTime());
+                            }
+                        } catch (ParseException ignored) {}
+                    }
+                } else {
+                    return outFmt.format(cal.getTime());
+                }
+            }
+            cal.add(Calendar.DAY_OF_YEAR, 1);
+        }
+        return outFmt.format(Calendar.getInstance().getTime());
+    }
+
+    private Calendar toTodayCal(Date time) {
+        Calendar tmp = Calendar.getInstance();
+        tmp.setTime(time);
+        Calendar cal = Calendar.getInstance();
+        cal.set(Calendar.HOUR_OF_DAY, tmp.get(Calendar.HOUR_OF_DAY));
+        cal.set(Calendar.MINUTE,      tmp.get(Calendar.MINUTE));
+        cal.set(Calendar.SECOND,      0);
+        cal.set(Calendar.MILLISECOND, 0);
+        return cal;
+    }
+
+    private String getTodayDayAbbr() {
+        switch (Calendar.getInstance().get(Calendar.DAY_OF_WEEK)) {
+            case Calendar.MONDAY:    return "M";
+            case Calendar.TUESDAY:   return "T";
+            case Calendar.WEDNESDAY: return "W";
+            case Calendar.THURSDAY:  return "TH";
+            case Calendar.FRIDAY:    return "F";
+            case Calendar.SATURDAY:  return "S";
+            case Calendar.SUNDAY:    return "SU";
+            default: return "";
+        }
+    }
+
+    private String calToDayAbbr(int dayOfWeek) {
+        switch (dayOfWeek) {
+            case Calendar.MONDAY:    return "M";
+            case Calendar.TUESDAY:   return "T";
+            case Calendar.WEDNESDAY: return "W";
+            case Calendar.THURSDAY:  return "TH";
+            case Calendar.FRIDAY:    return "F";
+            case Calendar.SATURDAY:  return "S";
+            case Calendar.SUNDAY:    return "SU";
+            default: return "";
+        }
     }
 }

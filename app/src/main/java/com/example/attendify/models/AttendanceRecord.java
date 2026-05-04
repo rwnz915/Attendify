@@ -1,21 +1,18 @@
 package com.example.attendify.models;
 
-// Add to AttendanceRecord.java — new constructor + fields for student records
 public class AttendanceRecord {
     private String date;
     private int present;
     private int absent;
     private int late;
 
-    // ── Extra fields for per-student history ──
     private String subject;
     private String subjectId;
     private String time;
-    private String statusLabel; // "Present", "Late", "Absent"
+    private String statusLabel;
     private String studentId;
     private String studentName;
 
-    // Existing constructor (used by teacher HomeFragment) — unchanged
     public AttendanceRecord(String date, int present, int absent, int late) {
         this.date    = date;
         this.present = present;
@@ -23,7 +20,6 @@ public class AttendanceRecord {
         this.late    = late;
     }
 
-    // New constructor for per-student history rows
     public AttendanceRecord(String date, String subject, String time, String statusLabel) {
         this(date, subject, "", time, statusLabel, "", "");
     }
@@ -36,7 +32,6 @@ public class AttendanceRecord {
         this.statusLabel = statusLabel != null ? statusLabel : "";
         this.studentId   = studentId != null ? studentId : "";
         this.studentName = studentName != null ? studentName : "";
-        // Map statusLabel → numeric fields so getPresent/getLate/getAbsent still work
         this.present = "Present".equals(this.statusLabel) ? 1 : 0;
         this.late    = "Late".equals(this.statusLabel)    ? 1 : 0;
         this.absent  = "Absent".equals(this.statusLabel)  ? 1 : 0;
@@ -53,4 +48,7 @@ public class AttendanceRecord {
     public String getStatusLabel() { return statusLabel; }
     public String getStudentId()   { return studentId; }
     public String getStudentName() { return studentName; }
+
+    // Setter for subject name (used when building summary records)
+    public void setSubject(String subject) { this.subject = subject; }
 }

@@ -64,6 +64,11 @@
             android:configChanges="uiMode" />
 
         <activity
+            android:name=".activities.DateStudentListActivity"
+            android:exported="false"
+            android:configChanges="uiMode" />
+
+        <activity
             android:name=".SetupActivity"
             android:exported="false"
             android:configChanges="uiMode" />

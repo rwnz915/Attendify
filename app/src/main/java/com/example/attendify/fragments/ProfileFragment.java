@@ -104,6 +104,29 @@ public class ProfileFragment extends Fragment {
         });
     }
 
+    // Call this to freeze all interactive elements
+    public void setInteractionEnabled(boolean enabled) {
+        View view = getView();
+        if (view == null) return;
+        int[] cards = {
+                R.id.card_personal_info,
+                R.id.card_notifications,
+                R.id.card_privacy_security,
+                R.id.card_app_settings,
+                R.id.card_about,
+                R.id.btn_logout
+        };
+        for (int id : cards) {
+            View v = view.findViewById(id);
+            if (v != null) {
+                v.setClickable(enabled);
+                v.setFocusable(enabled);
+            }
+        }
+        // Block the root view too
+        view.setOnTouchListener(enabled ? null : (v, e) -> true);
+    }
+
     private void navigateTo(Fragment fragment) {
         if (getActivity() instanceof MainActivity)
             ((MainActivity) getActivity()).navigateTo(fragment);

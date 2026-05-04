@@ -1,7 +1,9 @@
 package com.example.attendify.activities;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Spinner;
@@ -29,25 +31,27 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
+/**
+ * Secretary's month detail screen.
+ * Shows dates for a given month+subject. Clicking a date opens DateStudentListActivity.
+ */
 public class SecretaryMonthDetailActivity extends AppCompatActivity {
 
     private String monthYear;
-    private String initialSubject;
+    private String subjectFilter;  // fixed subject from SecretaryHistoryFragment
     private String userSection;
 
     private List<AttendanceRecord> allMonthRecords = new ArrayList<>();
 
-    private Spinner spinnerSubject;
     private RecyclerView rvDetails;
     private TextView tvTitle;
-
-    private String selectedSubject = "All Subjects";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,17 +60,20 @@ public class SecretaryMonthDetailActivity extends AppCompatActivity {
 
         androidx.activity.EdgeToEdge.enable(this);
 
-        monthYear = getIntent().getStringExtra("MONTH_YEAR");
-        initialSubject = getIntent().getStringExtra("SUBJECT");
-        userSection = getIntent().getStringExtra("SECTION");
+        monthYear    = getIntent().getStringExtra("MONTH_YEAR");
+        subjectFilter = getIntent().getStringExtra("SUBJECT");
+        userSection  = getIntent().getStringExtra("SECTION");
 
         tvTitle = findViewById(R.id.tv_month_title);
-        tvTitle.setText(monthYear);
+        String titleText = monthYear;
+        if (subjectFilter != null && !subjectFilter.isEmpty()) {
+            titleText += " - " + subjectFilter;
+        }
+        tvTitle.setText(titleText);
 
         findViewById(R.id.btn_back).setOnClickListener(v -> finish());
         findViewById(R.id.btn_export_month).setOnClickListener(v -> exportMonthData());
 
-        // Apply theme to header
         UserProfile user = AuthRepository.getInstance().getLoggedInUser();
         if (user != null) {
             ThemeApplier.applyHeader(this, user.getRole(), findViewById(R.id.detail_header));
@@ -79,9 +86,11 @@ public class SecretaryMonthDetailActivity extends AppCompatActivity {
                 header.getPaddingRight(),
                 header.getPaddingBottom());
 
-        spinnerSubject = findViewById(R.id.spinner_subject_detail);
-        rvDetails      = findViewById(R.id.rv_month_details);
+        // Hide subject spinner - subject is fixed
+        View spinnerSubject = findViewById(R.id.spinner_subject_detail);
+        if (spinnerSubject != null) spinnerSubject.setVisibility(View.GONE);
 
+        rvDetails = findViewById(R.id.rv_month_details);
         rvDetails.setLayoutManager(new LinearLayoutManager(this));
 
         loadData();
@@ -119,91 +128,76 @@ public class SecretaryMonthDetailActivity extends AppCompatActivity {
                                             doc.getString("studentName")));
                                 }
                                 runOnUiThread(() -> {
-                                    filterByMonth(records);
-                                    setupSpinner();
+                                    filterByMonthAndSubject(records);
+                                    buildDateList();
                                 });
                             });
                 });
     }
 
-    private void filterByMonth(List<AttendanceRecord> records) {
-        SimpleDateFormat sdfInput = new SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH);
-        SimpleDateFormat sdfOutput = new SimpleDateFormat("MMMM yyyy", Locale.ENGLISH);
+    private void filterByMonthAndSubject(List<AttendanceRecord> records) {
+        SimpleDateFormat sdfInput  = new SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH);
+        SimpleDateFormat sdfOutput = new SimpleDateFormat("MMMM yyyy",  Locale.ENGLISH);
 
         allMonthRecords.clear();
         for (AttendanceRecord rec : records) {
             try {
                 Date d = sdfInput.parse(rec.getDate());
-                if (sdfOutput.format(d).equals(monthYear)) {
+                boolean monthOk   = sdfOutput.format(d).equals(monthYear);
+                boolean subjectOk = subjectFilter == null || subjectFilter.isEmpty()
+                        || subjectFilter.equals(rec.getSubject());
+                if (monthOk && subjectOk) {
                     allMonthRecords.add(rec);
                 }
             } catch (ParseException e) {}
         }
     }
 
-    private void setupSpinner() {
-        Set<String> subjects = new HashSet<>();
-        subjects.add("All Subjects");
+    private void buildDateList() {
+        // Group by date — each date = one card showing aggregate stats
+        Map<String, List<AttendanceRecord>> byDate = new TreeMap<>(Collections.reverseOrder());
         for (AttendanceRecord rec : allMonthRecords) {
-            if (rec.getSubject() != null && !rec.getSubject().isEmpty()) {
-                subjects.add(rec.getSubject());
-            }
-        }
-        
-        List<String> subjectList = new ArrayList<>(subjects);
-        Collections.sort(subjectList);
-        
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, subjectList);
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerSubject.setAdapter(adapter);
-        
-        if (initialSubject != null && subjectList.contains(initialSubject)) {
-            spinnerSubject.setSelection(subjectList.indexOf(initialSubject));
-            selectedSubject = initialSubject;
+            byDate.computeIfAbsent(rec.getDate(), k -> new ArrayList<>()).add(rec);
         }
 
-        spinnerSubject.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                selectedSubject = subjectList.get(position);
-                applyFilters();
+        List<AttendanceRecord> summaries = new ArrayList<>();
+        for (Map.Entry<String, List<AttendanceRecord>> e : byDate.entrySet()) {
+            int p = 0, l = 0, a = 0;
+            for (AttendanceRecord r : e.getValue()) {
+                p += r.getPresent(); l += r.getLate(); a += r.getAbsent();
             }
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {}
+            summaries.add(new AttendanceRecord(e.getKey(), p, a, l));
+        }
+
+        HistoryAdapter adapter = new HistoryAdapter(this, summaries, true);
+        adapter.setOnItemClickListener(record -> {
+            String timeDisplay = getTimeForDate(record.getDate());
+            Intent intent = new Intent(this, DateStudentListActivity.class);
+            intent.putExtra("DATE",    record.getDate());
+            intent.putExtra("TIME",    timeDisplay);
+            intent.putExtra("SECTION", userSection);
+            intent.putExtra("SUBJECT", subjectFilter != null ? subjectFilter : "");
+            intent.putExtra("MODE",    "secretary");
+            startActivity(intent);
         });
+        rvDetails.setAdapter(adapter);
     }
 
-    private void applyFilters() {
-        Map<String, AttendanceRecord> dailySummaries = new TreeMap<>(Collections.reverseOrder());
-
+    private String getTimeForDate(String date) {
+        Set<String> times = new LinkedHashSet<>();
         for (AttendanceRecord rec : allMonthRecords) {
-            if (selectedSubject.equals("All Subjects") || selectedSubject.equals(rec.getSubject())) {
-                AttendanceRecord summary = dailySummaries.get(rec.getDate());
-                if (summary == null) {
-                    summary = new AttendanceRecord(rec.getDate(), 0, 0, 0);
-                    dailySummaries.put(rec.getDate(), summary);
+            if (rec.getDate().equals(date)) {
+                if (rec.getTime() != null && !rec.getTime().isEmpty() && !"--:--".equals(rec.getTime())) {
+                    times.add(rec.getTime());
                 }
-                
-                int p = summary.getPresent() + rec.getPresent();
-                int l = summary.getLate() + rec.getLate();
-                int a = summary.getAbsent() + rec.getAbsent();
-                
-                dailySummaries.put(rec.getDate(), new AttendanceRecord(rec.getDate(), p, a, l));
             }
         }
-
-        rvDetails.setAdapter(new HistoryAdapter(this, new ArrayList<>(dailySummaries.values())));
+        return String.join(" - ", times);
     }
 
     private void exportMonthData() {
-        List<AttendanceRecord> filtered = new ArrayList<>();
-        for (AttendanceRecord rec : allMonthRecords) {
-            if (selectedSubject.equals("All Subjects") || selectedSubject.equals(rec.getSubject())) {
-                filtered.add(rec);
-            }
-        }
-        
-        String fileName = "Section_Attendance_" + userSection.replace(" ", "_") + "_" + monthYear.replace(" ", "_");
-        ExportUtils.exportToCsv(this, fileName, filtered);
+        String fileName = "Section_Attendance_" + userSection.replace(" ", "_")
+                + "_" + monthYear.replace(" ", "_");
+        ExportUtils.exportToCsv(this, fileName, allMonthRecords);
     }
 }

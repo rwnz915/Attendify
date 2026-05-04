@@ -61,10 +61,10 @@ public class PersonalInfoFragment extends Fragment {
 
         // Parent Info (Student only)
         View parentLayout = view.findViewById(R.id.layout_parent_info);
-        View parentDivider = view.findViewById(R.id.divider_parent);
+        //View parentDivider = view.findViewById(R.id.divider_parent);
         if (user.isStudent()) {
             parentLayout.setVisibility(View.VISIBLE);
-            parentDivider.setVisibility(View.VISIBLE);
+            //parentDivider.setVisibility(View.VISIBLE);
 
             // Fetch from parents/{uid} collection
             com.google.firebase.firestore.FirebaseFirestore.getInstance()
@@ -95,7 +95,7 @@ public class PersonalInfoFragment extends Fragment {
 
         } else {
             parentLayout.setVisibility(View.GONE);
-            parentDivider.setVisibility(View.GONE);
+            //parentDivider.setVisibility(View.GONE);
         }
     }
 

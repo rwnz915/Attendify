@@ -38,7 +38,7 @@
                 android:layout_marginStart="16dp"
                 android:text="February 2026"
                 android:textColor="@color/white"
-                android:textSize="20sp"
+                android:textSize="15sp"
                 android:textStyle="bold" />
 
             <View
@@ -67,7 +67,7 @@
         <Spinner
             android:id="@+id/spinner_section_detail"
             android:layout_width="0dp"
-            android:layout_height="40dp"
+            android:layout_height="26dp"
             android:layout_weight="1"
             android:background="@drawable/bg_filter_inactive"
             android:paddingStart="12dp"
@@ -78,7 +78,7 @@
         <Spinner
             android:id="@+id/spinner_subject_detail"
             android:layout_width="0dp"
-            android:layout_height="40dp"
+            android:layout_height="26dp"
             android:layout_weight="1"
             android:background="@drawable/bg_filter_inactive"
             android:paddingStart="12dp"

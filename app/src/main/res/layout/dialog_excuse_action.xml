@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <!-- Title -->
+    <TextView
+        android:id="@+id/dialog_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Change Decision"
+        android:textColor="@color/gray_900"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="20dp" />
+
+    <!-- Student -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Student"
+        android:textColor="@color/gray_500"
+        android:textSize="12sp" />
+    <TextView
+        android:id="@+id/dialog_student_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@color/gray_900"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="14dp" />
+
+    <!-- Subject -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Subject"
+        android:textColor="@color/gray_500"
+        android:textSize="12sp" />
+    <TextView
+        android:id="@+id/dialog_subject"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@color/gray_900"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="14dp" />
+
+    <!-- Current Status -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Current Status"
+        android:textColor="@color/gray_500"
+        android:textSize="12sp" />
+    <TextView
+        android:id="@+id/dialog_status_badge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="14dp"
+        android:paddingStart="14dp"
+        android:paddingTop="5dp"
+        android:paddingEnd="14dp"
+        android:paddingBottom="5dp"
+        android:textSize="13sp"
+        android:textStyle="bold" />
+
+    <!-- Message -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Message"
+        android:textColor="@color/gray_500"
+        android:textSize="12sp" />
+    <TextView
+        android:id="@+id/dialog_message"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@color/gray_700"
+        android:textSize="14sp"
+        android:layout_marginBottom="24dp" />
+
+    <!-- Approve button -->
+    <TextView
+        android:id="@+id/dialog_btn_approve"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:gravity="center"
+        android:text="Approve"
+        android:textColor="@color/white"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="8dp" />
+
+    <!-- Reject button -->
+    <TextView
+        android:id="@+id/dialog_btn_reject"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:gravity="center"
+        android:text="Reject"
+        android:textColor="#DC2626"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        android:background="@drawable/bg_btn_reject"
+        android:layout_marginBottom="8dp" />
+
+    <!-- Cancel button -->
+    <TextView
+        android:id="@+id/dialog_btn_cancel"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:gravity="center"
+        android:text="Cancel"
+        android:textColor="@color/gray_700"
+        android:textSize="15sp"
+        android:background="@drawable/bg_btn_cancel" />
+
+</LinearLayout>
