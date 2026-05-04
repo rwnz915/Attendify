@@ -109,6 +109,31 @@
             android:configChanges="uiMode" />
 
         <activity
+            android:name=".activities.AboutActivity"
+            android:exported="false"
+            android:configChanges="uiMode" />
+
+        <activity
+            android:name=".activities.AppSettingsActivity"
+            android:exported="false"
+            android:configChanges="uiMode" />
+
+        <activity
+            android:name=".activities.NotificationSettingsActivity"
+            android:exported="false"
+            android:configChanges="uiMode" />
+
+        <activity
+            android:name=".activities.SecuritySettingsActivity"
+            android:exported="false"
+            android:configChanges="uiMode" />
+
+        <activity
+            android:name=".activities.PersonalInfoActivity"
+            android:exported="false"
+            android:configChanges="uiMode" />
+
+        <activity
             android:name=".activities.TeacherClassListActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />

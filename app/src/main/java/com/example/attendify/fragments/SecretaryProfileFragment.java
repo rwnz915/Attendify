@@ -1,5 +1,6 @@
 package com.example.attendify.fragments;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -10,17 +11,19 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentManager;
 
 import com.example.attendify.MainActivity;
 import com.example.attendify.R;
+import com.example.attendify.activities.AboutActivity;
+import com.example.attendify.activities.AppSettingsActivity;
+import com.example.attendify.activities.NotificationSettingsActivity;
+import com.example.attendify.activities.PersonalInfoActivity;
+import com.example.attendify.activities.SecuritySettingsActivity;
 import com.example.attendify.models.UserProfile;
 import com.example.attendify.repository.AuthRepository;
 import com.example.attendify.ThemeApplier;
 
 public class SecretaryProfileFragment extends Fragment {
-
-    private FragmentManager.OnBackStackChangedListener backStackListener;
 
     @Nullable
     @Override
@@ -83,11 +86,11 @@ public class SecretaryProfileFragment extends Fragment {
         ((ImageView) view.findViewById(R.id.iv_profile_icon_5)).setImageResource(android.R.drawable.ic_dialog_info);
 
         // Click listeners for menu items
-        view.findViewById(R.id.card_personal_info).setOnClickListener(v -> navigateTo(new PersonalInfoFragment()));
-        view.findViewById(R.id.card_notifications).setOnClickListener(v -> navigateTo(new NotificationSettingsFragment()));
-        view.findViewById(R.id.card_privacy_security).setOnClickListener(v -> navigateTo(new SecuritySettingsFragment()));
-        view.findViewById(R.id.card_app_settings).setOnClickListener(v -> navigateTo(new AppSettingsFragment()));
-        view.findViewById(R.id.card_about).setOnClickListener(v -> navigateTo(new AboutFragment()));
+        view.findViewById(R.id.card_personal_info).setOnClickListener(v -> startActivity(new Intent(requireContext(), PersonalInfoActivity.class)));
+        view.findViewById(R.id.card_notifications).setOnClickListener(v -> startActivity(new Intent(requireContext(), NotificationSettingsActivity.class)));
+        view.findViewById(R.id.card_privacy_security).setOnClickListener(v -> startActivity(new Intent(requireContext(), SecuritySettingsActivity.class)));
+        view.findViewById(R.id.card_app_settings).setOnClickListener(v -> startActivity(new Intent(requireContext(), AppSettingsActivity.class)));
+        view.findViewById(R.id.card_about).setOnClickListener(v -> startActivity(new Intent(requireContext(), AboutActivity.class)));
 
         view.findViewById(R.id.btn_sec_logout).setOnClickListener(v -> {
             if (getActivity() instanceof MainActivity)
@@ -95,29 +98,10 @@ public class SecretaryProfileFragment extends Fragment {
         });
     }
 
-    private void navigateTo(Fragment fragment) {
-        if (getActivity() instanceof MainActivity)
-            ((MainActivity) getActivity()).navigateTo(fragment);
-    }
-
     @Override
-    public void onStart() {
-        super.onStart();
-        backStackListener = () -> {
-            if (getParentFragmentManager().getBackStackEntryCount() == 0) {
-                reapplyTheme();
-            }
-        };
-        getParentFragmentManager().addOnBackStackChangedListener(backStackListener);
-    }
-
-    @Override
-    public void onStop() {
-        super.onStop();
-        if (backStackListener != null) {
-            getParentFragmentManager().removeOnBackStackChangedListener(backStackListener);
-            backStackListener = null;
-        }
+    public void onResume() {
+        super.onResume();
+        reapplyTheme();
     }
 
     private void reapplyTheme() {

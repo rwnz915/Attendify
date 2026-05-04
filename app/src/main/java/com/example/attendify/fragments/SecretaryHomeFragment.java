@@ -99,10 +99,10 @@ public class SecretaryHomeFragment extends Fragment {
                 ((MainActivity) getActivity()).selectTab(3);
         });
 
-        view.findViewById(R.id.btn_quick_settings).setOnClickListener(v -> {
-            if (getActivity() instanceof MainActivity)
-                ((MainActivity) getActivity()).navigateTo(new AppSettingsFragment());
-        });
+        // NEW
+        view.findViewById(R.id.btn_quick_settings).setOnClickListener(v ->
+                startActivity(new android.content.Intent(requireContext(),
+                        com.example.attendify.activities.AppSettingsActivity.class)));
 
         loadSecretaryInfo(view);
         loadTodayOverview();

@@ -1,21 +1,14 @@
-package com.example.attendify.fragments;
+package com.example.attendify.activities;
 
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.ScrollView;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import androidx.activity.OnBackPressedCallback;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.fragment.app.Fragment;
+import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.attendify.MainActivity;
 import com.example.attendify.R;
@@ -24,56 +17,39 @@ import com.example.attendify.ThemeManager;
 import com.example.attendify.models.UserProfile;
 import com.example.attendify.repository.AuthRepository;
 
-public class AppSettingsFragment extends Fragment {
+public class AppSettingsActivity extends AppCompatActivity {
 
     private String role = "teacher";
     private String selectedTheme;
     private View lastSelectedRow = null;
 
-    @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.fragment_app_settings, container, false);
-    }
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.fragment_app_settings);
 
-    @Override
-    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
+        androidx.activity.EdgeToEdge.enable(this);
 
         UserProfile user = AuthRepository.getInstance().getLoggedInUser();
-        if (user == null) return;
+        if (user == null) { finish(); return; }
         role = user.getRole();
-        selectedTheme = ThemeManager.getSavedTheme(requireContext(), role);
+        selectedTheme = ThemeManager.getSavedTheme(this, role);
 
         // Apply theme to header
-        ThemeApplier.applyHeader(requireContext(), role, view.findViewById(R.id.app_settings_header));
+        ThemeApplier.applyHeader(this, role, findViewById(R.id.app_settings_header));
 
-        // Handle system back button
-        requireActivity().getOnBackPressedDispatcher().addCallback(getViewLifecycleOwner(),
-                new OnBackPressedCallback(true) {
-                    @Override
-                    public void handleOnBackPressed() {
-                        navigateBackToProfile();
-                    }
-                });
+        // Status bar padding
+        android.view.View header = findViewById(R.id.app_settings_header);
+        header.setPadding(
+                header.getPaddingLeft(),
+                header.getPaddingTop() + MainActivity.statusBarHeight,
+                header.getPaddingRight(),
+                header.getPaddingBottom());
 
-        // Back button in layout
-        view.findViewById(R.id.btn_back).setOnClickListener(v -> navigateBackToProfile());
+        // Back button
+        findViewById(R.id.btn_back).setOnClickListener(v -> finish());
 
-        buildThemeList(view);
-    }
-
-    private void navigateBackToProfile() {
-        requireActivity().getSupportFragmentManager().popBackStack();
-        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
-            if (getActivity() instanceof MainActivity) {
-                MainActivity main = (MainActivity) getActivity();
-                int returnTab = main.navSourceTab != -1 ? main.navSourceTab : 4;
-                main.navSourceTab = -1; // reset after use
-                main.currentTab = -1;
-                main.selectTab(returnTab);
-            }
-        }, 200);
+        buildThemeList(getWindow().getDecorView().getRootView());
     }
 
     private void buildThemeList(View root) {
@@ -88,7 +64,7 @@ public class AppSettingsFragment extends Fragment {
     }
 
     private View buildThemeRow(String themeKey, LinearLayout container) {
-        View row = LayoutInflater.from(requireContext()).inflate(R.layout.item_theme_row, container, false);
+        View row = LayoutInflater.from(this).inflate(R.layout.item_theme_row, container, false);
 
         int[] swatches = ThemeManager.getSwatchColors(themeKey);
         setSwatchColor(row, R.id.swatch_1, swatches[0]);
@@ -121,9 +97,8 @@ public class AppSettingsFragment extends Fragment {
             check.setVisibility(View.VISIBLE);
 
             // Save and apply immediately to header
-            ThemeManager.saveTheme(requireContext(), role, themeKey);
-            ThemeApplier.applyHeader(requireContext(), role, getView().findViewById(R.id.app_settings_header));
-            //Toast.makeText(requireContext(), "Theme updated!", Toast.LENGTH_SHORT).show();
+            ThemeManager.saveTheme(this, role, themeKey);
+            ThemeApplier.applyHeader(this, role, findViewById(R.id.app_settings_header));
         });
 
         return row;

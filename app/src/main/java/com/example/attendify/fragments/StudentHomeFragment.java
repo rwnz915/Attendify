@@ -301,10 +301,10 @@ public class StudentHomeFragment extends Fragment {
         });
 
         // Settings
-        view.findViewById(R.id.btn_student_settings).setOnClickListener(v -> {
-            if (getActivity() instanceof MainActivity)
-                ((MainActivity) getActivity()).navigateTo(new AppSettingsFragment());
-        });
+        // NEW
+        view.findViewById(R.id.btn_student_settings).setOnClickListener(v ->
+                startActivity(new android.content.Intent(requireContext(),
+                        com.example.attendify.activities.AppSettingsActivity.class)));
 
         // Notification bell → open notifications page
         View notifBtn = view.findViewById(R.id.fl_notif_container);
