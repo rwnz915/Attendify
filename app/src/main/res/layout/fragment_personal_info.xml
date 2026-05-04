@@ -33,7 +33,6 @@
             android:layout_marginStart="8dp"
             android:layout_marginBottom="10dp"
             android:contentDescription="Back"
-            android:background="@drawable/bg_icon_white_transparent"
             android:padding="12dp"
             android:src="@drawable/ic_arrow_back"
             app:tint="@color/white" />

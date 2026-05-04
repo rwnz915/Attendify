@@ -35,7 +35,6 @@
             android:layout_marginBottom="10dp"
             android:padding="12dp"
             android:src="@drawable/ic_arrow_back"
-            android:background="@drawable/bg_icon_white_transparent"
             app:tint="@color/white"
             android:contentDescription="Back" />
     </FrameLayout>
