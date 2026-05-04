@@ -4,6 +4,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -58,6 +59,50 @@ public class StudentHomeFragment extends Fragment {
                              @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_student_home, container, false);
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        reapplyTheme();
+    }
+
+    private void reapplyTheme() {
+        View view = getView();
+        if (view == null) return;
+        UserProfile user = AuthRepository.getInstance().getLoggedInUser();
+        if (user == null) return;
+        String role = user.getRole();
+
+        ThemeApplier.applyHeader(requireContext(), role,
+                view.findViewById(R.id.student_header_bg));
+        ThemeApplier.applyOval(requireContext(), role,
+                view.findViewById(R.id.iv_profile_circle));
+
+        int primary   = ThemeManager.getPrimaryColor(requireContext(), role);
+        int lightTint = ThemeManager.getLightTintColor(requireContext(), role);
+
+        // Excuse Letter quick action
+        android.widget.ImageView btnClassList = view.findViewById(R.id.btn_class_list);
+        if (btnClassList != null) {
+            android.graphics.drawable.GradientDrawable gd1 = new android.graphics.drawable.GradientDrawable();
+            gd1.setShape(android.graphics.drawable.GradientDrawable.RECTANGLE);
+            gd1.setCornerRadius(50f * requireContext().getResources().getDisplayMetrics().density);
+            gd1.setColor(lightTint);
+            btnClassList.setBackground(gd1);
+            btnClassList.setColorFilter(primary);
+        }
+
+        // Settings quick action
+        android.widget.ImageView btnSettings = view.findViewById(R.id.btn_student_settings);
+        if (btnSettings != null) {
+            android.graphics.drawable.GradientDrawable gd2 = new android.graphics.drawable.GradientDrawable();
+            gd2.setShape(android.graphics.drawable.GradientDrawable.RECTANGLE);
+            gd2.setCornerRadius(50f * requireContext().getResources().getDisplayMetrics().density);
+            gd2.setColor(lightTint);
+            btnSettings.setBackground(gd2);
+            btnSettings.setColorFilter(primary);
+        }
     }
 
     @Override

@@ -129,6 +129,32 @@ public class SecretaryHomeFragment extends Fragment {
         }
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        reapplyTheme();
+    }
+
+    private void reapplyTheme() {
+        View view = getView();
+        if (view == null) return;
+        UserProfile user = AuthRepository.getInstance().getLoggedInUser();
+        if (user == null) return;
+        String role = user.getRole();
+
+        ThemeApplier.applyHeader(requireContext(), role,
+                view.findViewById(R.id.sec_header_bg));
+
+        ThemeApplier.applyQuickActionColor(requireContext(), role,
+                view.findViewById(R.id.btn_quick_subjects), 0);
+        ThemeApplier.applyQuickActionColor(requireContext(), role,
+                view.findViewById(R.id.btn_quick_class_list), 1);
+        ThemeApplier.applyQuickActionColor(requireContext(), role,
+                view.findViewById(R.id.btn_quick_history), 2);
+        ThemeApplier.applyQuickActionColor(requireContext(), role,
+                view.findViewById(R.id.btn_quick_settings), 3);
+    }
+
     private void loadSecretaryInfo(View view) {
         UserProfile user = AuthRepository.getInstance().getLoggedInUser();
         if (user == null) return;
