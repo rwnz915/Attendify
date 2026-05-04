@@ -111,21 +111,6 @@ public class AttendanceFragment extends Fragment {
 
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
         adapter = new StudentAdapter(requireContext(), new ArrayList<>());
-        adapter.setOnStudentClickListener(position -> {
-            List<Student> filtered = getFilteredList();
-            if (position >= filtered.size()) return;
-            Student tapped = filtered.get(position);
-            for (Student s : allStudents) {
-                if (s.getId() == tapped.getId()) {
-                    s.cycleStatus();
-                    // ── Update user status in Firestore when marked Present or Late ──
-                    updateUserStatusInFirestore(s);
-                    break;
-                }
-            }
-            updateStats();
-            applyFilter(currentFilter);
-        });
         recyclerView.setAdapter(adapter);
 
         filterAll.setOnClickListener(v     -> applyFilter("All"));
