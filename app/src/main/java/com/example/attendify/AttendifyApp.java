@@ -2,6 +2,8 @@ package com.example.attendify;
 
 import android.app.Application;
 
+import com.example.attendify.notifications.ClassNotificationScheduler;
+import com.example.attendify.notifications.NotificationHelper;
 import com.example.attendify.repository.AttendanceRepository;
 import com.example.attendify.repository.AuthRepository;
 import com.example.attendify.repository.StudentRepository;
@@ -15,5 +17,8 @@ public class AttendifyApp extends Application {
         AttendanceRepository.getInstance().init(this);
         SubjectRepository.getInstance().init(this);
         StudentRepository.getInstance().init(this);
+
+        // Create notification channels (required on API 26+)
+        NotificationHelper.createChannels(this);
     }
 }

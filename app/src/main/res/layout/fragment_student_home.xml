@@ -94,11 +94,13 @@
                         android:tint="@color/white" />
 
                     <View
+                        android:id="@+id/view_notif_dot"
                         android:layout_width="8dp"
                         android:layout_height="8dp"
                         android:layout_gravity="top|end"
                         android:layout_margin="4dp"
-                        android:background="@drawable/bg_dot_red" />
+                        android:background="@drawable/bg_dot_red"
+                        android:visibility="gone" />
                 </FrameLayout>
 
             </androidx.constraintlayout.widget.ConstraintLayout>
@@ -174,6 +176,19 @@
                             android:textSize="13sp"
                             app:drawableStartCompat="@drawable/ic_clock"
                             app:drawableTint="#CCFFFFFF" />
+
+                        <TextView
+                            android:id="@+id/tv_in_school_time"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:drawablePadding="6dp"
+                            android:gravity="center_vertical"
+                            android:textColor="#AAFFFFFF"
+                            android:textSize="12sp"
+                            android:visibility="gone"
+                            app:drawableStartCompat="@drawable/ic_location_pin"
+                            app:drawableTint="#AAFFFFFF" />
                     </LinearLayout>
 
                     <TextView

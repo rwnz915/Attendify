@@ -14,7 +14,11 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.example.attendify.MainActivity;
+import com.example.attendify.notifications.ClassNotificationScheduler;
+import com.example.attendify.notifications.NotificationHelper;
+import com.example.attendify.notifications.NotificationStore;
 import com.example.attendify.R;
+import com.example.attendify.activities.NotificationActivity;
 import com.example.attendify.models.UserProfile;
 import com.example.attendify.repository.AuthRepository;
 import com.example.attendify.repository.SubjectRepository;
@@ -103,6 +107,25 @@ public class SecretaryHomeFragment extends Fragment {
         loadTodayOverview();
         loadTodayRecentActivity();
         loadCurrentOrNextSubject(view);
+
+        // Notification bell → open notifications page
+        View secNotifBtn = view.findViewById(R.id.fl_sec_notif);
+        if (secNotifBtn != null) {
+            secNotifBtn.setClickable(true);
+            secNotifBtn.setOnClickListener(v -> {
+                if (getActivity() instanceof MainActivity)
+                    startActivity(new android.content.Intent(requireActivity(), NotificationActivity.class));
+            });
+        }
+
+        // Show/hide unread notification dot
+        if (secThemeUser != null) {
+            View notifDot = view.findViewById(R.id.view_notif_dot);
+            if (notifDot != null) {
+                boolean hasUnread = NotificationStore.getInstance().hasUnread(requireContext(), secThemeUser.getId());
+                notifDot.setVisibility(hasUnread ? View.VISIBLE : View.GONE);
+            }
+        }
     }
 
     private void loadSecretaryInfo(View view) {

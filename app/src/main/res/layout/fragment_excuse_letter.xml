@@ -1,9 +1,9 @@
-<?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout
+<LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
     android:background="#F4F5F9">
 
     <!-- Fixed Header -->
@@ -58,14 +58,16 @@
         </LinearLayout>
     </LinearLayout>
 
-    <!-- Scrollable content area -->
+    <!-- Scrollable content — overScrollMode=never stops the bounce that lets
+         items float up over the header when held at the top of the scroll -->
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_marginTop="108dp"
-        android:layout_marginBottom="88dp"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:fillViewport="true"
-        android:clipToPadding="false">
+        android:overScrollMode="never"
+        android:clipToPadding="false"
+        android:paddingBottom="16dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -101,6 +103,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:nestedScrollingEnabled="false"
+                android:overScrollMode="never"
                 android:visibility="gone" />
 
             <!-- Empty state -->
@@ -147,7 +150,6 @@
         android:id="@+id/bottom_bar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom"
         android:background="@color/white"
         android:elevation="8dp"
         android:paddingStart="16dp"
@@ -169,4 +171,4 @@
             android:textStyle="bold" />
     </LinearLayout>
 
-</androidx.coordinatorlayout.widget.CoordinatorLayout>
+</LinearLayout>

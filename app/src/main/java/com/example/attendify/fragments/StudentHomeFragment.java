@@ -11,8 +11,14 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import com.example.attendify.notifications.ClassNotificationScheduler;
+import com.example.attendify.notifications.NotificationHelper;
+import com.example.attendify.notifications.NotificationGuard;
+import com.example.attendify.notifications.NotificationGuard;
+import com.example.attendify.notifications.NotificationStore;
 import com.example.attendify.MainActivity;
 import com.example.attendify.R;
+import com.example.attendify.activities.NotificationActivity;
 import com.example.attendify.ThemeManager;
 import com.example.attendify.models.AttendanceRecord;
 import com.example.attendify.models.UserProfile;
@@ -188,6 +194,25 @@ public class StudentHomeFragment extends Fragment {
                                                     });
                                         } else {
                                             final String finalStatus = prelimStatus;
+                                            // Fire late/absent notification once per subject per day
+                                            if (todaySubject != null && finalStatus != null) {
+                                                String sid = todaySubject.id != null ? todaySubject.id : todaySubject.name;
+                                                if ("Late".equalsIgnoreCase(finalStatus)
+                                                        && NotificationGuard.shouldFire(requireContext(),
+                                                        user.getId(), sid, "student_late")) {
+                                                    NotificationHelper.notifyStudentLate(requireContext(), todaySubject.name);
+                                                    NotificationStore.getInstance().save(requireContext(), user.getId(),
+                                                            "You're Late",
+                                                            "You were marked late for " + todaySubject.name + ".");
+                                                } else if ("Absent".equalsIgnoreCase(finalStatus)
+                                                        && NotificationGuard.shouldFire(requireContext(),
+                                                        user.getId(), sid, "student_absent")) {
+                                                    NotificationHelper.notifyStudentAbsent(requireContext(), todaySubject.name);
+                                                    NotificationStore.getInstance().save(requireContext(), user.getId(),
+                                                            "Marked Absent",
+                                                            "You were marked absent for " + todaySubject.name + ". Submit an excuse letter if needed.");
+                                                }
+                                            }
                                             getActivity().runOnUiThread(() -> {
                                                 // Update header card with status badge
                                                 updateTodayClassCard(view, todaySubject, finalStatus, finalIsNextEarly);
@@ -283,6 +308,26 @@ public class StudentHomeFragment extends Fragment {
             if (getActivity() instanceof MainActivity)
                 ((MainActivity) getActivity()).navigateTo(new AppSettingsFragment());
         });
+
+        // Notification bell → open notifications page
+        View notifBtn = view.findViewById(R.id.fl_notif_container);
+        if (notifBtn != null) {
+            notifBtn.setClickable(true);
+            notifBtn.setOnClickListener(v -> {
+                if (getActivity() instanceof MainActivity)
+                    startActivity(new android.content.Intent(requireActivity(), NotificationActivity.class));
+            });
+        }
+
+        // Show/hide unread notification dot
+        UserProfile meForDot = AuthRepository.getInstance().getLoggedInUser();
+        if (meForDot != null) {
+            View notifDot = view.findViewById(R.id.view_notif_dot);
+            if (notifDot != null) {
+                boolean hasUnread = NotificationStore.getInstance().hasUnread(requireContext(), meForDot.getId());
+                notifDot.setVisibility(hasUnread ? View.VISIBLE : View.GONE);
+            }
+        }
     }
 
     // ── Today's Class card ────────────────────────────────────────────────────
@@ -352,6 +397,26 @@ public class StudentHomeFragment extends Fragment {
                     tvStatus.setTextColor(0xFF1565C0);
                     tvStatus.setBackgroundResource(R.drawable.bg_button_white);
                     break;
+            }
+        }
+
+        // Always show "In school since H:MM AM" for any non-absent status —
+        // the geofence time-in is preserved even after QR scan records Present/Late.
+        if (!isNext && status != null && !status.isEmpty() && !"Absent".equalsIgnoreCase(status)) {
+            UserProfile u = com.example.attendify.repository.AuthRepository.getInstance().getLoggedInUser();
+            if (u != null) {
+                TextView tvInSchool = view.findViewById(R.id.tv_in_school_time);
+                ClassNotificationScheduler.getInstance().getEarliestTimeInToday(
+                        requireContext(), u.getId(), subj != null && subj.id != null ? subj.id : "",
+                        (timeIn, subId) -> {
+                            if (getActivity() == null) return;
+                            getActivity().runOnUiThread(() -> {
+                                if (tvInSchool != null && timeIn != null && !timeIn.isEmpty()) {
+                                    tvInSchool.setText("In school since " + formatInSchoolTime(timeIn));
+                                    tvInSchool.setVisibility(android.view.View.VISIBLE);
+                                }
+                            });
+                        });
             }
         }
     }
@@ -599,5 +664,18 @@ public class StudentHomeFragment extends Fragment {
             Date d = DATE_FMT.parse(isoDate);
             return new SimpleDateFormat("MMM d, yyyy", Locale.ENGLISH).format(d);
         } catch (ParseException e) { return isoDate; }
+    }
+
+    // ── Format ISO timestamp → "h:mm a" ──────────────────────────────────────
+    private String formatInSchoolTime(String iso) {
+        if (iso == null || iso.isEmpty()) return "--:--";
+        try {
+            java.text.SimpleDateFormat inFmt  = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.ENGLISH);
+            java.text.SimpleDateFormat outFmt = new java.text.SimpleDateFormat("h:mm a", java.util.Locale.ENGLISH);
+            java.util.Date d = inFmt.parse(iso);
+            return d != null ? outFmt.format(d) : "--:--";
+        } catch (Exception e) {
+            return "--:--";
+        }
     }
 }

@@ -13,6 +13,7 @@ import androidx.fragment.app.Fragment;
 
 import com.example.attendify.MainActivity;
 import com.example.attendify.R;
+import com.example.attendify.activities.NotificationActivity;
 import com.example.attendify.models.UserProfile;
 import com.example.attendify.repository.ExcuseLetterRepository;
 import com.example.attendify.repository.AttendanceRepository;
@@ -28,6 +29,8 @@ import java.util.List;
 import java.util.Locale;
 import com.example.attendify.ThemeApplier;
 import com.example.attendify.ThemeManager;
+import com.example.attendify.notifications.NotificationStore;
+
 
 public class HomeFragment extends Fragment {
 
@@ -96,6 +99,13 @@ public class HomeFragment extends Fragment {
         UserProfile me = AuthRepository.getInstance().getLoggedInUser();
         if (me != null) {
             ((TextView) view.findViewById(R.id.tv_teacher_name)).setText(me.getFullName());
+
+            // Show/hide unread notification dot
+            View notifDot = view.findViewById(R.id.view_notif_dot);
+            if (notifDot != null) {
+                boolean hasUnread = NotificationStore.getInstance().hasUnread(requireContext(), me.getId());
+                notifDot.setVisibility(hasUnread ? View.VISIBLE : View.GONE);
+            }
         }
 
         // Set today's date label on the combined stat card
@@ -108,6 +118,15 @@ public class HomeFragment extends Fragment {
 
         loadPendingApprovals(view);
         loadHomeAttendanceData(view);
+
+        View notifBtn = view.findViewById(R.id.fl_notif_container);
+        if (notifBtn != null) {
+            notifBtn.setClickable(true);
+            notifBtn.setOnClickListener(v -> {
+                if (getActivity() instanceof MainActivity)
+                    startActivity(new android.content.Intent(requireActivity(), NotificationActivity.class));
+            });
+        }
     }
 
     // ── Pending approvals ─────────────────────────────────────────────────────

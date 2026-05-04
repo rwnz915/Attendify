@@ -19,6 +19,9 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.attendify.R;
+import com.example.attendify.notifications.NotificationHelper;
+import com.example.attendify.notifications.NotificationGuard;
+import com.example.attendify.notifications.NotificationStore;
 import com.example.attendify.ThemeApplier;
 import com.example.attendify.ThemeManager;
 import com.example.attendify.models.ExcuseLetter;
@@ -136,6 +139,18 @@ public class ApprovalRequestsFragment extends Fragment {
                                         "All excuse letters have been reviewed");
                             } else {
                                 showList(new PendingAdapter(letters));
+                                // Notify teacher of pending approval count
+                                int count = letters.size();
+                                // Guard: only notify once per day for new approvals
+                                if (NotificationGuard.shouldFire(requireContext(),
+                                        teacher.getId(), "approvals", "new_approval")) {
+                                    NotificationHelper.notifyTeacherNewApproval(requireContext(), count);
+                                    String body = count == 1
+                                            ? "You have 1 new excuse letter to review."
+                                            : "You have " + count + " excuse letters pending review.";
+                                    NotificationStore.getInstance().save(requireContext(),
+                                            teacher.getId(), "New Approval Request", body);
+                                }
                             }
                         });
                     }

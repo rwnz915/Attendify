@@ -57,6 +57,15 @@
                 android:text="07:55 AM"
                 android:textColor="@color/gray_500"
                 android:textSize="12sp" />
+
+            <TextView
+                android:id="@+id/tv_in_school_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textColor="@color/gray_400"
+                android:textSize="11sp"
+                android:visibility="gone" />
         </LinearLayout>
 
         <!-- Status Badge -->

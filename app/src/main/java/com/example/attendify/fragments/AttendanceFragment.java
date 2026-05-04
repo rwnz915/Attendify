@@ -15,6 +15,9 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.attendify.MainActivity;
+import com.example.attendify.notifications.ClassNotificationScheduler;
+import com.example.attendify.notifications.NotificationHelper;
+import com.example.attendify.notifications.NotificationStore;
 import com.example.attendify.R;
 import com.example.attendify.adapters.StudentAdapter;
 import com.example.attendify.models.Student;
@@ -439,6 +442,7 @@ public class AttendanceFragment extends Fragment {
                             updateStats();
                             applyFilter("All");
                         });
+
                     });
                 })
                 .addOnFailureListener(e -> {
@@ -490,13 +494,27 @@ public class AttendanceFragment extends Fragment {
                     .addOnSuccessListener(doc -> {
                         String userStatus = doc.getString("status");
                         if ("in school".equalsIgnoreCase(userStatus)) {
-                            s.setStatusFromDb(Student.STATUS_IN_SCHOOL, "--:--");
+                            // Fetch the real earliest geofence time-in for this student today.
+                            // ✅ FIX: decrement remaining INSIDE the async callback so onDone
+                            // only fires after setStatusFromDb has actually been called.
                             android.util.Log.d("AttendanceFragment",
                                     "users/status promote → IN_SCHOOL: " + s.getName());
-                        }
-                        synchronized (remaining) {
-                            remaining[0]--;
-                            if (remaining[0] == 0) onDone.run();
+                            ClassNotificationScheduler.getInstance().getEarliestTimeInToday(
+                                    requireContext(), s.getStudentId(), "",
+                                    (timeIn, subId) -> {
+                                        String displayTime = formatInSchoolTime(timeIn);
+                                        s.setStatusFromDb(Student.STATUS_IN_SCHOOL, displayTime);
+                                        synchronized (remaining) {
+                                            remaining[0]--;
+                                            if (remaining[0] == 0) onDone.run();
+                                        }
+                                    });
+                        } else {
+                            // Not in school — no async call needed, decrement immediately
+                            synchronized (remaining) {
+                                remaining[0]--;
+                                if (remaining[0] == 0) onDone.run();
+                            }
                         }
                     })
                     .addOnFailureListener(e -> {
@@ -585,8 +603,8 @@ public class AttendanceFragment extends Fragment {
             switch (s.getStatus()) {
                 case Student.STATUS_PRESENT:   p++; break;
                 case Student.STATUS_LATE:      l++; break;
+                case Student.STATUS_IN_SCHOOL: p++; break; // ✅ FIX: in school = physically present
                 case Student.STATUS_ABSENT:    a++; break;
-                case Student.STATUS_IN_SCHOOL: a++; break;
             }
         }
         tvPresent.setText(String.valueOf(p));
@@ -604,5 +622,18 @@ public class AttendanceFragment extends Fragment {
     /** Returns the currently resolved subject, or null if outside class hours. */
     public SubjectRepository.SubjectItem getCurrentSubject() {
         return currentSubject;
+    }
+
+    // ── Format ISO timestamp → "HH:MM AM" ─────────────────────────────────────
+    private String formatInSchoolTime(String iso) {
+        if (iso == null || iso.isEmpty()) return "--:--";
+        try {
+            java.text.SimpleDateFormat inFmt  = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.ENGLISH);
+            java.text.SimpleDateFormat outFmt = new java.text.SimpleDateFormat("h:mm a", Locale.ENGLISH);
+            java.util.Date d = inFmt.parse(iso);
+            return d != null ? outFmt.format(d) : "--:--";
+        } catch (Exception e) {
+            return "--:--";
+        }
     }
 }

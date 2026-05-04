@@ -73,6 +73,11 @@
             android:exported="false"
             android:configChanges="uiMode" />
 
+        <activity
+            android:name=".activities.NotificationActivity"
+            android:exported="false"
+            android:configChanges="uiMode" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="com.example.attendify.fileprovider"

@@ -38,6 +38,10 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 
+import com.example.attendify.activities.NotificationActivity;
+import com.example.attendify.models.UserProfile;
+import com.example.attendify.notifications.ClassNotificationScheduler;
+import com.example.attendify.notifications.NotificationHelper;
 import com.example.attendify.fragments.*;
 import com.example.attendify.fragments.SecretaryHomeFragment;
 import com.example.attendify.fragments.SecretaryQrFragment;
@@ -83,8 +87,8 @@ public class MainActivity extends AppCompatActivity {
 
     //14.707776, 121.050512
 
-    private static final double GEOFENCE_LAT = 14.704375; //14.704375;
-    private static final double GEOFENCE_LNG = 121.036763; //121.036763;
+    private static final double GEOFENCE_LAT = 14.707776; //14.704375;
+    private static final double GEOFENCE_LNG = 121.050512; //121.036763;
 
     // ── Hysteresis thresholds ────────────────────────────────────────────────
     // Two thresholds instead of one to prevent bouncing at the boundary.
@@ -184,6 +188,8 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
         checkLocationServices();
         registerNetworkCallback();
+        // Schedule 30-min-before-class alerts
+        ClassNotificationScheduler.getInstance().scheduleUpcomingClassAlerts(this);
     }
 
     // ─────────────────────────────────────────
@@ -311,6 +317,16 @@ public class MainActivity extends AppCompatActivity {
 
         ft.replace(R.id.fragment_container, fragment);
         ft.commit();
+    }
+
+
+    @Override
+    protected void onNewIntent(android.content.Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        if (intent != null && intent.getBooleanExtra(NotificationHelper.EXTRA_OPEN_NOTIF_PAGE, false)) {
+            startActivity(new android.content.Intent(this, NotificationActivity.class));
+        }
     }
 
     public void navigateTo(Fragment fragment) {
