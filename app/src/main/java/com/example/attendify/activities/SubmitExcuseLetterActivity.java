@@ -1,4 +1,4 @@
-package com.example.attendify.fragments;
+package com.example.attendify.activities;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -6,21 +6,16 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.OpenableColumns;
-import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.graphics.drawable.ColorDrawable;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.fragment.app.Fragment;
+import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.attendify.AppwriteManager;
 import com.example.attendify.R;
@@ -38,15 +33,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Form where students write and submit an excuse letter.
- *
- * Changes (v2):
- *  - Subject selector (Spinner-like chip row) — required
- *  - Image attachment — required
- *  - Stores subjectId, subjectName, section, teacherId in Firestore
- */
-public class SubmitExcuseLetterFragment extends Fragment {
+public class SubmitExcuseLetterActivity extends AppCompatActivity {
 
     private TextInputEditText  etMessage;
     private LinearLayout       layoutImagePreview;
@@ -57,7 +44,6 @@ public class SubmitExcuseLetterFragment extends Fragment {
     private ProgressBar        progressBar;
     private TextView           tvSubmitting;
 
-    // Subject selector views
     private LinearLayout       layoutSubjectTrigger;
     private LinearLayout       layoutSubjectDropdown;
     private TextView           tvSubjectSelected;
@@ -68,7 +54,6 @@ public class SubmitExcuseLetterFragment extends Fragment {
     private Uri      selectedImageUri = null;
     private AppwriteManager appwriteManager;
 
-    // Loaded subjects
     private final List<SubjectRepository.SubjectItem> subjectList = new ArrayList<>();
     private SubjectRepository.SubjectItem selectedSubject = null;
 
@@ -86,67 +71,62 @@ public class SubmitExcuseLetterFragment extends Fragment {
                         }
                     });
 
-    @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater,
-                             @Nullable ViewGroup container,
-                             @Nullable Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.fragment_submit_excuse_letter, container, false);
-    }
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.fragment_submit_excuse_letter);
 
-    @Override
-    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
+        androidx.activity.EdgeToEdge.enable(this);
 
-        // Apply saved theme
         UserProfile subUser = AuthRepository.getInstance().getLoggedInUser();
         if (subUser != null) {
             String role = subUser.getRole();
 
-            ThemeApplier.applyHeader(requireContext(), role, view.findViewById(R.id.excuse_header_bg));
+            ThemeApplier.applyHeader(this, role, findViewById(R.id.excuse_header_bg));
 
-            TextView tvSubtitle = view.findViewById(R.id.tv_header_subtitle);
+            TextView tvSubtitle = findViewById(R.id.tv_header_subtitle);
             if (tvSubtitle != null) {
-                tvSubtitle.setTextColor(ThemeManager.getLightTintColor(requireContext(), role));
+                tvSubtitle.setTextColor(ThemeManager.getLightTintColor(this, role));
             }
 
-            ThemeApplier.applyButton(requireContext(), role, view.findViewById(R.id.btn_submit));
+            ThemeApplier.applyButton(this, role, findViewById(R.id.btn_submit));
 
-            ImageView ivUpload = view.findViewById(R.id.iv_upload_icon);
+            ImageView ivUpload = findViewById(R.id.iv_upload_icon);
             if (ivUpload != null) {
-                ivUpload.setColorFilter(ThemeManager.getPrimaryColor(requireContext(), role));
+                ivUpload.setColorFilter(ThemeManager.getPrimaryColor(this, role));
             }
 
-            // ← add this
-            applyUploadZoneBorder(view.findViewById(R.id.btn_attach_image),
-                    ThemeManager.getPrimaryColor(requireContext(), role));
+            applyUploadZoneBorder(findViewById(R.id.btn_attach_image),
+                    ThemeManager.getPrimaryColor(this, role));
         }
 
-        appwriteManager = new AppwriteManager(requireContext());
+        appwriteManager = new AppwriteManager(this);
 
-        view.findViewById(R.id.btn_back).setOnClickListener(v ->
-                requireActivity().getSupportFragmentManager().popBackStack());
+        // Back button
+        View btnBack = findViewById(R.id.btn_back);
+        if (btnBack != null) btnBack.setOnClickListener(v -> finish());
 
-        etMessage          = view.findViewById(R.id.et_message);
-        layoutImagePreview = view.findViewById(R.id.layout_image_preview);
-        ivPreview          = view.findViewById(R.id.iv_preview);
-        tvFileName         = view.findViewById(R.id.tv_file_name);
-        btnAttach          = view.findViewById(R.id.btn_attach_image);
-        tvAttachLabel      = view.findViewById(R.id.tv_attach_label);
-        btnSubmit          = view.findViewById(R.id.btn_submit);
-        // Apply theme to submit button
+        etMessage          = findViewById(R.id.et_message);
+        layoutImagePreview = findViewById(R.id.layout_image_preview);
+        ivPreview          = findViewById(R.id.iv_preview);
+        tvFileName         = findViewById(R.id.tv_file_name);
+        btnAttach          = findViewById(R.id.btn_attach_image);
+        tvAttachLabel      = findViewById(R.id.tv_attach_label);
+        btnSubmit          = findViewById(R.id.btn_submit);
+
         UserProfile subBtnUser = AuthRepository.getInstance().getLoggedInUser();
         if (subBtnUser != null) {
-            ThemeApplier.applyButton(requireContext(), subBtnUser.getRole(), btnSubmit);
+            ThemeApplier.applyButton(this, subBtnUser.getRole(), btnSubmit);
         }
-        btnRemoveImage     = view.findViewById(R.id.btn_remove_image);
-        progressBar        = view.findViewById(R.id.progress_bar);
-        tvSubmitting       = view.findViewById(R.id.tv_submitting);
-        layoutSubjectTrigger   = view.findViewById(R.id.layout_subject_trigger);
-        layoutSubjectDropdown  = view.findViewById(R.id.layout_subject_chips);
-        tvSubjectSelected      = view.findViewById(R.id.tv_subject_selected);
-        ivDropdownArrow        = view.findViewById(R.id.iv_dropdown_arrow);
-        tvSubjectError         = view.findViewById(R.id.tv_subject_error);
+
+        btnRemoveImage     = findViewById(R.id.btn_remove_image);
+        progressBar        = findViewById(R.id.progress_bar);
+        tvSubmitting       = findViewById(R.id.tv_submitting);
+        layoutSubjectTrigger   = findViewById(R.id.layout_subject_trigger);
+        layoutSubjectDropdown  = findViewById(R.id.layout_subject_chips);
+        tvSubjectSelected      = findViewById(R.id.tv_subject_selected);
+        ivDropdownArrow        = findViewById(R.id.iv_dropdown_arrow);
+        tvSubjectError         = findViewById(R.id.tv_subject_error);
 
         layoutSubjectTrigger.setOnClickListener(v -> toggleDropdown());
 
@@ -181,7 +161,7 @@ public class SubmitExcuseLetterFragment extends Fragment {
         uploadZone.setBackground(new android.graphics.drawable.LayerDrawable(layers));
     }
 
-    // ── Load student's subjects from Firestore ────────────────────────────────
+    // ── Load subjects ─────────────────────────────────────────────────────────
 
     private void loadSubjects() {
         UserProfile user = AuthRepository.getInstance().getLoggedInUser();
@@ -192,17 +172,15 @@ public class SubmitExcuseLetterFragment extends Fragment {
                 new SubjectRepository.SubjectsCallback() {
                     @Override
                     public void onSuccess(List<SubjectRepository.SubjectItem> subjects) {
-                        if (getActivity() == null) return;
                         subjectList.clear();
                         subjectList.addAll(subjects);
-                        getActivity().runOnUiThread(() -> buildSubjectChips());
+                        runOnUiThread(() -> buildSubjectChips());
                     }
 
                     @Override
                     public void onFailure(String errorMessage) {
-                        if (getActivity() == null) return;
-                        getActivity().runOnUiThread(() ->
-                                Toast.makeText(requireContext(),
+                        runOnUiThread(() ->
+                                Toast.makeText(SubmitExcuseLetterActivity.this,
                                         "Could not load subjects: " + errorMessage,
                                         Toast.LENGTH_SHORT).show());
                     }
@@ -218,7 +196,7 @@ public class SubmitExcuseLetterFragment extends Fragment {
     private void buildSubjectChips() {
         layoutSubjectDropdown.removeAllViews();
         for (SubjectRepository.SubjectItem subj : subjectList) {
-            TextView item = new TextView(requireContext());
+            TextView item = new TextView(this);
             item.setText(subj.name);
             item.setTag(subj);
             item.setTextColor(0xFF111827);
@@ -230,9 +208,8 @@ public class SubmitExcuseLetterFragment extends Fragment {
             item.setOnClickListener(v -> selectSubject(subj));
             layoutSubjectDropdown.addView(item);
 
-            // Divider between items (skip after last)
             if (subjectList.indexOf(subj) < subjectList.size() - 1) {
-                View divider = new View(requireContext());
+                View divider = new View(this);
                 android.widget.LinearLayout.LayoutParams lp =
                         new android.widget.LinearLayout.LayoutParams(
                                 android.widget.LinearLayout.LayoutParams.MATCH_PARENT, dp(1));
@@ -250,7 +227,6 @@ public class SubmitExcuseLetterFragment extends Fragment {
         tvSubjectSelected.setText(subj.name);
         tvSubjectSelected.setTextColor(0xFF111827);
         tvSubjectError.setVisibility(View.GONE);
-        // Close dropdown
         dropdownOpen = false;
         layoutSubjectDropdown.setVisibility(View.GONE);
         ivDropdownArrow.setRotation(0f);
@@ -278,7 +254,7 @@ public class SubmitExcuseLetterFragment extends Fragment {
 
     private String getFileName(Uri uri) {
         String name = "image.jpg";
-        try (Cursor cursor = requireContext().getContentResolver()
+        try (Cursor cursor = getContentResolver()
                 .query(uri, null, null, null, null)) {
             if (cursor != null && cursor.moveToFirst()) {
                 int idx = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
@@ -308,7 +284,7 @@ public class SubmitExcuseLetterFragment extends Fragment {
         }
 
         if (selectedImageUri == null) {
-            Toast.makeText(requireContext(),
+            Toast.makeText(this,
                     "Please attach a supporting image (required)",
                     Toast.LENGTH_SHORT).show();
             valid = false;
@@ -318,7 +294,7 @@ public class SubmitExcuseLetterFragment extends Fragment {
 
         UserProfile user = AuthRepository.getInstance().getLoggedInUser();
         if (user == null) {
-            Toast.makeText(requireContext(), "Session expired. Please log in again.",
+            Toast.makeText(this, "Session expired. Please log in again.",
                     Toast.LENGTH_SHORT).show();
             return;
         }
@@ -336,27 +312,22 @@ public class SubmitExcuseLetterFragment extends Fragment {
                 @Override
                 public void onSuccess(String fileId) {
                     String imageUrl = appwriteManager.getFileUrl(fileId);
-                    if (getActivity() != null) {
-                        getActivity().runOnUiThread(() ->
-                                saveToFirestore(user, message, imageUrl, fileId));
-                    }
+                    runOnUiThread(() -> saveToFirestore(user, message, imageUrl, fileId));
                 }
 
                 @Override
                 public void onError(Exception e) {
-                    if (getActivity() != null) {
-                        getActivity().runOnUiThread(() -> {
-                            setLoading(false);
-                            Toast.makeText(requireContext(),
-                                    "Image upload failed: " + e.getMessage(),
-                                    Toast.LENGTH_LONG).show();
-                        });
-                    }
+                    runOnUiThread(() -> {
+                        setLoading(false);
+                        Toast.makeText(SubmitExcuseLetterActivity.this,
+                                "Image upload failed: " + e.getMessage(),
+                                Toast.LENGTH_LONG).show();
+                    });
                 }
             });
         } catch (Exception e) {
             setLoading(false);
-            Toast.makeText(requireContext(),
+            Toast.makeText(this,
                     "Could not read image: " + e.getMessage(),
                     Toast.LENGTH_SHORT).show();
         }
@@ -378,21 +349,19 @@ public class SubmitExcuseLetterFragment extends Fragment {
                 new ExcuseLetterRepository.SubmitCallback() {
                     @Override
                     public void onSuccess() {
-                        if (getActivity() == null) return;
-                        getActivity().runOnUiThread(() -> {
+                        runOnUiThread(() -> {
                             setLoading(false);
-                            Toast.makeText(requireContext(),
+                            Toast.makeText(SubmitExcuseLetterActivity.this,
                                     "Excuse letter submitted!", Toast.LENGTH_SHORT).show();
-                            requireActivity().getSupportFragmentManager().popBackStack();
+                            finish();
                         });
                     }
 
                     @Override
                     public void onFailure(String errorMessage) {
-                        if (getActivity() == null) return;
-                        getActivity().runOnUiThread(() -> {
+                        runOnUiThread(() -> {
                             setLoading(false);
-                            Toast.makeText(requireContext(),
+                            Toast.makeText(SubmitExcuseLetterActivity.this,
                                     "Submit failed: " + errorMessage,
                                     Toast.LENGTH_LONG).show();
                         });
@@ -404,8 +373,8 @@ public class SubmitExcuseLetterFragment extends Fragment {
 
     private File uriToFile(Uri uri) throws Exception {
         String name = getFileName(uri);
-        File file = new File(requireContext().getCacheDir(), name);
-        try (InputStream in = requireContext().getContentResolver().openInputStream(uri);
+        File file = new File(getCacheDir(), name);
+        try (InputStream in = getContentResolver().openInputStream(uri);
              FileOutputStream out = new FileOutputStream(file)) {
             if (in == null) throw new Exception("Cannot open input stream");
             byte[] buf = new byte[4096];

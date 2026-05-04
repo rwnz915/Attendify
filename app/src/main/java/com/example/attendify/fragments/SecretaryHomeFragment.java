@@ -89,8 +89,9 @@ public class SecretaryHomeFragment extends Fragment {
         });
 
         view.findViewById(R.id.btn_quick_class_list).setOnClickListener(v -> {
-            if (getActivity() instanceof MainActivity)
-                ((MainActivity) getActivity()).navigateTo(new SecretaryClassListFragment());
+            if (getActivity() != null)
+                startActivity(new android.content.Intent(getActivity(),
+                        com.example.attendify.activities.SecretaryClassListActivity.class));
         });
 
         view.findViewById(R.id.btn_quick_history).setOnClickListener(v -> {

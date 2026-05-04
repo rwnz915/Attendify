@@ -1,4 +1,4 @@
-package com.example.attendify.fragments;
+package com.example.attendify.activities;
 
 import android.content.Intent;
 import android.net.Uri;
@@ -15,8 +15,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.fragment.app.Fragment;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -30,17 +29,7 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * TeacherContactParentFragment
- *
- * Shows all students in the teacher's sections with their parent contact info.
- * Data is loaded from:
- *   - users  collection  → students whose section matches teacher's sections
- *   - parents/{studentUid} → contact, parent, student fields
- *
- * UI mirrors SecretaryClassListFragment (header + back button + RecyclerView).
- */
-public class TeacherContactParentFragment extends Fragment {
+public class TeacherContactParentActivity extends AppCompatActivity {
 
     // ── View refs ─────────────────────────────────────────────────────────────
     private ProgressBar progressContact;
@@ -56,53 +45,42 @@ public class TeacherContactParentFragment extends Fragment {
 
     // ── Simple data holder ────────────────────────────────────────────────────
     static class ParentInfo {
-        String studentName;  // from parents doc — field "student"
-        String parentName;   // from parents doc — field "parent"
-        String contact;      // from parents doc — field "contact"
-        String studentUid;   // document ID = student's Firebase UID
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    @Nullable
-    @Override
-    public View onCreateView(@NonNull LayoutInflater inflater,
-                             @Nullable ViewGroup container,
-                             @Nullable Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.fragment_teacher_contact_parent, container, false);
+        String studentName;
+        String parentName;
+        String contact;
+        String studentUid;
     }
 
     @Override
-    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.fragment_teacher_contact_parent);
+
+        androidx.activity.EdgeToEdge.enable(this);
 
         // ── Bind views ────────────────────────────────────────────────────────
-        progressContact  = view.findViewById(R.id.progress_contact);
-        rvContact        = view.findViewById(R.id.rv_contact);
-        tvContactEmpty   = view.findViewById(R.id.tv_contact_empty);
-        tvContactSection = view.findViewById(R.id.tv_contact_section);
-        tvContactCount   = view.findViewById(R.id.tv_contact_count);
-        etContactSearch  = view.findViewById(R.id.et_contact_search);
+        progressContact  = findViewById(R.id.progress_contact);
+        rvContact        = findViewById(R.id.rv_contact);
+        tvContactEmpty   = findViewById(R.id.tv_contact_empty);
+        tvContactSection = findViewById(R.id.tv_contact_section);
+        tvContactCount   = findViewById(R.id.tv_contact_count);
+        etContactSearch  = findViewById(R.id.et_contact_search);
 
         // ── Back button ───────────────────────────────────────────────────────
-        view.findViewById(R.id.btn_contact_back).setOnClickListener(v -> {
-            if (getActivity() != null)
-                getActivity().getSupportFragmentManager().popBackStack();
-        });
+        View btnBack = findViewById(R.id.btn_contact_back);
+        if (btnBack != null) btnBack.setOnClickListener(v -> finish());
 
         // ── Apply theme to header ─────────────────────────────────────────────
         UserProfile me = AuthRepository.getInstance().getLoggedInUser();
         if (me != null) {
-            ThemeApplier.applyHeader(requireContext(), me.getRole(),
-                    view.findViewById(R.id.teacher_contact_header));
+            ThemeApplier.applyHeader(this, me.getRole(),
+                    findViewById(R.id.teacher_contact_header));
         }
 
         // ── RecyclerView ──────────────────────────────────────────────────────
-        rvContact.setLayoutManager(new LinearLayoutManager(requireContext()));
+        rvContact.setLayoutManager(new LinearLayoutManager(this));
         adapter = new ContactAdapter(new ArrayList<>());
         rvContact.setAdapter(adapter);
-
-        // ── Section label set dynamically after subjects are fetched ──────────
-
 
         // ── Search filter ─────────────────────────────────────────────────────
         etContactSearch.addTextChangedListener(new TextWatcher() {
@@ -127,19 +105,15 @@ public class TeacherContactParentFragment extends Fragment {
 
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
-        // Step 1: Get all subjects where this teacher is the instructor.
-        //         Each subject doc has a "section" field — that's the source of truth.
-        //         (teacher.getSections() on UserProfile is often null for teachers)
         db.collection("subjects")
                 .whereEqualTo("teacherId", teacher.getId())
                 .get()
                 .addOnSuccessListener(subjectDocs -> {
                     if (subjectDocs.isEmpty()) {
-                        safeRunOnUiThread(this::showEmpty);
+                        runOnUiThread(this::showEmpty);
                         return;
                     }
 
-                    // Collect unique sections from all the teacher's subjects
                     List<String> sections = new ArrayList<>();
                     for (QueryDocumentSnapshot doc : subjectDocs) {
                         String sec = doc.getString("section");
@@ -149,16 +123,13 @@ public class TeacherContactParentFragment extends Fragment {
                     }
 
                     if (sections.isEmpty()) {
-                        safeRunOnUiThread(this::showEmpty);
+                        runOnUiThread(this::showEmpty);
                         return;
                     }
 
-                    // Update the header subtitle with actual sections found
-                    safeRunOnUiThread(() ->
+                    runOnUiThread(() ->
                             tvContactSection.setText("Sections: " + String.join(", ", sections)));
 
-                    // Step 2: Get students in those sections.
-                    //         Firestore whereIn supports max 10 values.
                     List<String> batch = sections.size() > 10 ? sections.subList(0, 10) : sections;
 
                     db.collection("users")
@@ -167,11 +138,10 @@ public class TeacherContactParentFragment extends Fragment {
                             .get()
                             .addOnSuccessListener(studentDocs -> {
                                 if (studentDocs.isEmpty()) {
-                                    safeRunOnUiThread(this::showEmpty);
+                                    runOnUiThread(this::showEmpty);
                                     return;
                                 }
 
-                                // Step 3: For each student UID, fetch parents/{uid}
                                 int total = studentDocs.size();
                                 List<ParentInfo> results = new ArrayList<>();
                                 int[] fetched = {0};
@@ -189,7 +159,6 @@ public class TeacherContactParentFragment extends Fragment {
                                                     info.studentName = parentDoc.getString("student");
                                                     info.parentName  = parentDoc.getString("parent");
                                                     info.contact     = parentDoc.getString("contact");
-                                                    // Fallback to users doc if parent doc missing name
                                                     if (info.studentName == null || info.studentName.isEmpty()) {
                                                         info.studentName = (ln != null && fn != null)
                                                                 ? ln + ", " + fn
@@ -202,18 +171,17 @@ public class TeacherContactParentFragment extends Fragment {
                                             .addOnFailureListener(e -> checkDone(results, total, fetched));
                                 }
                             })
-                            .addOnFailureListener(e -> safeRunOnUiThread(this::showEmpty));
+                            .addOnFailureListener(e -> runOnUiThread(this::showEmpty));
                 })
-                .addOnFailureListener(e -> safeRunOnUiThread(this::showEmpty));
+                .addOnFailureListener(e -> runOnUiThread(this::showEmpty));
     }
 
-    /** Called after each parent doc fetch; renders once all are done. */
     private void checkDone(List<ParentInfo> results, int total, int[] fetched) {
         synchronized (fetched) { fetched[0]++; }
         if (fetched[0] >= total) {
             allItems.clear();
             allItems.addAll(results);
-            safeRunOnUiThread(() -> {
+            runOnUiThread(() -> {
                 showLoading(false);
                 if (allItems.isEmpty()) {
                     showEmpty();
@@ -268,10 +236,6 @@ public class TeacherContactParentFragment extends Fragment {
         adapter.updateList(list);
     }
 
-    private void safeRunOnUiThread(Runnable r) {
-        if (getActivity() != null) getActivity().runOnUiThread(r);
-    }
-
     // ── Adapter ───────────────────────────────────────────────────────────────
 
     private class ContactAdapter extends RecyclerView.Adapter<ContactAdapter.VH> {
@@ -303,7 +267,6 @@ public class TeacherContactParentFragment extends Fragment {
             h.tvParentName.setText(p.parentName   != null ? p.parentName  : "Parent");
             h.tvContact.setText(p.contact         != null ? p.contact     : "No contact number");
 
-            // Apply theme — replaces hardcoded blue on both the call button and icon circle
             String role = AuthRepository.getInstance().getLoggedInUser() != null
                     ? AuthRepository.getInstance().getLoggedInUser().getRole() : "teacher";
             ThemeApplier.applyButton(h.itemView.getContext(), role, h.btnCall);
@@ -311,11 +274,10 @@ public class TeacherContactParentFragment extends Fragment {
 
             h.btnCall.setOnClickListener(v -> {
                 if (p.contact == null || p.contact.trim().isEmpty()) {
-                    Toast.makeText(requireContext(),
+                    Toast.makeText(TeacherContactParentActivity.this,
                             "No contact number available", Toast.LENGTH_SHORT).show();
                     return;
                 }
-                // Dial intent — opens phone app with number pre-filled
                 Intent dial = new Intent(Intent.ACTION_DIAL,
                         Uri.parse("tel:" + p.contact.trim()));
                 startActivity(dial);

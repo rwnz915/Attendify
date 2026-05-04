@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="tcl_header_bg"      type="id" />
+    <item name="tcl_btn_back"       type="id" />
+    <item name="tcl_tv_sections"    type="id" />
+    <item name="tcl_tv_count"       type="id" />
+    <item name="tcl_chip_container" type="id" />
+    <item name="tcl_progress"       type="id" />
+    <item name="tcl_tv_empty"       type="id" />
+    <item name="tcl_rv"             type="id" />
+</resources>

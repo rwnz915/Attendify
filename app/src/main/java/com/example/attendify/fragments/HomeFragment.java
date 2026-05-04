@@ -86,15 +86,29 @@ public class HomeFragment extends Fragment {
 
         // Pending Approvals is now in the Quick Actions row
         view.findViewById(R.id.card_pending_approvals).setOnClickListener(v -> {
-            if (getActivity() instanceof MainActivity)
-                ((MainActivity) getActivity()).navigateTo(new ApprovalRequestsFragment());
+            if (getActivity() != null)
+                getActivity().startActivity(new android.content.Intent(getActivity(),
+                        com.example.attendify.activities.ApprovalRequestsActivity.class));
         });
 
         // Contact Parent quick action
         view.findViewById(R.id.btn_contact_parent).setOnClickListener(v -> {
-            if (getActivity() instanceof MainActivity)
-                ((MainActivity) getActivity()).navigateTo(new TeacherContactParentFragment());
+            if (getActivity() != null)
+                getActivity().startActivity(new android.content.Intent(getActivity(),
+                        com.example.attendify.activities.TeacherContactParentActivity.class));
         });
+
+        //android.widget.ImageView btnClassList = view.findViewById(R.id.btn_class_list);
+        if (btnClassList != null) {
+            // (existing theme lines stay as-is — add the click listener below them)
+            btnClassList.setOnClickListener(v -> {
+                if (getActivity() != null) {
+                    getActivity().startActivity(
+                            new android.content.Intent(getActivity(),
+                                    com.example.attendify.activities.TeacherClassListActivity.class));
+                }
+            });
+        }
 
         UserProfile me = AuthRepository.getInstance().getLoggedInUser();
         if (me != null) {

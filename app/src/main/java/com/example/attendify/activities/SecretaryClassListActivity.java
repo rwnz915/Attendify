@@ -1,4 +1,4 @@
-package com.example.attendify.fragments;
+package com.example.attendify.activities;
 
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -8,8 +8,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.fragment.app.Fragment;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -22,15 +21,7 @@ import com.example.attendify.repository.StudentRepository;
 
 import java.util.List;
 
-/**
- * SecretaryClassListFragment
- *
- * Shows the full roster of students in the secretary's section.
- * Navigated to from the Class List quick-action on SecretaryHomeFragment.
- *
- * Layout: fragment_secretary_class_list.xml (green header, back button, RecyclerView)
- */
-public class SecretaryClassListFragment extends Fragment {
+public class SecretaryClassListActivity extends AppCompatActivity {
 
     private ProgressBar   progressClasslist;
     private RecyclerView  rvClasslist;
@@ -38,39 +29,33 @@ public class SecretaryClassListFragment extends Fragment {
     private TextView      tvClasslistSection;
     private TextView      tvClasslistCount;
 
-    @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater,
-                             @Nullable ViewGroup container,
-                             @Nullable Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.fragment_secretary_class_list, container, false);
-    }
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.fragment_secretary_class_list);
 
-    @Override
-    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
+        androidx.activity.EdgeToEdge.enable(this);
 
         // ── Bind views ────────────────────────────────────────────────────────
-        progressClasslist   = view.findViewById(R.id.progress_classlist);
-        rvClasslist         = view.findViewById(R.id.rv_classlist);
-        tvClasslistEmpty    = view.findViewById(R.id.tv_classlist_empty);
-        tvClasslistSection  = view.findViewById(R.id.tv_classlist_section);
-        tvClasslistCount    = view.findViewById(R.id.tv_classlist_count);
+        progressClasslist   = findViewById(R.id.progress_classlist);
+        rvClasslist         = findViewById(R.id.rv_classlist);
+        tvClasslistEmpty    = findViewById(R.id.tv_classlist_empty);
+        tvClasslistSection  = findViewById(R.id.tv_classlist_section);
+        tvClasslistCount    = findViewById(R.id.tv_classlist_count);
 
         // ── Back button ───────────────────────────────────────────────────────
-        view.findViewById(R.id.btn_classlist_back).setOnClickListener(v -> {
-            if (getActivity() != null)
-                getActivity().getSupportFragmentManager().popBackStack();
-        });
+        View btnBack = findViewById(R.id.btn_classlist_back);
+        if (btnBack != null) btnBack.setOnClickListener(v -> finish());
 
         // ── Apply saved theme to header ───────────────────────────────────────
         UserProfile clThemeUser = AuthRepository.getInstance().getLoggedInUser();
         if (clThemeUser != null) {
-            ThemeApplier.applyHeader(requireContext(), clThemeUser.getRole(), view.findViewById(R.id.sec_classlist_header));
+            ThemeApplier.applyHeader(this, clThemeUser.getRole(),
+                    findViewById(R.id.sec_classlist_header));
         }
 
         // ── RecyclerView setup ────────────────────────────────────────────────
-        rvClasslist.setLayoutManager(new LinearLayoutManager(requireContext()));
+        rvClasslist.setLayoutManager(new LinearLayoutManager(this));
 
         // ── Load data ─────────────────────────────────────────────────────────
         UserProfile secretary = AuthRepository.getInstance().getLoggedInUser();
@@ -98,8 +83,7 @@ public class SecretaryClassListFragment extends Fragment {
                 new StudentRepository.StudentsCallback() {
                     @Override
                     public void onSuccess(List<Student> students) {
-                        if (getActivity() == null) return;
-                        getActivity().runOnUiThread(() -> {
+                        runOnUiThread(() -> {
                             showLoading(false);
                             if (students.isEmpty()) {
                                 showEmpty();
@@ -111,8 +95,7 @@ public class SecretaryClassListFragment extends Fragment {
 
                     @Override
                     public void onFailure(String errorMessage) {
-                        if (getActivity() == null) return;
-                        getActivity().runOnUiThread(() -> {
+                        runOnUiThread(() -> {
                             showLoading(false);
                             showEmpty();
                         });
@@ -167,10 +150,8 @@ public class SecretaryClassListFragment extends Fragment {
         public void onBindViewHolder(@NonNull VH h, int position) {
             Student s = list.get(position);
             if (h.tvName    != null) h.tvName.setText(s.getName());
-            // Show school ID in the time slot (repurposed for class list view)
             if (h.tvTime    != null)
                 h.tvTime.setText(s.getSchoolId() != null ? s.getSchoolId() : "");
-            // Hide attendance status badge — not needed for a simple roster
             if (h.tvStatusBadge != null) h.tvStatusBadge.setVisibility(View.GONE);
         }
 

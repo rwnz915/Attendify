@@ -78,6 +78,41 @@
             android:exported="false"
             android:configChanges="uiMode" />
 
+        <activity
+            android:name=".activities.ApprovalRequestsActivity"
+            android:exported="false"
+            android:configChanges="uiMode" />
+
+        <activity
+            android:name=".activities.ExcuseLetterActivity"
+            android:exported="false"
+            android:configChanges="uiMode" />
+
+        <activity
+            android:name=".activities.SubmitExcuseLetterActivity"
+            android:exported="false"
+            android:configChanges="uiMode" />
+
+        <activity
+            android:name=".activities.TeacherContactParentActivity"
+            android:exported="false"
+            android:configChanges="uiMode" />
+
+        <activity
+            android:name=".activities.SecretaryClassListActivity"
+            android:exported="false"
+            android:configChanges="uiMode" />
+
+        <activity
+            android:name=".activities.ExcuseLetterStatusActivity"
+            android:exported="false"
+            android:configChanges="uiMode" />
+
+        <activity
+            android:name=".activities.TeacherClassListActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="com.example.attendify.fileprovider"

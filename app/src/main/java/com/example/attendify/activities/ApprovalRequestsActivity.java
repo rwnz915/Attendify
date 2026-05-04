@@ -1,4 +1,4 @@
-package com.example.attendify.fragments;
+package com.example.attendify.activities;
 
 import android.content.Intent;
 import android.graphics.Typeface;
@@ -13,25 +13,24 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.fragment.app.Fragment;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.attendify.R;
-import com.example.attendify.notifications.NotificationHelper;
-import com.example.attendify.notifications.NotificationGuard;
-import com.example.attendify.notifications.NotificationStore;
 import com.example.attendify.ThemeApplier;
 import com.example.attendify.ThemeManager;
 import com.example.attendify.models.ExcuseLetter;
 import com.example.attendify.models.UserProfile;
+import com.example.attendify.notifications.NotificationGuard;
+import com.example.attendify.notifications.NotificationHelper;
+import com.example.attendify.notifications.NotificationStore;
 import com.example.attendify.repository.AuthRepository;
 import com.example.attendify.repository.ExcuseLetterRepository;
 
 import java.util.List;
 
-public class ApprovalRequestsFragment extends Fragment {
+public class ApprovalRequestsActivity extends AppCompatActivity {
 
     private static final int TAB_PENDING = 0;
     private static final int TAB_HISTORY = 1;
@@ -45,36 +44,31 @@ public class ApprovalRequestsFragment extends Fragment {
     private ProgressBar  progressBar;
     private TextView     tabPending, tabHistory;
 
-    @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater,
-                             @Nullable ViewGroup container,
-                             @Nullable Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.fragment_approval_requests, container, false);
-    }
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.fragment_approval_requests);
 
-    @Override
-    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
+        androidx.activity.EdgeToEdge.enable(this);
 
-        view.findViewById(R.id.btn_back).setOnClickListener(v ->
-                requireActivity().getSupportFragmentManager().popBackStack());
+        // Back button
+        View btnBack = findViewById(R.id.btn_back);
+        if (btnBack != null) btnBack.setOnClickListener(v -> finish());
 
         UserProfile approvalUser = AuthRepository.getInstance().getLoggedInUser();
         if (approvalUser != null) {
-            ThemeApplier.applyHeader(requireContext(), approvalUser.getRole(),
-                    view.findViewById(R.id.approval_header_bg));
-            themeAccentColor = ThemeManager.getPrimaryColor(
-                    requireContext(), approvalUser.getRole());
+            ThemeApplier.applyHeader(this, approvalUser.getRole(),
+                    findViewById(R.id.approval_header_bg));
+            themeAccentColor = ThemeManager.getPrimaryColor(this, approvalUser.getRole());
         }
 
-        rv              = view.findViewById(R.id.rv_approvals);
-        emptyState      = view.findViewById(R.id.tv_empty);
-        tvEmptyTitle    = view.findViewById(R.id.tv_empty_title);
-        tvEmptySubtitle = view.findViewById(R.id.tv_empty_subtitle);
-        progressBar     = view.findViewById(R.id.progress_bar);
-        tabPending      = view.findViewById(R.id.tab_pending);
-        tabHistory      = view.findViewById(R.id.tab_history);
+        rv              = findViewById(R.id.rv_approvals);
+        emptyState      = findViewById(R.id.tv_empty);
+        tvEmptyTitle    = findViewById(R.id.tv_empty_title);
+        tvEmptySubtitle = findViewById(R.id.tv_empty_subtitle);
+        progressBar     = findViewById(R.id.progress_bar);
+        tabPending      = findViewById(R.id.tab_pending);
+        tabHistory      = findViewById(R.id.tab_history);
 
         tabPending.setTextColor(themeAccentColor);
 
@@ -131,24 +125,21 @@ public class ApprovalRequestsFragment extends Fragment {
                 new ExcuseLetterRepository.ListCallback() {
                     @Override
                     public void onSuccess(List<ExcuseLetter> letters) {
-                        if (getActivity() == null) return;
-                        getActivity().runOnUiThread(() -> {
+                        runOnUiThread(() -> {
                             progressBar.setVisibility(View.GONE);
                             if (letters.isEmpty()) {
                                 showEmpty("No pending requests",
                                         "All excuse letters have been reviewed");
                             } else {
                                 showList(new PendingAdapter(letters));
-                                // Notify teacher of pending approval count
                                 int count = letters.size();
-                                // Guard: only notify once per day for new approvals
-                                if (NotificationGuard.shouldFire(requireContext(),
+                                if (NotificationGuard.shouldFire(ApprovalRequestsActivity.this,
                                         teacher.getId(), "approvals", "new_approval")) {
-                                    NotificationHelper.notifyTeacherNewApproval(requireContext(), count);
+                                    NotificationHelper.notifyTeacherNewApproval(ApprovalRequestsActivity.this, count);
                                     String body = count == 1
                                             ? "You have 1 new excuse letter to review."
                                             : "You have " + count + " excuse letters pending review.";
-                                    NotificationStore.getInstance().save(requireContext(),
+                                    NotificationStore.getInstance().save(ApprovalRequestsActivity.this,
                                             teacher.getId(), "New Approval Request", body);
                                 }
                             }
@@ -171,14 +162,12 @@ public class ApprovalRequestsFragment extends Fragment {
                 new ExcuseLetterRepository.ListCallback() {
                     @Override
                     public void onSuccess(List<ExcuseLetter> allLetters) {
-                        if (getActivity() == null) return;
-
                         java.util.List<ExcuseLetter> decided = new java.util.ArrayList<>();
                         for (ExcuseLetter l : allLetters) {
                             if (!"pending".equals(l.getStatus())) decided.add(l);
                         }
 
-                        getActivity().runOnUiThread(() -> {
+                        runOnUiThread(() -> {
                             progressBar.setVisibility(View.GONE);
                             if (decided.isEmpty()) {
                                 showEmpty("No history yet",
@@ -205,7 +194,7 @@ public class ApprovalRequestsFragment extends Fragment {
     }
 
     private void showList(RecyclerView.Adapter<?> adapter) {
-        rv.setLayoutManager(new LinearLayoutManager(requireContext()));
+        rv.setLayoutManager(new LinearLayoutManager(this));
         rv.setAdapter(adapter);
         rv.setVisibility(View.VISIBLE);
         emptyState.setVisibility(View.GONE);
@@ -221,11 +210,9 @@ public class ApprovalRequestsFragment extends Fragment {
     }
 
     private void showError(String message) {
-        if (getActivity() == null) return;
-        getActivity().runOnUiThread(() -> {
+        runOnUiThread(() -> {
             progressBar.setVisibility(View.GONE);
-            Toast.makeText(requireContext(), "Failed to load: " + message,
-                    Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Failed to load: " + message, Toast.LENGTH_SHORT).show();
         });
     }
 
@@ -276,7 +263,6 @@ public class ApprovalRequestsFragment extends Fragment {
                 }
             }
 
-            // View Attachment
             if (letter.hasImage()) {
                 h.btnViewAttachment.setVisibility(View.VISIBLE);
                 h.btnViewAttachment.setTextColor(themeAccentColor);
@@ -286,20 +272,17 @@ public class ApprovalRequestsFragment extends Fragment {
                 h.btnViewAttachment.setVisibility(View.GONE);
             }
 
-            // Approve button — themed gradient
-            ThemeApplier.applyButton(requireContext(),
+            ThemeApplier.applyButton(ApprovalRequestsActivity.this,
                     AuthRepository.getInstance().getLoggedInUser() != null
                             ? AuthRepository.getInstance().getLoggedInUser().getRole()
                             : "teacher",
                     h.btnApprove);
 
-            // Approve — single confirm dialog (no reject shown)
             h.btnApprove.setOnClickListener(v ->
                     showExcuseActionDialog(letter, "Approve Excuse Letter",
                             true, false,
                             h.getAdapterPosition(), items, this));
 
-            // Reject — single confirm dialog (no approve shown)
             h.btnDecline.setOnClickListener(v ->
                     showExcuseActionDialog(letter, "Reject Excuse Letter",
                             false, true,
@@ -354,7 +337,6 @@ public class ApprovalRequestsFragment extends Fragment {
             h.tvDate.setText(formatTimestamp(letter.getSubmittedAt()));
             h.tvMessage.setText(letter.getMessage());
 
-            // Status badge
             if (isApproved) {
                 h.tvStatusBadge.setText("✓  Approved");
                 h.tvStatusBadge.setBackgroundResource(R.drawable.bg_badge_green_pill);
@@ -365,7 +347,6 @@ public class ApprovalRequestsFragment extends Fragment {
                 h.tvStatusBadge.setTextColor(0xFFB91C1C);
             }
 
-            // Subject badge
             String subj = letter.getSubjectName();
             if (subj != null && !subj.isEmpty()) {
                 h.tvSubjectBadge.setVisibility(View.VISIBLE);
@@ -374,7 +355,6 @@ public class ApprovalRequestsFragment extends Fragment {
                 h.tvSubjectBadge.setVisibility(View.GONE);
             }
 
-            // View Attachment
             if (letter.hasImage()) {
                 h.btnViewAttachment.setVisibility(View.VISIBLE);
                 h.btnViewAttachment.setTextColor(themeAccentColor);
@@ -384,16 +364,12 @@ public class ApprovalRequestsFragment extends Fragment {
                 h.btnViewAttachment.setVisibility(View.GONE);
             }
 
-            // Change Decision button — themed gradient
-            ThemeApplier.applyButton(requireContext(),
+            ThemeApplier.applyButton(ApprovalRequestsActivity.this,
                     AuthRepository.getInstance().getLoggedInUser() != null
                             ? AuthRepository.getInstance().getLoggedInUser().getRole()
                             : "teacher",
                     h.btnChangeDecision);
 
-            // History — show opposite action only
-            // If currently approved → show Reject only
-            // If currently rejected → show Approve only
             h.btnChangeDecision.setOnClickListener(v ->
                     showExcuseActionDialog(letter, "Change Decision",
                             !isApproved, isApproved,
@@ -437,8 +413,7 @@ public class ApprovalRequestsFragment extends Fragment {
                 new ExcuseLetterRepository.SubmitCallback() {
                     @Override
                     public void onSuccess() {
-                        if (getActivity() == null) return;
-                        getActivity().runOnUiThread(() -> {
+                        runOnUiThread(() -> {
                             items.remove(position);
                             adapter.notifyItemRemoved(position);
                             adapter.notifyItemRangeChanged(position, items.size());
@@ -453,7 +428,7 @@ public class ApprovalRequestsFragment extends Fragment {
                                 }
                             }
 
-                            Toast.makeText(requireContext(),
+                            Toast.makeText(ApprovalRequestsActivity.this,
                                     newStatus.equals("approved")
                                             ? "Excuse letter approved ✓"
                                             : "Excuse letter rejected",
@@ -463,9 +438,8 @@ public class ApprovalRequestsFragment extends Fragment {
 
                     @Override
                     public void onFailure(String errorMessage) {
-                        if (getActivity() == null) return;
-                        getActivity().runOnUiThread(() ->
-                                Toast.makeText(requireContext(),
+                        runOnUiThread(() ->
+                                Toast.makeText(ApprovalRequestsActivity.this,
                                         "Failed: " + errorMessage,
                                         Toast.LENGTH_SHORT).show());
                     }
@@ -482,7 +456,7 @@ public class ApprovalRequestsFragment extends Fragment {
                                         List<ExcuseLetter> items,
                                         RecyclerView.Adapter<?> adapter) {
 
-        android.app.Dialog dialog = new android.app.Dialog(requireContext());
+        android.app.Dialog dialog = new android.app.Dialog(this);
         dialog.requestWindowFeature(android.view.Window.FEATURE_NO_TITLE);
         dialog.setContentView(R.layout.dialog_excuse_action);
 
@@ -503,7 +477,6 @@ public class ApprovalRequestsFragment extends Fragment {
         ((TextView) dialog.findViewById(R.id.dialog_student_name))
                 .setText(letter.getStudentName());
 
-        // Subject
         TextView tvSubject = dialog.findViewById(R.id.dialog_subject);
         String subj = letter.getSubjectName();
         if (subj != null && !subj.isEmpty()) {
@@ -513,7 +486,6 @@ public class ApprovalRequestsFragment extends Fragment {
             tvSubject.setVisibility(View.GONE);
         }
 
-        // Status badge — only for history
         TextView tvStatus = dialog.findViewById(R.id.dialog_status_badge);
         if ("pending".equals(letter.getStatus())) {
             tvStatus.setVisibility(View.GONE);
@@ -544,7 +516,7 @@ public class ApprovalRequestsFragment extends Fragment {
 
         if (showApprove) {
             btnApprove.setVisibility(View.VISIBLE);
-            ThemeApplier.applyButton(requireContext(),
+            ThemeApplier.applyButton(this,
                     AuthRepository.getInstance().getLoggedInUser().getRole(), btnApprove);
             btnApprove.setOnClickListener(v -> {
                 dialog.dismiss();

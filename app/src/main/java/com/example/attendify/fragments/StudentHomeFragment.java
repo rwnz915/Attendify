@@ -285,16 +285,13 @@ public class StudentHomeFragment extends Fragment {
 
         // Wire up "Excuse Letter" quick action
         view.findViewById(R.id.btn_class_list).setOnClickListener(v ->
-                requireActivity().getSupportFragmentManager()
-                        .beginTransaction()
-                        .replace(R.id.fragment_container, new ExcuseLetterFragment())
-                        .addToBackStack(null)
-                        .commit());
+                startActivity(new android.content.Intent(getActivity(),
+                        com.example.attendify.activities.ExcuseLetterActivity.class)));
 
         // Excuse Letter
         view.findViewById(R.id.btn_class_list).setOnClickListener(v -> {
-            if (getActivity() instanceof MainActivity)
-                ((MainActivity) getActivity()).navigateTo(new ExcuseLetterFragment());
+            startActivity(new android.content.Intent(getActivity(),
+                    com.example.attendify.activities.ExcuseLetterActivity.class));
         });
 
         // Subjects — switch to the Subjects tab (index 1)
