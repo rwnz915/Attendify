@@ -68,8 +68,11 @@ public class GeofenceReceiver extends BroadcastReceiver {
         }
 
         if (transition == Geofence.GEOFENCE_TRANSITION_EXIT) {
-            Log.d(TAG, "Exited school geofence");
-            // Status reset on exit can be added here if needed
+            Log.d(TAG, "Exited school geofence — resetting status if not yet marked");
+            String exitUserId = LocalCacheManager.getInstance(context).getCachedUid();
+            if (exitUserId != null) {
+                GeofenceRepository.getInstance().resetStatusOnExit(exitUserId);
+            }
         }
     }
 

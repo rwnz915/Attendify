@@ -478,7 +478,14 @@ public class AttendanceFragment extends Fragment {
                     .get()
                     .addOnSuccessListener(doc -> {
                         String userStatus = doc.getString("status");
-                        if ("in school".equalsIgnoreCase(userStatus)) {
+                        String statusDate  = doc.getString("statusDate");
+                        String today = new java.text.SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH)
+                                .format(new java.util.Date());
+                        // Only trust "in school" if it was recorded TODAY.
+                        // statusDate guards against stale status left over from a previous day.
+                        boolean isInSchoolToday = "in school".equalsIgnoreCase(userStatus)
+                                && today.equals(statusDate);
+                        if (isInSchoolToday) {
                             // Fetch the real earliest geofence time-in for this student today.
                             // ✅ FIX: decrement remaining INSIDE the async callback so onDone
                             // only fires after setStatusFromDb has actually been called.
