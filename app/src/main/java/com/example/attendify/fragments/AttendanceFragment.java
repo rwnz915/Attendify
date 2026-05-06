@@ -1,5 +1,6 @@
 package com.example.attendify.fragments;
 
+import android.app.AlertDialog;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -128,6 +129,12 @@ public class AttendanceFragment extends Fragment {
 
         // Step 1: resolve current subject by time, then load students
         resolveCurrentSubjectAndLoad();
+
+        // Suspend button
+        View btnSuspend = view.findViewById(R.id.btn_suspend_class);
+        if (btnSuspend != null) {
+            btnSuspend.setOnClickListener(v -> showSuspendConfirmDialog());
+        }
     }
 
     // ── Status update helper ──────────────────────────────────────────────────
@@ -191,24 +198,60 @@ public class AttendanceFragment extends Fragment {
                     @Override
                     public void onSuccess(List<SubjectRepository.SubjectItem> subjects) {
                         if (getActivity() == null) return;
+                        final List<SubjectRepository.SubjectItem> allSubjects = subjects;
 
                         SubjectRepository.SubjectItem match = findCurrentSubject(subjects);
                         getActivity().runOnUiThread(() -> {
                             currentSubject = match;
                             updateHeader();
+
                             if (match == null) {
                                 if (progressBar != null) progressBar.setVisibility(View.GONE);
                                 showNoCurrentSubject();
-                            } else {
-                                loadStudentsForSubject(match);
+                                hideSuspendButton();
+                                return;
                             }
+
+                            // Show suspend button if within the 30-min pre-class window
+                            if (isInSuspendWindow(match.schedule)) {
+                                showSuspendButton();
+                            } else {
+                                hideSuspendButton();
+                            }
+
+                            // Check if already suspended today before loading students
+                            String today = new SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH)
+                                    .format(new Date());
+                            String docId = teacher.getId() + "_" + match.id + "_" + today;
+
+                            FirebaseFirestore.getInstance()
+                                    .collection("suspended_classes")
+                                    .document(docId)
+                                    .get()
+                                    .addOnSuccessListener(snap -> {
+                                        if (getActivity() == null) return;
+                                        getActivity().runOnUiThread(() -> {
+                                            if (snap.exists()) {
+                                                // Already suspended — find next class, update header, block list
+                                                showSuspendedState(subjects, match);
+                                            } else {
+                                                loadStudentsForSubject(match);
+                                            }
+                                        });
+                                    })
+                                    .addOnFailureListener(e -> {
+                                        if (getActivity() != null)
+                                            getActivity().runOnUiThread(() ->
+                                                    loadStudentsForSubject(match));
+                                    });
                         });
                     }
 
                     @Override
                     public void onFailure(String errorMessage) {
                         if (getActivity() == null) return;
-                        getActivity().runOnUiThread(() -> showError("Failed to load subjects: " + errorMessage));
+                        getActivity().runOnUiThread(() ->
+                                showError("Failed to load subjects: " + errorMessage));
                     }
                 });
     }
@@ -627,5 +670,173 @@ public class AttendanceFragment extends Fragment {
         } catch (Exception e) {
             return "--:--";
         }
+    }
+
+    // ── Suspend helpers ───────────────────────────────────────────────────────
+
+    /** True if now is within 30 min before class start through class end. */
+    private boolean isInSuspendWindow(String schedule) {
+        if (schedule == null) return false;
+        try {
+            String[] parts = schedule.trim().split("\\s+", 2);
+            if (parts.length < 2) return false;
+            String[] times = parts[1].split("-");
+            if (times.length < 2) return false;
+
+            int startMin = parseTimeToMinutes(times[0].trim()) - 30; // 30 min early
+            int endMin   = parseTimeToMinutes(times[1].trim());
+            if (startMin < 0 || endMin < 0) return false;
+
+            Calendar now = Calendar.getInstance();
+            int nowMin = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE);
+            return nowMin >= startMin && nowMin <= endMin;
+        } catch (Exception e) { return false; }
+    }
+
+    private void showSuspendButton() {
+        View root = getView();
+        if (root == null) return;
+        View btn = root.findViewById(R.id.btn_suspend_class);
+        if (btn != null) btn.setVisibility(View.VISIBLE);
+    }
+
+    private void hideSuspendButton() {
+        View root = getView();
+        if (root == null) return;
+        View btn = root.findViewById(R.id.btn_suspend_class);
+        if (btn != null) btn.setVisibility(View.GONE);
+    }
+
+    private void showSuspendedState(List<SubjectRepository.SubjectItem> allSubjects,
+                                    SubjectRepository.SubjectItem suspended) {
+        if (progressBar != null) progressBar.setVisibility(View.GONE);
+        hideSuspendButton();
+
+        // Find next class after the suspended one and show it in the header
+        SubjectRepository.SubjectItem next = findNextSubject(allSubjects, suspended);
+        if (tvSubjectName != null) {
+            if (next != null) {
+                tvSubjectName.setText(next.name);
+                String info = (next.section != null ? next.section : "")
+                        + "  •  " + (next.schedule != null ? next.schedule : "");
+                if (tvSubjectInfo != null) tvSubjectInfo.setText(info.trim());
+            } else {
+                tvSubjectName.setText("No Upcoming Class");
+                if (tvSubjectInfo != null) tvSubjectInfo.setText("No more classes today");
+            }
+        }
+
+        // Show empty list with suspended message (item-level message is already good)
+        allStudents = new ArrayList<>();
+        updateStats();
+        applyFilter("All");
+        if (tvEmpty != null) {
+            tvEmpty.setText("Class Suspended — No attendance for today.");
+            tvEmpty.setVisibility(View.VISIBLE);
+        }
+        if (recyclerView != null) recyclerView.setVisibility(View.GONE);
+    }
+
+    /** Finds the earliest subject that starts after the suspended subject ends today. */
+    private SubjectRepository.SubjectItem findNextSubject(
+            List<SubjectRepository.SubjectItem> subjects,
+            SubjectRepository.SubjectItem suspended) {
+        if (subjects == null || suspended == null) return null;
+
+        Calendar now = Calendar.getInstance();
+        int todayDow = now.get(Calendar.DAY_OF_WEEK);
+
+        // Get end time of suspended class
+        int suspendedEnd = -1;
+        if (suspended.schedule != null) {
+            String[] p = suspended.schedule.trim().split("\\s+", 2);
+            if (p.length >= 2) {
+                String[] t = p[1].split("-");
+                if (t.length >= 2) suspendedEnd = parseTimeToMinutes(t[1].trim());
+            }
+        }
+
+        SubjectRepository.SubjectItem earliest = null;
+        int earliestStart = Integer.MAX_VALUE;
+
+        for (SubjectRepository.SubjectItem s : subjects) {
+            if (s == suspended || s.schedule == null) continue;
+            String[] p = s.schedule.trim().split("\\s+", 2);
+            if (p.length < 2) continue;
+            if (!dayMatchesToday(p[0], todayDow)) continue;
+            int startMin = parseTimeToMinutes(p[1].split("-")[0].trim());
+            if (startMin > suspendedEnd && startMin < earliestStart) {
+                earliestStart = startMin;
+                earliest = s;
+            }
+        }
+        return earliest;
+    }
+
+    private void showSuspendConfirmDialog() {
+        if (currentSubject == null) return;
+
+        new AlertDialog.Builder(requireContext())
+                .setTitle("Suspend This Class?")
+                .setMessage("Are you sure you want to suspend:\n\n"
+                        + "📘 " + currentSubject.name + " — " + currentSubject.section + "\n"
+                        + "🕐 " + currentSubject.schedule + "\n\n"
+                        + "This session will be marked as suspended today. "
+                        + "No attendance will be recorded.")
+                .setPositiveButton("Yes, Suspend", (dialog, which) -> suspendClass())
+                .setNegativeButton("Cancel", null)
+                .setIcon(android.R.drawable.ic_dialog_alert)
+                .show();
+    }
+
+    private void suspendClass() {
+        UserProfile me = AuthRepository.getInstance().getLoggedInUser();
+        if (me == null || currentSubject == null) return;
+
+        String today = new SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH).format(new Date());
+        String docId = me.getId() + "_" + currentSubject.id + "_" + today;
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("teacherId",   me.getId());
+        data.put("subjectId",   currentSubject.id);
+        data.put("subjectName", currentSubject.name);
+        data.put("section",     currentSubject.section);
+        data.put("schedule",    currentSubject.schedule);
+        data.put("date",        today);
+        data.put("suspendedAt", new SimpleDateFormat("hh:mm a", Locale.ENGLISH).format(new Date()));
+
+        FirebaseFirestore.getInstance()
+                .collection("suspended_classes")
+                .document(docId)
+                .set(data)
+                .addOnSuccessListener(unused -> {
+                    if (getActivity() == null) return;
+                    getActivity().runOnUiThread(() -> {
+                        Toast.makeText(requireContext(),
+                                "Class suspended for today.", Toast.LENGTH_SHORT).show();
+                        // Re-load subjects to find the next class for the header
+                        SubjectRepository.getInstance().getTeacherSubjects(me.getId(),
+                                new SubjectRepository.SubjectsCallback() {
+                                    @Override
+                                    public void onSuccess(List<SubjectRepository.SubjectItem> subjects) {
+                                        if (getActivity() == null) return;
+                                        getActivity().runOnUiThread(() ->
+                                                showSuspendedState(subjects, currentSubject));
+                                    }
+                                    @Override
+                                    public void onFailure(String e) {
+                                        if (getActivity() == null) return;
+                                        getActivity().runOnUiThread(() ->
+                                                showSuspendedState(new ArrayList<>(), currentSubject));
+                                    }
+                                });
+                    });
+                })
+                .addOnFailureListener(e -> {
+                    if (getActivity() != null)
+                        getActivity().runOnUiThread(() ->
+                                Toast.makeText(requireContext(),
+                                        "Failed to suspend. Try again.", Toast.LENGTH_SHORT).show());
+                });
     }
 }

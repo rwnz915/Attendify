@@ -70,6 +70,25 @@
                         android:src="@drawable/search"
                         app:tint="@color/white" />
                 </FrameLayout>
+
+                <!-- Suspend class button — shown only within 30-min window -->
+                <TextView
+                    android:id="@+id/btn_suspend_class"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:layout_marginStart="10dp"
+                    android:background="@drawable/bg_suspend_class"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackgroundBorderless"
+                    android:gravity="center"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
+                    android:text="⚠ Suspend"
+                    android:textColor="#FF6B00"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
             </LinearLayout>
 
             <!-- Search Bar (visible when search icon tapped) -->
@@ -111,6 +130,38 @@
 
         </LinearLayout>
     </FrameLayout>
+
+    <!-- Suspended banner — shown when class has been suspended today -->
+    <LinearLayout
+        android:id="@+id/banner_suspended"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#FFFF6B00"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:paddingStart="20dp"
+        android:paddingTop="10dp"
+        android:paddingEnd="20dp"
+        android:paddingBottom="10dp"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="⛔ "
+            android:textColor="@color/white"
+            android:textSize="14sp" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="This class is suspended today. No attendance recorded."
+            android:textColor="@color/white"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+    </LinearLayout>
 
     <!-- Stat cards — paddingTop so shadow isn't clipped -->
     <LinearLayout

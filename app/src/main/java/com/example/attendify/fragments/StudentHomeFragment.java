@@ -27,6 +27,7 @@ import com.example.attendify.repository.AttendanceRepository;
 import com.example.attendify.repository.AuthRepository;
 import com.example.attendify.repository.SubjectRepository;
 import com.example.attendify.fragments.ExcuseLetterFragment;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -163,168 +164,59 @@ public class StudentHomeFragment extends Fragment {
                         final SubjectRepository.SubjectItem todaySubject = active;
                         final boolean finalIsNextEarly = isNext;
 
-                        // Update card name/time first (no status yet)
-                        getActivity().runOnUiThread(() -> updateTodayClassCard(view, todaySubject, null, finalIsNextEarly));
-
-                        // Step 2: Load attendance to get all-time stats + today's records
-                        AttendanceRepository.getInstance().getStudentHistory(user.getId(),
-                                new AttendanceRepository.AttendanceCallback() {
-                                    @Override
-                                    public void onSuccess(List<AttendanceRecord> allHistory) {
+                        // If there is an active (non-next) subject, check if it's suspended
+                        if (!isNext && todaySubject != null) {
+                            // We need the teacher ID from the subject to build the doc ID.
+                            // suspended_classes doc format: {teacherId}_{subjectId}_{date}
+                            // Query by subjectId + date since student doesn't know teacherId.
+                            FirebaseFirestore.getInstance()
+                                    .collection("suspended_classes")
+                                    .whereEqualTo("subjectId", todaySubject.id)
+                                    .whereEqualTo("date", today)
+                                    .limit(1)
+                                    .get()
+                                    .addOnSuccessListener(snap -> {
                                         if (getActivity() == null) return;
 
-                                        int totalPresent = 0, totalLate = 0, totalAbsent = 0;
-                                        List<AttendanceRecord> todayRecords = new ArrayList<>();
+                                        if (!snap.isEmpty()) {
+                                            // Class is suspended — find the next subject after this one
+                                            SubjectRepository.SubjectItem nextAfter =
+                                                    getNextSubjectAfter(subjects, todayAbbr, todaySubject);
 
-                                        for (AttendanceRecord r : allHistory) {
-                                            // All-time totals
-                                            totalPresent += r.getPresent();
-                                            totalLate    += r.getLate();
-                                            totalAbsent  += r.getAbsent();
-                                            // Collect today's records
-                                            if (today.equals(r.getDate())) todayRecords.add(r);
-                                        }
+                                            getActivity().runOnUiThread(() ->
+                                                    updateTodayClassCard(view, todaySubject,
+                                                            nextAfter, "Suspended", false));
 
-                                        // Find the status for today's active subject
-                                        String headerStatus = null;
-                                        if (todaySubject != null) {
-                                            for (AttendanceRecord r : todayRecords) {
-                                                if (todaySubject.name != null &&
-                                                        todaySubject.name.equals(r.getSubject())) {
-                                                    headerStatus = r.getStatusLabel();
-                                                    break;
-                                                }
-                                            }
-                                        }
-
-                                        final int fp = totalPresent, fl = totalLate, fa = totalAbsent;
-                                        final List<AttendanceRecord> todayFinal = todayRecords;
-                                        final String prelimStatus = headerStatus;
-
-                                        // If no attendance record exists for the active subject yet,
-                                        // check users/{userId}/status — set to "in school" by the
-                                        // geofence receiver whenever the student enters the school.
-                                        // This works regardless of whether subjectId was stored in
-                                        // the geofence doc.
-                                        if (prelimStatus == null && todaySubject != null) {
-                                            com.google.firebase.firestore.FirebaseFirestore.getInstance()
-                                                    .collection("users")
-                                                    .document(user.getId())
-                                                    .get()
-                                                    .addOnSuccessListener(userDoc -> {
-                                                        String userStatus = userDoc.getString("status");
-                                                        // Show "In school" badge only when actively inside;
-                                                        // ignore "absent" or null so badge stays hidden.
-                                                        final String resolvedStatus =
-                                                                "in school".equalsIgnoreCase(userStatus)
-                                                                        ? "In school" : null;
-                                                        if (getActivity() == null) return;
-                                                        getActivity().runOnUiThread(() -> {
-                                                            updateTodayClassCard(view, todaySubject, resolvedStatus, finalIsNextEarly);
-                                                            ((TextView) view.findViewById(R.id.tv_present_count)).setText(String.valueOf(fp));
-                                                            ((TextView) view.findViewById(R.id.tv_late_count)).setText(String.valueOf(fl));
-                                                            ((TextView) view.findViewById(R.id.tv_absent_count)).setText(String.valueOf(fa));
-                                                            bindTodayList(view, todayFinal);
-                                                        });
-                                                    })
-                                                    .addOnFailureListener(e -> {
-                                                        if (getActivity() == null) return;
-                                                        getActivity().runOnUiThread(() -> {
-                                                            updateTodayClassCard(view, todaySubject, null, finalIsNextEarly);
-                                                            ((TextView) view.findViewById(R.id.tv_present_count)).setText(String.valueOf(fp));
-                                                            ((TextView) view.findViewById(R.id.tv_late_count)).setText(String.valueOf(fl));
-                                                            ((TextView) view.findViewById(R.id.tv_absent_count)).setText(String.valueOf(fa));
-                                                            bindTodayList(view, todayFinal);
-                                                        });
-                                                    });
+                                            // Still load attendance stats
+                                            loadAttendanceStats(view, user, today, todaySubject, false);
                                         } else {
-                                            final String finalStatus = prelimStatus;
-                                            // Fire late/absent notification once per subject per day
-                                            if (todaySubject != null && finalStatus != null) {
-                                                String sid = todaySubject.id != null ? todaySubject.id : todaySubject.name;
-                                                if ("Late".equalsIgnoreCase(finalStatus)
-                                                        && NotificationGuard.shouldFire(requireContext(),
-                                                        user.getId(), sid, "student_late")) {
-                                                    NotificationHelper.notifyStudentLate(requireContext(), todaySubject.name);
-                                                    NotificationStore.getInstance().save(requireContext(), user.getId(),
-                                                            "You're Late",
-                                                            "You were marked late for " + todaySubject.name + ".");
-                                                } else if ("Absent".equalsIgnoreCase(finalStatus)
-                                                        && NotificationGuard.shouldFire(requireContext(),
-                                                        user.getId(), sid, "student_absent")) {
-                                                    NotificationHelper.notifyStudentAbsent(requireContext(), todaySubject.name);
-                                                    NotificationStore.getInstance().save(requireContext(), user.getId(),
-                                                            "Marked Absent",
-                                                            "You were marked absent for " + todaySubject.name + ". Submit an excuse letter if needed.");
-                                                }
-                                            }
-                                            getActivity().runOnUiThread(() -> {
-                                                // Update header card with status badge
-                                                updateTodayClassCard(view, todaySubject, finalStatus, finalIsNextEarly);
-
-                                                // Stat cards — all-time
-                                                ((TextView) view.findViewById(R.id.tv_present_count))
-                                                        .setText(String.valueOf(fp));
-                                                ((TextView) view.findViewById(R.id.tv_late_count))
-                                                        .setText(String.valueOf(fl));
-                                                ((TextView) view.findViewById(R.id.tv_absent_count))
-                                                        .setText(String.valueOf(fa));
-
-                                                // Recent list — today only
-                                                bindTodayList(view, todayFinal);
-                                            });
+                                            // Not suspended — proceed normally
+                                            getActivity().runOnUiThread(() ->
+                                                    updateTodayClassCard(view, todaySubject,
+                                                            null, null, false));
+                                            loadAttendanceStats(view, user, today, todaySubject, false);
                                         }
-                                    }
-
-                                    @Override
-                                    public void onFailure(String err) {
+                                    })
+                                    .addOnFailureListener(e -> {
+                                        // On error, proceed without suspension check
                                         if (getActivity() == null) return;
                                         getActivity().runOnUiThread(() ->
-                                                bindTodayList(view, new ArrayList<>()));
-                                    }
-                                });
+                                                updateTodayClassCard(view, todaySubject,
+                                                        null, null, false));
+                                        loadAttendanceStats(view, user, today, todaySubject, false);
+                                    });
+                        } else {
+                            // No active class (showing next) — no suspension check needed
+                            getActivity().runOnUiThread(() ->
+                                    updateTodayClassCard(view, todaySubject, null, null, finalIsNextEarly));
+                            loadAttendanceStats(view, user, today, todaySubject, finalIsNextEarly);
+                        }
                     }
 
                     @Override
                     public void onFailure(String err) {
                         // Still try loading attendance even if subjects fail
-                        AttendanceRepository.getInstance().getStudentHistory(user.getId(),
-                                new AttendanceRepository.AttendanceCallback() {
-                                    @Override
-                                    public void onSuccess(List<AttendanceRecord> allHistory) {
-                                        if (getActivity() == null) return;
-
-                                        int totalPresent = 0, totalLate = 0, totalAbsent = 0;
-                                        List<AttendanceRecord> todayRecords = new ArrayList<>();
-
-                                        for (AttendanceRecord r : allHistory) {
-                                            totalPresent += r.getPresent();
-                                            totalLate    += r.getLate();
-                                            totalAbsent  += r.getAbsent();
-                                            if (today.equals(r.getDate())) todayRecords.add(r);
-                                        }
-
-                                        final int fp = totalPresent, fl = totalLate, fa = totalAbsent;
-                                        final List<AttendanceRecord> todayFinal = todayRecords;
-
-                                        getActivity().runOnUiThread(() -> {
-                                            ((TextView) view.findViewById(R.id.tv_present_count))
-                                                    .setText(String.valueOf(fp));
-                                            ((TextView) view.findViewById(R.id.tv_late_count))
-                                                    .setText(String.valueOf(fl));
-                                            ((TextView) view.findViewById(R.id.tv_absent_count))
-                                                    .setText(String.valueOf(fa));
-                                            bindTodayList(view, todayFinal);
-                                        });
-                                    }
-
-                                    @Override
-                                    public void onFailure(String e) {
-                                        if (getActivity() == null) return;
-                                        getActivity().runOnUiThread(() ->
-                                                bindTodayList(view, new ArrayList<>()));
-                                    }
-                                });
+                        loadAttendanceStats(view, user, today, null, true);
                     }
                 });
 
@@ -375,19 +267,20 @@ public class StudentHomeFragment extends Fragment {
     // ── Today's Class card ────────────────────────────────────────────────────
 
     /**
-     * Updates the header Today's Class card.
-     *
-     * @param subj   the active/next subject, or null if no class today
-     * @param status the student's attendance status ("Present", "Late", "Absent"), or null if not yet recorded
+     * @param subj       the active/next subject, or null if no class today
+     * @param nextSubject the next subject after a suspended one (may be null)
+     * @param status     "Present", "Late", "Absent", "Suspended", "In school", or null
+     * @param isNext     true if subj is a future class (not currently ongoing)
      */
     private void updateTodayClassCard(View view,
                                       SubjectRepository.SubjectItem subj,
+                                      SubjectRepository.SubjectItem nextSubject,
                                       @Nullable String status,
                                       boolean isNext) {
-        TextView tvLabel  = view.findViewById(R.id.tv_class_label);
-        TextView tvName   = view.findViewById(R.id.tv_today_subject_name);
-        TextView tvTime   = view.findViewById(R.id.tv_today_subject_time);
-        TextView tvStatus = view.findViewById(R.id.tv_today_status);
+        TextView tvLabel   = view.findViewById(R.id.tv_class_label);
+        TextView tvName    = view.findViewById(R.id.tv_today_subject_name);
+        TextView tvTime    = view.findViewById(R.id.tv_today_subject_time);
+        TextView tvStatus  = view.findViewById(R.id.tv_today_status);
         TextView tvSection = view.findViewById(R.id.tv_today_subject_section);
 
         if (subj == null) {
@@ -397,6 +290,39 @@ public class StudentHomeFragment extends Fragment {
             tvStatus.setVisibility(View.GONE);
             return;
         }
+
+        boolean isSuspended = "Suspended".equals(status);
+
+        if (isSuspended) {
+            if (tvLabel != null) tvLabel.setText("Suspended");
+            tvName.setText(subj.name);
+            tvSection.setText("- " + subj.section);
+            tvName.setAlpha(0.5f);
+            tvSection.setAlpha(0.5f);
+
+            // Show suspended badge
+            tvStatus.setVisibility(View.VISIBLE);
+            tvStatus.setText("Suspended");
+            tvStatus.setTextColor(0xFFFF6B00);
+            tvStatus.setBackgroundResource(R.drawable.bg_badge_suspended);
+
+            // Show next subject time below if available
+            if (nextSubject != null) {
+                String nextTime = formatScheduleTime(nextSubject.schedule);
+                String nextDate = getNextClassDate(nextSubject.schedule);
+                tvTime.setText("Next: " + nextSubject.name + "  •  " + nextTime + "  •  " + nextDate);
+                tvTime.setAlpha(1f);
+            } else {
+                tvTime.setText(formatScheduleTime(subj.schedule));
+                tvTime.setAlpha(0.5f);
+            }
+            return;
+        }
+
+        // Reset alpha in case we previously showed suspended
+        tvName.setAlpha(1f);
+        if (tvSection != null) tvSection.setAlpha(1f);
+        tvTime.setAlpha(1f);
 
         if (tvLabel != null) tvLabel.setText(isNext ? "Next Class" : "Today's Class");
         tvName.setText(subj.name);
@@ -410,13 +336,12 @@ public class StudentHomeFragment extends Fragment {
             tvTime.setText(formattedTime);
         }
 
-        // Hide status badge for upcoming classes — only show for active class
+        // Hide status badge for upcoming classes
         if (isNext || status == null || status.isEmpty()) {
             tvStatus.setVisibility(View.GONE);
         } else {
             tvStatus.setVisibility(View.VISIBLE);
             tvStatus.setText(status);
-
             switch (status) {
                 case "Present":
                     tvStatus.setTextColor(0xFF2E7D32);
@@ -442,20 +367,21 @@ public class StudentHomeFragment extends Fragment {
             }
         }
 
-        // Always show "In school since H:MM AM" for any non-absent status —
-        // the geofence time-in is preserved even after QR scan records Present/Late.
-        if (!isNext && status != null && !status.isEmpty() && !"Absent".equalsIgnoreCase(status)) {
-            UserProfile u = com.example.attendify.repository.AuthRepository.getInstance().getLoggedInUser();
+        // Show "In school since H:MM AM" for any non-absent status
+        if (!isNext && status != null && !status.isEmpty() && !isSuspended
+                && !"Absent".equalsIgnoreCase(status)) {
+            UserProfile u = AuthRepository.getInstance().getLoggedInUser();
             if (u != null) {
                 TextView tvInSchool = view.findViewById(R.id.tv_in_school_time);
                 ClassNotificationScheduler.getInstance().getEarliestTimeInToday(
-                        requireContext(), u.getId(), subj != null && subj.id != null ? subj.id : "",
+                        requireContext(), u.getId(),
+                        subj.id != null ? subj.id : "",
                         (timeIn, subId) -> {
                             if (getActivity() == null) return;
                             getActivity().runOnUiThread(() -> {
                                 if (tvInSchool != null && timeIn != null && !timeIn.isEmpty()) {
                                     tvInSchool.setText("In school since " + formatInSchoolTime(timeIn));
-                                    tvInSchool.setVisibility(android.view.View.VISIBLE);
+                                    tvInSchool.setVisibility(View.VISIBLE);
                                 }
                             });
                         });
@@ -706,6 +632,191 @@ public class StudentHomeFragment extends Fragment {
             Date d = DATE_FMT.parse(isoDate);
             return new SimpleDateFormat("MMM d, yyyy", Locale.ENGLISH).format(d);
         } catch (ParseException e) { return isoDate; }
+    }
+
+    // ── Extracted attendance stats loader ─────────────────────────────────────
+
+    private void loadAttendanceStats(View view, UserProfile user, String today,
+                                     SubjectRepository.SubjectItem todaySubject,
+                                     boolean isNext) {
+        AttendanceRepository.getInstance().getStudentHistory(user.getId(),
+                new AttendanceRepository.AttendanceCallback() {
+                    @Override
+                    public void onSuccess(List<AttendanceRecord> allHistory) {
+                        if (getActivity() == null) return;
+
+                        int totalPresent = 0, totalLate = 0, totalAbsent = 0;
+                        List<AttendanceRecord> todayRecords = new ArrayList<>();
+
+                        for (AttendanceRecord r : allHistory) {
+                            totalPresent += r.getPresent();
+                            totalLate    += r.getLate();
+                            totalAbsent  += r.getAbsent();
+                            if (today.equals(r.getDate())) todayRecords.add(r);
+                        }
+
+                        String headerStatus = null;
+                        if (todaySubject != null) {
+                            for (AttendanceRecord r : todayRecords) {
+                                if (todaySubject.name != null &&
+                                        todaySubject.name.equals(r.getSubject())) {
+                                    headerStatus = r.getStatusLabel();
+                                    break;
+                                }
+                            }
+                        }
+
+                        final int fp = totalPresent, fl = totalLate, fa = totalAbsent;
+                        final List<AttendanceRecord> todayFinal = todayRecords;
+                        final String prelimStatus = headerStatus;
+
+                        if (prelimStatus == null && todaySubject != null && !isNext) {
+                            FirebaseFirestore.getInstance()
+                                    .collection("users")
+                                    .document(user.getId())
+                                    .get()
+                                    .addOnSuccessListener(userDoc -> {
+                                        String userStatus = userDoc.getString("status");
+                                        final String resolvedStatus =
+                                                "in school".equalsIgnoreCase(userStatus)
+                                                        ? "In school" : null;
+                                        if (getActivity() == null) return;
+                                        getActivity().runOnUiThread(() -> {
+                                            // Never overwrite a Suspended card with In school / attendance status
+                                            TextView tvLabel = view.findViewById(R.id.tv_class_label);
+                                            boolean alreadySuspended = tvLabel != null
+                                                    && "Suspended".equals(tvLabel.getText().toString());
+                                            if (!alreadySuspended) {
+                                                updateTodayClassCard(view, todaySubject, null,
+                                                        resolvedStatus, isNext);
+                                            }
+                                            setStatCounts(view, fp, fl, fa);
+                                            bindTodayList(view, todayFinal);
+                                        });
+                                    })
+                                    .addOnFailureListener(e -> {
+                                        if (getActivity() == null) return;
+                                        getActivity().runOnUiThread(() -> {
+                                            TextView tvLabel = view.findViewById(R.id.tv_class_label);
+                                            boolean alreadySuspended = tvLabel != null
+                                                    && "Suspended".equals(tvLabel.getText().toString());
+                                            if (!alreadySuspended) {
+                                                updateTodayClassCard(view, todaySubject, null,
+                                                        null, isNext);
+                                            }
+                                            setStatCounts(view, fp, fl, fa);
+                                            bindTodayList(view, todayFinal);
+                                        });
+                                    });
+                        } else {
+                            final String finalStatus = prelimStatus;
+                            if (todaySubject != null && finalStatus != null) {
+                                String sid = todaySubject.id != null ? todaySubject.id : todaySubject.name;
+                                if ("Late".equalsIgnoreCase(finalStatus)
+                                        && NotificationGuard.shouldFire(requireContext(),
+                                        user.getId(), sid, "student_late")) {
+                                    NotificationHelper.notifyStudentLate(requireContext(),
+                                            todaySubject.name);
+                                    NotificationStore.getInstance().save(requireContext(),
+                                            user.getId(), "You're Late",
+                                            "You were marked late for " + todaySubject.name + ".");
+                                } else if ("Absent".equalsIgnoreCase(finalStatus)
+                                        && NotificationGuard.shouldFire(requireContext(),
+                                        user.getId(), sid, "student_absent")) {
+                                    NotificationHelper.notifyStudentAbsent(requireContext(),
+                                            todaySubject.name);
+                                    NotificationStore.getInstance().save(requireContext(),
+                                            user.getId(), "Marked Absent",
+                                            "You were marked absent for " + todaySubject.name
+                                                    + ". Submit an excuse letter if needed.");
+                                }
+                            }
+                            getActivity().runOnUiThread(() -> {
+                                // Never overwrite Suspended card with attendance status
+                                TextView tvLabel = view.findViewById(R.id.tv_class_label);
+                                boolean alreadySuspended = tvLabel != null
+                                        && "Suspended".equals(tvLabel.getText().toString());
+                                if (!alreadySuspended) {
+                                    updateTodayClassCard(view, todaySubject, null,
+                                            finalStatus, isNext);
+                                }
+                                setStatCounts(view, fp, fl, fa);
+                                bindTodayList(view, todayFinal);
+                            });
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(String err) {
+                        if (getActivity() == null) return;
+                        getActivity().runOnUiThread(() -> bindTodayList(view, new ArrayList<>()));
+                    }
+                });
+    }
+
+    private void setStatCounts(View view, int present, int late, int absent) {
+        ((TextView) view.findViewById(R.id.tv_present_count)).setText(String.valueOf(present));
+        ((TextView) view.findViewById(R.id.tv_late_count)).setText(String.valueOf(late));
+        ((TextView) view.findViewById(R.id.tv_absent_count)).setText(String.valueOf(absent));
+    }
+
+    /**
+     * Returns the next subject that starts AFTER the given suspended subject today,
+     * or the next subject on any upcoming day if none today.
+     */
+    private SubjectRepository.SubjectItem getNextSubjectAfter(
+            List<SubjectRepository.SubjectItem> subjects,
+            String todayAbbr,
+            SubjectRepository.SubjectItem suspended) {
+
+        // Find suspended class end time in minutes
+        int suspendedEndMin = -1;
+        if (suspended != null && suspended.schedule != null) {
+            try {
+                String[] parts = suspended.schedule.trim().split("\\s+", 2);
+                if (parts.length >= 2) {
+                    String[] times = parts[1].split("-");
+                    if (times.length >= 2)
+                        suspendedEndMin = parseTimeToMinutes(times[1].trim());
+                }
+            } catch (Exception ignored) {}
+        }
+
+        // Look for the earliest subject today that starts after the suspended one ends
+        SubjectRepository.SubjectItem earliest = null;
+        int earliestStart = Integer.MAX_VALUE;
+
+        for (SubjectRepository.SubjectItem s : subjects) {
+            if (s == suspended || s.schedule == null) continue;
+            String[] parts = s.schedule.trim().split("\\s+", 2);
+            if (parts.length < 1) continue;
+            if (!matchesDay(parts[0].toUpperCase(Locale.ENGLISH), todayAbbr)) continue;
+            int startMin = parseTimeToMinutes(parts.length > 1
+                    ? parts[1].split("-")[0].trim() : "");
+            if (startMin > suspendedEndMin && startMin < earliestStart) {
+                earliestStart = startMin;
+                earliest = s;
+            }
+        }
+
+        // If nothing found today, fall back to getNextSubject (any upcoming day)
+        if (earliest == null) earliest = getNextSubject(subjects, todayAbbr);
+        return earliest;
+    }
+
+    private int parseTimeToMinutes(String t) {
+        if (t == null || t.isEmpty()) return -1;
+        try {
+            t = t.trim().toLowerCase(Locale.ENGLISH);
+            boolean pm = t.contains("pm"), am = t.contains("am");
+            t = t.replace("pm", "").replace("am", "").trim();
+            String[] hm = t.split(":");
+            int h = Integer.parseInt(hm[0].trim());
+            int m = hm.length > 1 ? Integer.parseInt(hm[1].trim()) : 0;
+            if (pm && h != 12) h += 12;
+            if (am && h == 12) h = 0;
+            return h * 60 + m;
+        } catch (Exception e) { return -1; }
     }
 
     // ── Format ISO timestamp → "h:mm a" ──────────────────────────────────────

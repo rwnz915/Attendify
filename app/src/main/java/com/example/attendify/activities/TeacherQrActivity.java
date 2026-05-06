@@ -56,8 +56,6 @@ public class TeacherQrActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_teacher_qr);
 
-        androidx.activity.EdgeToEdge.enable(this);
-
         // Apply teacher theme to header
         UserProfile me = AuthRepository.getInstance().getLoggedInUser();
         String role = me != null ? me.getRole() : "teacher";
@@ -82,7 +80,7 @@ public class TeacherQrActivity extends AppCompatActivity {
         btnScan = findViewById(R.id.btn_open_scanner);
         btnScan.setOnClickListener(v -> {
             if (activeSubject == null) {
-                showMessage("No class is ongoing right now. Scanning is disabled.");
+                showMessage("❌ No class is ongoing right now. Scanning is disabled.");
                 return;
             }
             startQRScanner();
@@ -105,10 +103,38 @@ public class TeacherQrActivity extends AppCompatActivity {
                     @Override
                     public void onSuccess(List<SubjectRepository.SubjectItem> subjects) {
                         SubjectRepository.SubjectItem found = findActiveSubject(subjects);
-                        runOnUiThread(() -> {
-                            activeSubject = found;
-                            updateClassLabel(found);
-                        });
+                        if (found == null) {
+                            runOnUiThread(() -> {
+                                activeSubject = null;
+                                updateClassLabel(null);
+                            });
+                            return;
+                        }
+                        // Check if this class is suspended today
+                        String today = new SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH)
+                                .format(new Date());
+                        String docId = teacher.getId() + "_" + found.id + "_" + today;
+                        FirebaseFirestore.getInstance()
+                                .collection("suspended_classes")
+                                .document(docId)
+                                .get()
+                                .addOnSuccessListener(snap -> runOnUiThread(() -> {
+                                    if (snap.exists()) {
+                                        // Class is suspended — block scanning
+                                        activeSubject = null;
+                                        tvActiveClass.setText(found.name + "  •  " + found.section
+                                                + "  •  SUSPENDED");
+                                        showMessage("⛔ This class is suspended for today.\nNo attendance will be recorded.");
+                                    } else {
+                                        activeSubject = found;
+                                        updateClassLabel(found);
+                                    }
+                                }))
+                                .addOnFailureListener(e -> runOnUiThread(() -> {
+                                    // On error, allow scanning (fail open)
+                                    activeSubject = found;
+                                    updateClassLabel(found);
+                                }));
                     }
 
                     @Override
@@ -236,26 +262,26 @@ public class TeacherQrActivity extends AppCompatActivity {
 
         UserProfile teacher = AuthRepository.getInstance().getLoggedInUser();
         if (teacher == null) {
-            showMessage("Session expired. Please log in again.");
+            showMessage("❌ Session expired. Please log in again.");
             return;
         }
 
         // Re-resolve active subject synchronously (best effort — it was loaded in onCreate)
         if (activeSubject == null) {
-            showMessage("No class is ongoing right now.\nScanning is disabled.");
+            showMessage("❌ No class is ongoing right now.\nScanning is disabled.");
             return;
         }
 
         // Verify the scanned subject belongs to this teacher's active class
         if (!activeSubject.id.equals(scannedSubjectId)) {
-            showMessage("Wrong subject.\nActive: " + activeSubject.name
+            showMessage("❌ Wrong subject.\nActive: " + activeSubject.name
                     + "\nScanned: " + scannedSubjectName);
             return;
         }
 
         // Verify section matches
         if (activeSubject.section != null && !activeSubject.section.equals(scannedSection)) {
-            showMessage("Section mismatch.\nActive: " + activeSubject.section
+            showMessage("❌ Section mismatch.\nActive: " + activeSubject.section
                     + "\nStudent: " + scannedSection);
             return;
         }
@@ -302,14 +328,14 @@ public class TeacherQrActivity extends AppCompatActivity {
                         boolean isPresent = "Present".equals(status);
                         runOnUiThread(() ->
                                 showResultCard(
-                                        isPresent ? "PRESENT" : "LATE",
+                                        isPresent ? "✅ PRESENT" : "⏰ LATE",
                                         name, subjectName, timeFormatted, isPresent));
                     }
 
                     @Override
                     public void onFailure(String errorMessage) {
                         runOnUiThread(() ->
-                                showMessage("Failed to save: " + errorMessage));
+                                showMessage("❌ Failed to save: " + errorMessage));
                     }
                 });
     }

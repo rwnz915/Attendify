@@ -1,11 +1,13 @@
 package com.example.attendify.fragments;
 
+import android.app.AlertDialog;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -19,14 +21,17 @@ import com.example.attendify.repository.ExcuseLetterRepository;
 import com.example.attendify.repository.AttendanceRepository;
 import com.example.attendify.repository.AuthRepository;
 import com.example.attendify.repository.SubjectRepository;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import com.example.attendify.ThemeApplier;
 import com.example.attendify.ThemeManager;
 import com.example.attendify.notifications.NotificationStore;
@@ -36,6 +41,9 @@ public class HomeFragment extends Fragment {
 
     private static final SimpleDateFormat DATE_FMT =
             new SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH);
+
+    // Tracks the currently active/next subject shown on the Today's Class card
+    private SubjectRepository.SubjectItem activeSubjectForSuspend = null;
 
     @Nullable
     @Override
@@ -215,15 +223,48 @@ public class HomeFragment extends Fragment {
                         final SubjectRepository.SubjectItem finalSubject =
                                 activeSubject != null ? activeSubject : nextSubject;
                         final boolean finalIsNext = isNext;
+                        final List<SubjectRepository.SubjectItem> allSubjects = subjects;
 
-                        if (getActivity() != null)
-                            getActivity().runOnUiThread(() -> {
-                                updateTodayClassCard(view, finalSubject, finalIsNext);
-                                // Update the "Classes" column in the combined stat card
-                                TextView tvTotal = view.findViewById(R.id.tv_today_total);
-                                if (tvTotal != null)
-                                    tvTotal.setText(String.valueOf(finalTodayClassCount));
-                            });
+                        // If active class exists, check if already suspended today
+                        if (!finalIsNext && finalSubject != null) {
+                            String docId = user.getId() + "_" + finalSubject.id + "_" + today;
+                            FirebaseFirestore.getInstance()
+                                    .collection("suspended_classes")
+                                    .document(docId)
+                                    .get()
+                                    .addOnSuccessListener(snap -> {
+                                        if (getActivity() == null) return;
+                                        SubjectRepository.SubjectItem next =
+                                                snap.exists() ? getNextSubject(allSubjects, todayAbbr) : null;
+                                        getActivity().runOnUiThread(() -> {
+                                            if (snap.exists()) {
+                                                showSuspendedCard(view, finalSubject, next);
+                                            } else {
+                                                updateTodayClassCard(view, finalSubject, false);
+                                            }
+                                            TextView tvTotal = view.findViewById(R.id.tv_today_total);
+                                            if (tvTotal != null)
+                                                tvTotal.setText(String.valueOf(finalTodayClassCount));
+                                        });
+                                    })
+                                    .addOnFailureListener(e -> {
+                                        if (getActivity() != null)
+                                            getActivity().runOnUiThread(() -> {
+                                                updateTodayClassCard(view, finalSubject, false);
+                                                TextView tvTotal = view.findViewById(R.id.tv_today_total);
+                                                if (tvTotal != null)
+                                                    tvTotal.setText(String.valueOf(finalTodayClassCount));
+                                            });
+                                    });
+                        } else {
+                            if (getActivity() != null)
+                                getActivity().runOnUiThread(() -> {
+                                    updateTodayClassCard(view, finalSubject, finalIsNext);
+                                    TextView tvTotal = view.findViewById(R.id.tv_today_total);
+                                    if (tvTotal != null)
+                                        tvTotal.setText(String.valueOf(finalTodayClassCount));
+                                });
+                        }
 
                         // Attendance stat: sum across all subjects that have started today
                         List<SubjectRepository.SubjectItem> startedToday =
@@ -261,29 +302,73 @@ public class HomeFragment extends Fragment {
     private void updateTodayClassCard(View view,
                                       SubjectRepository.SubjectItem subj,
                                       boolean isNext) {
-        TextView tvLabel = view.findViewById(R.id.tv_class_label);
-        TextView tvName  = view.findViewById(R.id.tv_today_subject_name);
-        TextView tvTime  = view.findViewById(R.id.tv_today_subject_time);
+        TextView tvLabel   = view.findViewById(R.id.tv_class_label);
+        TextView tvName    = view.findViewById(R.id.tv_today_subject_name);
+        TextView tvTime    = view.findViewById(R.id.tv_today_subject_time);
         TextView tvSection = view.findViewById(R.id.tv_today_subject_section);
+        TextView tvStatus  = view.findViewById(R.id.tv_today_status);
 
         if (subj == null) {
-            if (tvLabel != null) tvLabel.setText("Today's Class");
-            tvName.setText("No class today");
-            tvTime.setText("—");
+            if (tvLabel   != null) tvLabel.setText("Today's Class");
+            if (tvName    != null) tvName.setText("No class today");
+            if (tvTime    != null) tvTime.setText("—");
+            if (tvStatus  != null) tvStatus.setVisibility(View.GONE);
+            activeSubjectForSuspend = null;
             return;
         }
 
         if (tvLabel != null) tvLabel.setText(isNext ? "Next Class" : "Today's Class");
-        tvName.setText(subj.name);
-        tvSection.setText("- " + subj.section);
+        if (tvName  != null) { tvName.setText(subj.name); tvName.setAlpha(1f); }
+        if (tvSection != null) { tvSection.setText("- " + subj.section); tvSection.setAlpha(1f); }
+        if (tvStatus != null) tvStatus.setVisibility(View.GONE);
 
         String formattedTime = formatScheduleTime(subj.schedule);
         if (isNext) {
             String dateLabel = getNextClassDate(subj.schedule);
-            tvTime.setText(formattedTime + "  •  " + dateLabel);
+            if (tvTime != null) tvTime.setText(formattedTime + "  •  " + dateLabel);
         } else {
-            tvTime.setText(formattedTime);
+            if (tvTime != null) tvTime.setText(formattedTime);
         }
+
+        // Track for suspend dialog (only when active, not next)
+        activeSubjectForSuspend = (!isNext) ? subj : null;
+    }
+
+    /** Called after a successful suspend — shows Suspended badge + next subject time. */
+    private void showSuspendedCard(View view,
+                                   SubjectRepository.SubjectItem suspended,
+                                   SubjectRepository.SubjectItem next) {
+        TextView tvLabel   = view.findViewById(R.id.tv_class_label);
+        TextView tvName    = view.findViewById(R.id.tv_today_subject_name);
+        TextView tvSection = view.findViewById(R.id.tv_today_subject_section);
+        TextView tvTime    = view.findViewById(R.id.tv_today_subject_time);
+        TextView tvStatus  = view.findViewById(R.id.tv_today_status);
+
+        if (tvLabel   != null) tvLabel.setText("Suspended");
+        if (tvName    != null) { tvName.setText(suspended.name);           tvName.setAlpha(0.5f); }
+        if (tvSection != null) { tvSection.setText("- " + suspended.section); tvSection.setAlpha(0.5f); }
+
+        if (tvStatus != null) {
+            tvStatus.setVisibility(View.GONE);
+            tvStatus.setText("Suspended");
+            tvStatus.setTextColor(0xFFFF6B00);
+            tvStatus.setBackgroundResource(R.drawable.bg_badge_suspended);
+        }
+
+        // Show next subject in the time row
+        if (tvTime != null) {
+            if (next != null) {
+                String nextTime = formatScheduleTime(next.schedule);
+                String nextDate = getNextClassDate(next.schedule);
+                tvTime.setText("Next: " + next.name + "  •  " + nextTime + "  •  " + nextDate);
+                tvTime.setAlpha(1f);
+            } else {
+                tvTime.setText(formatScheduleTime(suspended.schedule));
+                tvTime.setAlpha(0.5f);
+            }
+        }
+
+        activeSubjectForSuspend = null;
     }
 
     private String getNextClassDate(String schedule) {
@@ -580,5 +665,111 @@ public class HomeFragment extends Fragment {
             Date d = DATE_FMT.parse(isoDate);
             return new SimpleDateFormat("MMM d, yyyy", Locale.ENGLISH).format(d);
         } catch (ParseException e) { return isoDate; }
+    }
+
+    // ── Suspend class helpers ─────────────────────────────────────────────────
+
+    /**
+     * Returns true if now is within the suspend window:
+     * 30 minutes before class start up through class end.
+     */
+    private boolean isInSuspendWindow(String schedule) {
+        if (schedule == null) return false;
+        try {
+            String[] parts = schedule.trim().split("\\s+", 2);
+            if (parts.length < 2) return false;
+            String[] times = parts[1].split("-");
+            if (times.length < 2) return false;
+            SimpleDateFormat sdf = new SimpleDateFormat("h:mma", Locale.ENGLISH);
+            Date start = sdf.parse(times[0].trim().toUpperCase(Locale.ENGLISH));
+            Date end   = sdf.parse(times[1].trim().toUpperCase(Locale.ENGLISH));
+            if (start == null || end == null) return false;
+
+            Calendar startCal = toTodayCal(start);
+            startCal.add(Calendar.MINUTE, -30); // 30 min early window
+            Calendar endCal   = toTodayCal(end);
+            Calendar now      = Calendar.getInstance();
+            return now.after(startCal) && now.before(endCal);
+        } catch (ParseException e) { return false; }
+    }
+
+    private void showSuspendConfirmDialog() {
+        if (activeSubjectForSuspend == null) return;
+        String subjectName = activeSubjectForSuspend.name;
+        String section     = activeSubjectForSuspend.section;
+        String schedule    = activeSubjectForSuspend.schedule;
+
+        new AlertDialog.Builder(requireContext())
+                .setTitle("Suspend Class?")
+                .setMessage("Are you sure you want to suspend\n\n"
+                        + "📘 " + subjectName + " — " + section + "\n"
+                        + "🕐 " + formatScheduleTime(schedule) + "\n\n"
+                        + "This will mark today's session as suspended. "
+                        + "No attendance will be recorded for this class today.")
+                .setPositiveButton("Yes, Suspend", (dialog, which) ->
+                        suspendClass(activeSubjectForSuspend))
+                .setNegativeButton("Cancel", null)
+                .setIcon(android.R.drawable.ic_dialog_alert)
+                .show();
+    }
+
+    private void suspendClass(SubjectRepository.SubjectItem subj) {
+        UserProfile me = AuthRepository.getInstance().getLoggedInUser();
+        if (me == null || subj == null) return;
+
+        String today  = DATE_FMT.format(new Date());
+        String docId  = me.getId() + "_" + subj.id + "_" + today;
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("teacherId",   me.getId());
+        data.put("subjectId",   subj.id);
+        data.put("subjectName", subj.name);
+        data.put("section",     subj.section);
+        data.put("schedule",    subj.schedule);
+        data.put("date",        today);
+        data.put("suspendedAt", new SimpleDateFormat("hh:mm a", Locale.ENGLISH).format(new Date()));
+
+        FirebaseFirestore.getInstance()
+                .collection("suspended_classes")
+                .document(docId)
+                .set(data)
+                .addOnSuccessListener(unused -> {
+                    if (getActivity() == null) return;
+                    // Reload subjects to find the next class
+                    SubjectRepository.getInstance().getTeacherSubjects(me.getId(),
+                            new SubjectRepository.SubjectsCallback() {
+                                @Override
+                                public void onSuccess(List<SubjectRepository.SubjectItem> subjects) {
+                                    if (getActivity() == null) return;
+                                    String todayAbbr = getTodayDayAbbr();
+                                    SubjectRepository.SubjectItem next =
+                                            getNextSubject(subjects, todayAbbr);
+                                    getActivity().runOnUiThread(() -> {
+                                        View root = getView();
+                                        if (root == null) return;
+                                        showSuspendedCard(root, subj, next);
+                                        Toast.makeText(requireContext(),
+                                                "Class suspended for today.", Toast.LENGTH_SHORT).show();
+                                    });
+                                }
+                                @Override
+                                public void onFailure(String e) {
+                                    if (getActivity() == null) return;
+                                    getActivity().runOnUiThread(() -> {
+                                        View root = getView();
+                                        if (root != null) showSuspendedCard(root, subj, null);
+                                        Toast.makeText(requireContext(),
+                                                "Class suspended for today.", Toast.LENGTH_SHORT).show();
+                                    });
+                                }
+                            });
+                })
+                .addOnFailureListener(e -> {
+                    if (getActivity() != null)
+                        getActivity().runOnUiThread(() ->
+                                Toast.makeText(requireContext(),
+                                        "Failed to suspend class. Try again.",
+                                        Toast.LENGTH_SHORT).show());
+                });
     }
 }
