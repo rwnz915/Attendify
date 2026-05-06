@@ -75,13 +75,21 @@ public class HomeFragment extends Fragment {
             btnClassList.setColorFilter(com.example.attendify.ThemeManager.getPrimaryColor(requireContext(), roleTheme));
         }
 
+        // Apply theme to Scan QR quick-action icon
+        android.widget.ImageView btnScanQr = view.findViewById(R.id.btn_scan_qr);
+        if (btnScanQr != null) {
+            ThemeApplier.applyLightTint(requireContext(), roleTheme, btnScanQr, 14);
+            btnScanQr.setColorFilter(com.example.attendify.ThemeManager.getPrimaryColor(requireContext(), roleTheme));
+        }
+
         view.findViewById(R.id.btn_start).setOnClickListener(v -> {
             if (getActivity() instanceof MainActivity)
                 ((MainActivity) getActivity()).selectTab(2);
         });
-        view.findViewById(R.id.btn_subjects).setOnClickListener(v -> {
-            if (getActivity() instanceof MainActivity)
-                ((MainActivity) getActivity()).selectTab(1);
+        view.findViewById(R.id.btn_scan_qr).setOnClickListener(v -> {
+            if (getActivity() != null)
+                getActivity().startActivity(new android.content.Intent(getActivity(),
+                        com.example.attendify.activities.TeacherQrActivity.class));
         });
 
         // Pending Approvals is now in the Quick Actions row

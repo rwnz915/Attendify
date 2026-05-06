@@ -137,6 +137,10 @@
             android:name=".activities.TeacherClassListActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".activities.TeacherQrActivity"
+            android:exported="false"
+            android:configChanges="uiMode" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

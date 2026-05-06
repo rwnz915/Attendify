@@ -407,7 +407,7 @@
                     android:textSize="11sp" />
             </LinearLayout>
 
-            <!-- Subjects -->
+            <!-- Scan QR -->
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -416,16 +416,16 @@
                 android:orientation="vertical">
 
                 <ImageView
-                    android:id="@+id/btn_subjects"
+                    android:id="@+id/btn_scan_qr"
                     android:layout_width="48dp"
                     android:layout_height="48dp"
-                    android:background="@drawable/bg_quick_yellow"
+                    android:background="@drawable/bg_quick_action_blue"
                     android:clickable="true"
                     android:focusable="true"
                     android:foreground="?attr/selectableItemBackgroundBorderless"
                     android:padding="12dp"
-                    android:src="@drawable/ic_book"
-                    app:tint="#D97706" />
+                    android:src="@drawable/qr_code"
+                    app:tint="@color/blue_600" />
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -433,7 +433,7 @@
                     android:layout_marginTop="6dp"
                     android:maxLines="1"
                     android:ellipsize="end"
-                    android:text="Subjects"
+                    android:text="Scan QR"
                     android:textColor="@color/gray_700"
                     android:textSize="11sp" />
             </LinearLayout>

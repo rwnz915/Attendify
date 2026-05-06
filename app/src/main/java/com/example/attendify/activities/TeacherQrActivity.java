@@ -1,31 +1,25 @@
-package com.example.attendify.fragments;
+package com.example.attendify.activities;
 
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.TextView;
-import android.widget.Toast;
-import android.content.res.ColorStateList;
-
-import com.example.attendify.ThemeManager;
-import com.google.android.material.button.MaterialButton;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
 import androidx.core.content.ContextCompat;
-import androidx.fragment.app.Fragment;
 
-import com.example.attendify.MainActivity;
 import com.example.attendify.R;
+import com.example.attendify.ThemeApplier;
+import com.example.attendify.ThemeManager;
 import com.example.attendify.models.UserProfile;
 import com.example.attendify.repository.AttendanceRepository;
 import com.example.attendify.repository.AuthRepository;
 import com.example.attendify.repository.SubjectRepository;
+import com.google.android.material.button.MaterialButton;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.zxing.integration.android.IntentIntegrator;
@@ -36,65 +30,56 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-import com.example.attendify.ThemeApplier;
 
 /**
- * Secretary QR scanner tab.
+ * Teacher QR scanner activity.
  *
- * Matches the existing SecretaryFragment scan logic but with a proper
- * polished UI: green header, scan viewfinder, result card.
+ * Teachers can scan a student's QR code to record attendance for
+ * whichever of the teacher's own subjects is currently active.
+ * UI mirrors SecretaryQrFragment with the teacher's theme applied.
  */
-public class SecretaryQrFragment extends Fragment {
+public class TeacherQrActivity extends AppCompatActivity {
 
     private static final int CAMERA_REQUEST_CODE    = 100;
     private static final int LATE_THRESHOLD_MINUTES = 15;
 
-    private TextView tvActiveClass, tvMessage;
-    private TextView tvResultStatus, tvResultName, tvResultSubject, tvResultTime;
-    private CardView cardResult;
+    private TextView     tvActiveClass;
+    private TextView     tvMessage;
+    private TextView     tvResultStatus, tvResultName, tvResultSubject, tvResultTime;
+    private CardView     cardResult;
     private MaterialButton btnScan;
 
     private SubjectRepository.SubjectItem activeSubject = null;
 
-    @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater,
-                             @Nullable ViewGroup container,
-                             @Nullable Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.fragment_secretary_qr, container, false);
-    }
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_teacher_qr);
 
-    @Override
-    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
+        androidx.activity.EdgeToEdge.enable(this);
 
-        UserProfile secQrUser = AuthRepository.getInstance().getLoggedInUser();
+        // Apply teacher theme to header
+        UserProfile me = AuthRepository.getInstance().getLoggedInUser();
+        String role = me != null ? me.getRole() : "teacher";
+        ThemeApplier.applyHeader(this, role, findViewById(R.id.teacher_qr_header));
 
-        // Apply saved theme to header
-        if (secQrUser != null) {
-            ThemeApplier.applyHeader(requireContext(), secQrUser.getRole(),
-                    view.findViewById(R.id.sec_qr_header));
-        }
+        // Apply themed corner brackets and scan button
+        applyThemeAccent(role);
 
-        // Expand header over status bar
-        View header = view.findViewById(R.id.sec_qr_header);
-        if (header != null) {
-            header.setPadding(
-                    header.getPaddingLeft(),
-                    header.getPaddingTop() + MainActivity.statusBarHeight,
-                    header.getPaddingRight(),
-                    header.getPaddingBottom());
-        }
+        // Back button
+        View btnBack = findViewById(R.id.btn_back);
+        if (btnBack != null) btnBack.setOnClickListener(v -> finish());
 
-        tvActiveClass   = view.findViewById(R.id.tv_qr_active_class);
-        tvMessage       = view.findViewById(R.id.tv_qr_message);
-        cardResult      = view.findViewById(R.id.card_scan_result);
-        tvResultStatus  = view.findViewById(R.id.tv_result_status_label);
-        tvResultName    = view.findViewById(R.id.tv_result_student_name);
-        tvResultSubject = view.findViewById(R.id.tv_result_subject);
-        tvResultTime    = view.findViewById(R.id.tv_result_time);
+        // Wire views
+        tvActiveClass   = findViewById(R.id.tv_qr_active_class);
+        tvMessage       = findViewById(R.id.tv_qr_message);
+        cardResult      = findViewById(R.id.card_scan_result);
+        tvResultStatus  = findViewById(R.id.tv_result_status_label);
+        tvResultName    = findViewById(R.id.tv_result_student_name);
+        tvResultSubject = findViewById(R.id.tv_result_subject);
+        tvResultTime    = findViewById(R.id.tv_result_time);
 
-        btnScan = view.findViewById(R.id.btn_open_scanner);
+        btnScan = findViewById(R.id.btn_open_scanner);
         btnScan.setOnClickListener(v -> {
             if (activeSubject == null) {
                 showMessage("No class is ongoing right now. Scanning is disabled.");
@@ -103,30 +88,24 @@ public class SecretaryQrFragment extends Fragment {
             startQRScanner();
         });
 
-        // Apply theme accent to QR corners + button
-        if (secQrUser != null) {
-            applyThemeAccent(view, secQrUser.getRole());
-        }
-
         resolveActiveSubject();
     }
 
     // ── Active subject ────────────────────────────────────────────────────────
 
     private void resolveActiveSubject() {
-        UserProfile sec = AuthRepository.getInstance().getLoggedInUser();
-        if (sec == null || sec.getSection() == null) {
+        UserProfile teacher = AuthRepository.getInstance().getLoggedInUser();
+        if (teacher == null) {
             updateClassLabel(null);
             return;
         }
 
-        SubjectRepository.getInstance().getStudentSubjects(sec.getSection(),
+        SubjectRepository.getInstance().getTeacherSubjects(teacher.getId(),
                 new SubjectRepository.SubjectsCallback() {
                     @Override
                     public void onSuccess(List<SubjectRepository.SubjectItem> subjects) {
-                        if (getActivity() == null) return;
                         SubjectRepository.SubjectItem found = findActiveSubject(subjects);
-                        getActivity().runOnUiThread(() -> {
+                        runOnUiThread(() -> {
                             activeSubject = found;
                             updateClassLabel(found);
                         });
@@ -134,8 +113,7 @@ public class SecretaryQrFragment extends Fragment {
 
                     @Override
                     public void onFailure(String errorMessage) {
-                        if (getActivity() != null)
-                            getActivity().runOnUiThread(() -> updateClassLabel(null));
+                        runOnUiThread(() -> updateClassLabel(null));
                     }
                 });
     }
@@ -150,7 +128,7 @@ public class SecretaryQrFragment extends Fragment {
         }
     }
 
-    // ── Schedule helpers (same as original SecretaryFragment) ─────────────────
+    // ── Schedule helpers ──────────────────────────────────────────────────────
 
     private SubjectRepository.SubjectItem findActiveSubject(
             List<SubjectRepository.SubjectItem> subjects) {
@@ -214,7 +192,7 @@ public class SecretaryQrFragment extends Fragment {
     // ── Scanner ───────────────────────────────────────────────────────────────
 
     private void startQRScanner() {
-        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA)
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
                 != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(new String[]{Manifest.permission.CAMERA}, CAMERA_REQUEST_CODE);
         } else {
@@ -224,7 +202,7 @@ public class SecretaryQrFragment extends Fragment {
 
     private void openScanner() {
         hideResult();
-        IntentIntegrator integrator = IntentIntegrator.forSupportFragment(this);
+        IntentIntegrator integrator = new IntentIntegrator(this);
         integrator.setPrompt("Scan Student QR Code");
         integrator.setBeepEnabled(true);
         integrator.setOrientationLocked(true);
@@ -233,7 +211,7 @@ public class SecretaryQrFragment extends Fragment {
     }
 
     @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         IntentResult result = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
         if (result != null && result.getContents() != null) {
@@ -241,12 +219,12 @@ public class SecretaryQrFragment extends Fragment {
         }
     }
 
-    // ── Process QR (same validation chain as SecretaryFragment) ──────────────
+    // ── Process QR ────────────────────────────────────────────────────────────
 
     private void processScannedQr(String qrData) {
         String[] parts = qrData.split("\\|");
         if (parts.length < 5) {
-            showMessage("Invalid QR Code format.");
+            showMessage("❌ Invalid QR Code format.");
             return;
         }
 
@@ -256,28 +234,29 @@ public class SecretaryQrFragment extends Fragment {
         String scannedSubjectName = parts[3].trim();
         String scannedSection     = parts[4].trim();
 
-        UserProfile sec = AuthRepository.getInstance().getLoggedInUser();
-        if (sec == null) {
-            showMessage("Secretary session expired. Please log in again.");
+        UserProfile teacher = AuthRepository.getInstance().getLoggedInUser();
+        if (teacher == null) {
+            showMessage("Session expired. Please log in again.");
             return;
         }
 
-        resolveActiveSubject();
+        // Re-resolve active subject synchronously (best effort — it was loaded in onCreate)
         if (activeSubject == null) {
             showMessage("No class is ongoing right now.\nScanning is disabled.");
             return;
         }
 
-        String secSection = sec.getSection();
-        if (secSection == null || !secSection.equals(scannedSection)) {
-            showMessage("Section mismatch.\nYour section: " + secSection
-                    + "\nStudent section: " + scannedSection);
-            return;
-        }
-
+        // Verify the scanned subject belongs to this teacher's active class
         if (!activeSubject.id.equals(scannedSubjectId)) {
             showMessage("Wrong subject.\nActive: " + activeSubject.name
                     + "\nScanned: " + scannedSubjectName);
+            return;
+        }
+
+        // Verify section matches
+        if (activeSubject.section != null && !activeSubject.section.equals(scannedSection)) {
+            showMessage("Section mismatch.\nActive: " + activeSubject.section
+                    + "\nStudent: " + scannedSection);
             return;
         }
 
@@ -289,26 +268,22 @@ public class SecretaryQrFragment extends Fragment {
                 .whereEqualTo("date", today)
                 .get()
                 .addOnSuccessListener(snapshot -> {
-                    if (getActivity() == null) return;
                     if (!snapshot.isEmpty()) {
                         DocumentSnapshot existing = snapshot.getDocuments().get(0);
-                        String existingStatus = existing.getString("status");
-                        String existingTime   = existing.getString("time");
-                        getActivity().runOnUiThread(() ->
+                        String existingTime = existing.getString("time");
+                        runOnUiThread(() ->
                                 showResultCard("⚠️ Already Recorded",
                                         scannedStudentName, scannedSubjectName,
                                         existingTime, false));
                         return;
                     }
-                    getActivity().runOnUiThread(() ->
+                    runOnUiThread(() ->
                             saveAttendance(scannedUid, scannedStudentName,
                                     scannedSubjectId, scannedSubjectName, today));
                 })
-                .addOnFailureListener(e -> {
-                    if (getActivity() != null)
-                        getActivity().runOnUiThread(() ->
-                                showMessage("❌ Could not verify duplicate. Try again."));
-                });
+                .addOnFailureListener(e ->
+                        runOnUiThread(() ->
+                                showMessage("❌ Could not verify duplicate. Try again.")));
     }
 
     private void saveAttendance(String uid, String name, String subjectId,
@@ -324,9 +299,8 @@ public class SecretaryQrFragment extends Fragment {
                 new AttendanceRepository.SubmitCallback() {
                     @Override
                     public void onSuccess() {
-                        if (getActivity() == null) return;
                         boolean isPresent = "Present".equals(status);
-                        getActivity().runOnUiThread(() ->
+                        runOnUiThread(() ->
                                 showResultCard(
                                         isPresent ? "PRESENT" : "LATE",
                                         name, subjectName, timeFormatted, isPresent));
@@ -334,9 +308,8 @@ public class SecretaryQrFragment extends Fragment {
 
                     @Override
                     public void onFailure(String errorMessage) {
-                        if (getActivity() != null)
-                            getActivity().runOnUiThread(() ->
-                                    showMessage("Failed to save: " + errorMessage));
+                        runOnUiThread(() ->
+                                showMessage("Failed to save: " + errorMessage));
                     }
                 });
     }
@@ -358,14 +331,14 @@ public class SecretaryQrFragment extends Fragment {
 
     private void showResultCard(String status, String name, String subject,
                                 String time, boolean isGreen) {
-        if (tvMessage != null) tvMessage.setVisibility(View.GONE);
+        if (tvMessage  != null) tvMessage.setVisibility(View.GONE);
         if (cardResult != null) cardResult.setVisibility(View.VISIBLE);
 
         int color = isGreen
-                ? requireContext().getColor(R.color.green_700)
-                : requireContext().getColor(R.color.orange_600);
+                ? getColor(R.color.green_700)
+                : getColor(R.color.orange_600);
 
-        if (tvResultStatus != null) {
+        if (tvResultStatus  != null) {
             tvResultStatus.setText(status);
             tvResultStatus.setTextColor(color);
         }
@@ -389,10 +362,8 @@ public class SecretaryQrFragment extends Fragment {
 
     // ── Theme accent ──────────────────────────────────────────────────────────
 
-    // ── Theme accent ──────────────────────────────────────────────────────────
-
-    private void applyThemeAccent(View root, String role) {
-        int color = ThemeManager.getPrimaryColor(requireContext(), role);
+    private void applyThemeAccent(String role) {
+        int color = ThemeManager.getPrimaryColor(this, role);
 
         int[] cornerIds = {
                 R.id.qr_corner_tl_h, R.id.qr_corner_tl_v,
@@ -401,13 +372,15 @@ public class SecretaryQrFragment extends Fragment {
                 R.id.qr_corner_br_h, R.id.qr_corner_br_v
         };
         for (int id : cornerIds) {
-            View corner = root.findViewById(id);
+            View corner = findViewById(id);
             if (corner != null) corner.setBackgroundColor(color);
         }
 
-        // Clear MaterialButton's built-in tint FIRST, then apply gradient
-        btnScan.setBackgroundTintList(null);
-        ThemeApplier.applyButton(requireContext(), role, btnScan);
+        MaterialButton btn = findViewById(R.id.btn_open_scanner);
+        if (btn != null) {
+            btn.setBackgroundTintList(null);
+            ThemeApplier.applyButton(this, role, btn);
+        }
     }
 
     // ── Permission ────────────────────────────────────────────────────────────
