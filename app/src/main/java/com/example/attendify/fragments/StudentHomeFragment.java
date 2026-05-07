@@ -865,8 +865,8 @@ public class StudentHomeFragment extends Fragment {
                     fused.getLastLocation().addOnSuccessListener(location -> {
                         if (location == null) return;
 
-                        double schoolLat = 14.707776;
-                        double schoolLng = 121.050512;
+                        double schoolLat = 14.704375;
+                        double schoolLng = 121.036763;
                         float  radiusM   = 80f;
 
                         float[] result = new float[1];
