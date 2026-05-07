@@ -1,12 +1,14 @@
 package com.example.attendify.fragments;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.content.Context;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -25,6 +27,7 @@ import com.example.attendify.models.AttendanceRecord;
 import com.example.attendify.models.UserProfile;
 import com.example.attendify.repository.AttendanceRepository;
 import com.example.attendify.repository.AuthRepository;
+import com.example.attendify.repository.GeofenceRepository;
 import com.example.attendify.repository.SubjectRepository;
 import com.example.attendify.fragments.ExcuseLetterFragment;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -137,6 +140,10 @@ public class StudentHomeFragment extends Fragment {
 
         UserProfile user = AuthRepository.getInstance().getLoggedInUser();
         if (user == null) return;
+
+        // ── Recovery: flush offline cache + catch missed geofence ────────────
+        GeofenceRepository.getInstance().flushPendingEntries(requireContext(), user.getId());
+        checkAndRecoverMissedGeofence(requireContext(), user.getId(), "");
 
         ((TextView) view.findViewById(R.id.tv_student_name)).setText(user.getFullName());
 
@@ -266,7 +273,7 @@ public class StudentHomeFragment extends Fragment {
         // TEMP TEST — remove before production
         /*if (user != null) {
             NotificationGuard.reset(requireContext(), user.getId(), "geofence", "arrived_at_school");
-            NotificationHelper.notifyStudentArrivedAtSchool(requireContext(), "Programming");
+            NotificationHelper.notifyStudentArrivedAtSchool(requireContext(), "");
             NotificationStore.getInstance().save(requireContext(), user.getId(),
                     "Arrived at School", "Welcome! Your arrival at school has been recorded.");
         }*/
@@ -840,5 +847,48 @@ public class StudentHomeFragment extends Fragment {
         } catch (Exception e) {
             return "--:--";
         }
+    }
+
+    private void checkAndRecoverMissedGeofence(Context ctx, String userId, String subjectId) {
+        ClassNotificationScheduler.getInstance().getEarliestTimeInToday(
+                ctx, userId, subjectId, (timeIn, sid) -> {
+                    if (timeIn != null) return;
+
+                    com.google.android.gms.location.FusedLocationProviderClient fused =
+                            com.google.android.gms.location.LocationServices
+                                    .getFusedLocationProviderClient(ctx);
+
+                    if (android.content.pm.PackageManager.PERMISSION_GRANTED !=
+                            androidx.core.content.ContextCompat.checkSelfPermission(ctx,
+                                    android.Manifest.permission.ACCESS_FINE_LOCATION)) return;
+
+                    fused.getLastLocation().addOnSuccessListener(location -> {
+                        if (location == null) return;
+
+                        double schoolLat = 14.707776;
+                        double schoolLng = 121.050512;
+                        float  radiusM   = 80f;
+
+                        float[] result = new float[1];
+                        android.location.Location.distanceBetween(
+                                location.getLatitude(), location.getLongitude(),
+                                schoolLat, schoolLng, result);
+
+                        if (result[0] <= radiusM) {
+                            Log.d("StudentHome", "Recovering missed geofence entry");
+                            com.example.attendify.repository.GeofenceRepository
+                                    .getInstance()
+                                    .recordTimeIn(ctx, userId, subjectId);
+
+                            if (com.example.attendify.notifications.NotificationGuard
+                                    .shouldFire(ctx, userId, "geofence", "arrived_at_school")) {
+                                NotificationHelper.notifyStudentArrivedAtSchool(ctx, "");
+                                NotificationStore.getInstance().save(ctx, userId,
+                                        "Arrived at School",
+                                        "Welcome! Your arrival at school has been recorded.");
+                            }
+                        }
+                    });
+                });
     }
 }

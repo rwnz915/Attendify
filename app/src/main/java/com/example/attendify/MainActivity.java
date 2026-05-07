@@ -94,8 +94,8 @@ public class MainActivity extends AppCompatActivity {
 
     //14.707776, 121.050512
 
-    private static final double GEOFENCE_LAT = 14.707776; //14.704375;
-    private static final double GEOFENCE_LNG = 121.050512; //121.036763;
+    private static final double GEOFENCE_LAT = 14.704375; //14.704375;
+    private static final double GEOFENCE_LNG = 121.036763; //121.036763;
 
     // ── Hysteresis thresholds ────────────────────────────────────────────────
     // Two thresholds instead of one to prevent bouncing at the boundary.
