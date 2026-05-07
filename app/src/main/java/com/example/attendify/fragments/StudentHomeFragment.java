@@ -676,10 +676,12 @@ public class StudentHomeFragment extends Fragment {
                                     .document(user.getId())
                                     .get()
                                     .addOnSuccessListener(userDoc -> {
-                                        String userStatus = userDoc.getString("status");
-                                        final String resolvedStatus =
-                                                "in school".equalsIgnoreCase(userStatus)
-                                                        ? "In school" : null;
+                                        // ✅ FIXED — require statusDate to match today
+                                        String userStatus   = userDoc.getString("status");
+                                        String statusDate   = userDoc.getString("statusDate");
+                                        boolean inSchoolToday = "in school".equalsIgnoreCase(userStatus)
+                                                && today.equals(statusDate);
+                                        final String resolvedStatus = inSchoolToday ? "In school" : null;
                                         if (getActivity() == null) return;
                                         getActivity().runOnUiThread(() -> {
                                             // Never overwrite a Suspended card with In school / attendance status

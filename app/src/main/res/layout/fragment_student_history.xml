@@ -230,6 +230,7 @@
                     android:layout_width="35dp"
                     android:layout_height="35dp"
                     android:src="@drawable/ic_document"
+                    android:visibility="gone"
                     android:padding="6dp" />
 
                 <TextView
@@ -237,6 +238,7 @@
                     android:layout_height="wrap_content"
                     android:text="Export to CSV"
                     android:textSize="8sp"
+                    android:visibility="gone"
                     android:textAlignment="center" />
 
             </LinearLayout>

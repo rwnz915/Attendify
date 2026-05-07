@@ -48,8 +48,15 @@ import com.example.attendify.fragments.SecretaryQrFragment;
 import com.example.attendify.geofence.GeofenceReceiver;
 import com.example.attendify.repository.AuthRepository;
 import com.google.android.gms.location.*;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import android.location.Location;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -176,6 +183,13 @@ public class MainActivity extends AppCompatActivity {
             logout();
         } else {
             setupUIForRole(userRole);
+
+            if ("student".equals(userRole)) {
+                UserProfile loggedIn = AuthRepository.getInstance().getLoggedInUser();
+                if (loggedIn != null) {
+                    resetStaleStatusIfNewDay(loggedIn.getId());
+                }
+            }
         }
 
         requestPermissionsFlow();
@@ -190,6 +204,38 @@ public class MainActivity extends AppCompatActivity {
         registerNetworkCallback();
         // Schedule 30-min-before-class alerts
         ClassNotificationScheduler.getInstance().scheduleUpcomingClassAlerts(this);
+    }
+
+    private void resetStaleStatusIfNewDay(String userId) {
+        String today = new SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH).format(new Date());
+        FirebaseFirestore.getInstance()
+                .collection("users")
+                .document(userId)
+                .get()
+                .addOnSuccessListener(doc -> {
+                    if (!doc.exists()) return;
+                    String status     = doc.getString("status");
+                    String statusDate = doc.getString("statusDate");
+                    boolean isStaleInSchool = "in school".equalsIgnoreCase(status)
+                            && !today.equals(statusDate); // ← set on a previous day
+                    if (!isStaleInSchool) return; // nothing to do
+                    // Reset to absent since it's a new day
+                    Map<String, Object> update = new HashMap<>();
+                    update.put("status",     "absent");
+                    update.put("statusDate", today);
+                    FirebaseFirestore.getInstance()
+                            .collection("users")
+                            .document(userId)
+                            .update(update)
+                            .addOnSuccessListener(v ->
+                                    Log.d("MainActivity", "Stale 'in school' cleared for new day"))
+                            .addOnFailureListener(e ->
+                                    Log.w("MainActivity", "Failed to clear stale status: " + e.getMessage()));
+                    // Also clear the local cache
+                    LocalCacheManager cache = LocalCacheManager.getInstance(this);
+                    cache.putRaw(userId, "user_status",      "absent");
+                    cache.putRaw(userId, "user_status_date", today);
+                });
     }
 
     // ─────────────────────────────────────────
