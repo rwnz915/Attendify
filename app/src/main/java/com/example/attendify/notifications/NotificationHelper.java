@@ -32,11 +32,13 @@ public class NotificationHelper {
     public static final String CHANNEL_APPROVALS  = "attendify_approvals";
 
     // ── Notification IDs (use unique ints so stacking works) ─────────────────
-    public static final int NOTIF_CLASS_STARTING  = 1001;
-    public static final int NOTIF_STUDENT_LATE    = 1002;
-    public static final int NOTIF_STUDENT_ABSENT  = 1003;
-    public static final int NOTIF_NEW_APPROVAL    = 1004;
-    public static final int NOTIF_CLASS_STARTING_SEC = 1005;
+    public static final int NOTIF_CLASS_STARTING      = 1001;
+    public static final int NOTIF_STUDENT_LATE        = 1002;
+    public static final int NOTIF_STUDENT_ABSENT      = 1003;
+    public static final int NOTIF_NEW_APPROVAL        = 1004;
+    public static final int NOTIF_CLASS_STARTING_SEC  = 1005;
+    public static final int NOTIF_STUDENT_CLASS_NOW   = 1006; // student: class is starting now
+    public static final int NOTIF_STUDENT_ARRIVED     = 1007; // student: geofence enter detected
 
     // ── Intent extras ────────────────────────────────────────────────────────
     public static final String EXTRA_OPEN_NOTIF_PAGE = "open_notif_page";
@@ -105,6 +107,25 @@ public class NotificationHelper {
                 base(ctx, CHANNEL_CLASS,
                         "Class Starting Soon",
                         subjectName + " starts at " + time + ". Get ready!"));
+    }
+
+    /** Class is starting now (student) */
+    public static void notifyStudentClassNow(Context ctx, String subjectName, String time) {
+        post(ctx, NOTIF_STUDENT_CLASS_NOW,
+                base(ctx, CHANNEL_CLASS,
+                        "Class is Starting Now",
+                        subjectName + " is starting now at " + time + ". Don't be late!"));
+    }
+
+    /** Student has been detected inside the school geofence */
+    public static void notifyStudentArrivedAtSchool(Context ctx, String subjectName) {
+        String body = (subjectName != null && !subjectName.isEmpty())
+                ? "Welcome! Your arrival has been recorded for " + subjectName + "."
+                : "Welcome! Your arrival at school has been recorded.";
+        post(ctx, NOTIF_STUDENT_ARRIVED,
+                base(ctx, CHANNEL_ATTENDANCE,
+                        "Arrived at School",
+                        body));
     }
 
     /** Student was marked late */

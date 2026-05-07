@@ -6,6 +6,9 @@ import android.content.Intent;
 import android.util.Log;
 
 import com.example.attendify.LocalCacheManager;
+import com.example.attendify.notifications.NotificationGuard;
+import com.example.attendify.notifications.NotificationHelper;
+import com.example.attendify.notifications.NotificationStore;
 import com.example.attendify.repository.GeofenceRepository;
 import com.example.attendify.repository.SubjectRepository;
 import com.google.android.gms.location.Geofence;
@@ -52,6 +55,25 @@ public class GeofenceReceiver extends BroadcastReceiver {
                                 String activeSubjectId = findActiveSubjectId(subjects);
                                 GeofenceRepository.getInstance()
                                         .recordTimeIn(context, userId, activeSubjectId);
+
+                                // Find the active subject name for a friendlier notification body
+                                String activeSubjectName = "";
+                                for (SubjectRepository.SubjectItem s : subjects) {
+                                    if (activeSubjectId != null && activeSubjectId.equals(s.id)) {
+                                        activeSubjectName = s.name != null ? s.name : "";
+                                        break;
+                                    }
+                                }
+
+                                // Fire arrival notification (once per day)
+                                if (NotificationGuard.shouldFire(context, userId, "geofence", "arrived_at_school")) {
+                                    NotificationHelper.notifyStudentArrivedAtSchool(context, activeSubjectName);
+                                    String body = activeSubjectName.isEmpty()
+                                            ? "Welcome! Your arrival at school has been recorded."
+                                            : "Welcome! Your arrival has been recorded for " + activeSubjectName + ".";
+                                    NotificationStore.getInstance().save(context, userId,
+                                            "Arrived at School", body);
+                                }
                             }
 
                             @Override
@@ -59,11 +81,27 @@ public class GeofenceReceiver extends BroadcastReceiver {
                                 // Fall back: record time-in without a subjectId
                                 Log.w(TAG, "Could not load subjects: " + error + " — recording without subjectId");
                                 GeofenceRepository.getInstance().recordTimeIn(context, userId, "");
+
+                                // Still fire the arrival notification
+                                if (NotificationGuard.shouldFire(context, userId, "geofence", "arrived_at_school")) {
+                                    NotificationHelper.notifyStudentArrivedAtSchool(context, "");
+                                    NotificationStore.getInstance().save(context, userId,
+                                            "Arrived at School",
+                                            "Welcome! Your arrival at school has been recorded.");
+                                }
                             }
                         });
             } else {
                 // No section cached yet — record without subjectId
                 GeofenceRepository.getInstance().recordTimeIn(context, userId, "");
+
+                // Fire arrival notification (once per day)
+                if (NotificationGuard.shouldFire(context, userId, "geofence", "arrived_at_school")) {
+                    NotificationHelper.notifyStudentArrivedAtSchool(context, "");
+                    NotificationStore.getInstance().save(context, userId,
+                            "Arrived at School",
+                            "Welcome! Your arrival at school has been recorded.");
+                }
             }
         }
 

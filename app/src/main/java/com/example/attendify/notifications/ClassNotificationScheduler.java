@@ -46,6 +46,7 @@ public class ClassNotificationScheduler {
     private static ClassNotificationScheduler instance;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private Runnable pendingRunnable;
+    private Runnable pendingNowRunnable; // fires at exact class-start for students
 
     private ClassNotificationScheduler() {}
 
@@ -70,6 +71,10 @@ public class ClassNotificationScheduler {
         if (pendingRunnable != null) {
             handler.removeCallbacks(pendingRunnable);
             pendingRunnable = null;
+        }
+        if (pendingNowRunnable != null) {
+            handler.removeCallbacks(pendingNowRunnable);
+            pendingNowRunnable = null;
         }
 
         String section = user.getSection();  // students & secretary have section
@@ -158,6 +163,27 @@ public class ClassNotificationScheduler {
 
         handler.postDelayed(pendingRunnable, delayMs);
         Log.d(TAG, "Scheduled alert for '" + alertSubject.name + "' in " + (delayMs / 1000) + "s");
+
+        // ── Extra: student "class starting NOW" alert at the exact start time ──
+        if ("student".equals(role)) {
+            long nowDelayMs = nextStartMs - nowMs;
+            if (nowDelayMs < 0) nowDelayMs = 0;
+
+            final String nowTimeLabel = timeLabel;
+            pendingNowRunnable = () -> {
+                if (!NotificationGuard.shouldFire(ctx, userId, subjectKey, "class_now_student")) {
+                    Log.d(TAG, "class_now alert suppressed (already fired today): " + alertSubject.name);
+                    return;
+                }
+                NotificationHelper.notifyStudentClassNow(ctx, alertSubject.name, nowTimeLabel);
+                NotificationStore.getInstance().save(ctx, userId,
+                        "Class is Starting Now",
+                        alertSubject.name + " is starting now at " + nowTimeLabel + ". Don't be late!");
+                Log.d(TAG, "class_now alert fired for: " + alertSubject.name);
+            };
+            handler.postDelayed(pendingNowRunnable, nowDelayMs);
+            Log.d(TAG, "Scheduled class_now alert for '" + alertSubject.name + "' in " + (nowDelayMs / 1000) + "s");
+        }
     }
 
     // ── Accurate school time-in ───────────────────────────────────────────────

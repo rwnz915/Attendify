@@ -262,6 +262,14 @@ public class StudentHomeFragment extends Fragment {
                 notifDot.setVisibility(hasUnread ? View.VISIBLE : View.GONE);
             }
         }
+
+        // TEMP TEST — remove before production
+        /*if (user != null) {
+            NotificationGuard.reset(requireContext(), user.getId(), "geofence", "arrived_at_school");
+            NotificationHelper.notifyStudentArrivedAtSchool(requireContext(), "Programming");
+            NotificationStore.getInstance().save(requireContext(), user.getId(),
+                    "Arrived at School", "Welcome! Your arrival at school has been recorded.");
+        }*/
     }
 
     // ── Today's Class card ────────────────────────────────────────────────────

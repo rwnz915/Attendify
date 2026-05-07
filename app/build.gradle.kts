@@ -61,4 +61,7 @@ dependencies {
     implementation("com.squareup.picasso:picasso:2.8")
 
     implementation("com.google.code.gson:gson:2.10.1")
+
+    // No Apache POI needed — .xlsx is written as raw Open XML (ZipOutputStream)
+    // which avoids all java.awt.Color / xmlbeans issues on Android.
 }

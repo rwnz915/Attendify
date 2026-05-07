@@ -10,4 +10,11 @@
         <item name="android:forceDarkAllowed" tools:targetApi="q">false</item>
     </style>
     <style name="Theme.Attendify" parent="Base.Theme.Attendify" />
+
+    <!-- Dialog theme for ExportDialogFragment -->
+    <style name="ExportDialogTheme" parent="Theme.Material3.Light.Dialog">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowSoftInputMode">adjustResize</item>
+        <item name="colorPrimary">@color/blue_600</item>
+    </style>
 </resources>

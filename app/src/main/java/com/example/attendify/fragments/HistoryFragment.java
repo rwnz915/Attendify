@@ -28,6 +28,8 @@ import com.example.attendify.models.UserProfile;
 import com.example.attendify.repository.AttendanceRepository;
 import com.example.attendify.repository.AuthRepository;
 import com.example.attendify.repository.SubjectRepository;
+import com.example.attendify.dialogs.ExportDialogFragment;
+import com.example.attendify.dialogs.ExportDialogFragment;
 import com.example.attendify.utils.ExportUtils;
 import com.example.attendify.ThemeApplier;
 
@@ -285,7 +287,7 @@ public class HistoryFragment extends Fragment {
     }
 
     private void exportCurrentData() {
-        String fileName = "Attendance_Report_All";
-        ExportUtils.exportToCsv(requireContext(), fileName, allRecords);
+        ExportDialogFragment.newInstance()
+                .show(getChildFragmentManager(), "export_dialog");
     }
 }

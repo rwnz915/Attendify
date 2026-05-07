@@ -56,6 +56,8 @@ public class TeacherQrActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_teacher_qr);
 
+        androidx.activity.EdgeToEdge.enable(this);
+
         // Apply teacher theme to header
         UserProfile me = AuthRepository.getInstance().getLoggedInUser();
         String role = me != null ? me.getRole() : "teacher";

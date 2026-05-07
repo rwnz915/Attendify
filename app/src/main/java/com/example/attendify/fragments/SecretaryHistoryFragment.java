@@ -26,6 +26,7 @@ import com.example.attendify.adapters.MonthHistoryAdapter;
 import com.example.attendify.models.AttendanceRecord;
 import com.example.attendify.models.UserProfile;
 import com.example.attendify.repository.AuthRepository;
+import com.example.attendify.dialogs.ExportDialogFragment;
 import com.example.attendify.utils.ExportUtils;
 import com.example.attendify.ThemeApplier;
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -297,14 +298,7 @@ public class SecretaryHistoryFragment extends Fragment {
     }
 
     private void exportCurrentData() {
-        List<AttendanceRecord> filtered = new ArrayList<>();
-        for (AttendanceRecord rec : allRecords) {
-            if (selectedSubject.equals("All Subjects") || selectedSubject.equals(rec.getSubject())) {
-                filtered.add(rec);
-            }
-        }
-
-        String fileName = "Section_Attendance_Report_" + userSection.replace(" ", "_") + "_" + selectedSubject.replace(" ", "_");
-        ExportUtils.exportToCsv(requireContext(), fileName, filtered);
+        ExportDialogFragment.newInstance()
+                .show(getChildFragmentManager(), "export_dialog");
     }
 }
